@@ -1,0 +1,33 @@
+name: bc_dev_permits
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13
+  - pip
+  - typer
+  - loguru
+  - tqdm
+  - ipython
+  - jupyterlab
+  - matplotlib
+  - seaborn
+  - notebook
+  - numpy
+  - pandas
+  - scikit-learn
+  - ruff
+  - aiohttp
+  - pyxlsb
+  - openpyxl
+  - pyarrow
+  # - sqlite3
+  # - geopandas
+  # - folium
+  # - fiona
+  # - conda-forge::pillow
+  # - pdfplumber
+ - pip:
+    - python-dotenv
+    - mkdocs
+    - -e .
+    # - ollama
