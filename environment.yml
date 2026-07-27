@@ -20,6 +20,7 @@ dependencies:
   - pyxlsb
   - openpyxl
   - pyarrow
+  - pathspec
   # - sqlite3
   # - geopandas
   # - folium
