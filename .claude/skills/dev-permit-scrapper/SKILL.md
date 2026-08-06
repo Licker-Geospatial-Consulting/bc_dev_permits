@@ -3,14 +3,11 @@ name: dev-permit-scrapper
 description: Scrape development permit and development application data from BC municipality websites into a normalized SQL table, covering commercial, residential, mixed-use, industrial, and institutional projects. Use this whenever the user wants to extract, harvest, or parse development permits, development applications, rezonings, or DVPs from a city/municipal/council website or webmap — including HTML application pages, ArcGIS or VertiGIS webmaps, and PDF documents. Also use when the user mentions a specific municipality by name (North Vancouver/CNV, Coquitlam, Maple Ridge, Port Moody, West Vancouver, New Westminster, UBC) in the context of building or development data, or asks to set up local PDF field extraction with Ollama. Prefer parsing fields directly from the page; only fall back to saving PDF links when the page has no relevant text with respect to fields that needs to be fetched.
 ---
 
-# Development Permit Scraper
+# Development Permit Scraper Workflow
 
-Harvest development permit / development application data from BC municipal
-sources into one normalized SQL table (`dev_permit`), regardless of the site's
-architecture. Cover **commercial vs residential** (plus mixed-use, industrial,
-institutional) with the same schema. The code should be ruff formatted.
+Use this workflow when harvesting a new source, adding a municipality, repairing or modifying an existing harvester, or changing extractions.
 
-## The one rule that shapes everything
+## Guiding rule
 
 **Parse first, PDF-fallback second.** For every application:
 
@@ -39,9 +36,9 @@ expensive local-LLM PDF pass for pages that genuinely need it.
    store PDF links per the rule above).
 4. **Classify** `development_class` (commercial / residential / mixed / industrial /
    institutional) — this is a required output for every row.
-5. **Extract prose → fields.** Parse fields that are already in the HTML/map content deterministically 
-   (`bc_dev_permits/features.py` — regex/selectors, no model call). Reserve Ollama (`bc_dev_permits/modeling/predict.py`, 
-   contract in `references/extraction_prompt.md`) for the PDF-fallback path only — reading fields out of 
+5. **Extract prose → fields.** Parse fields that are already in the HTML/map content deterministically
+   (`bc_dev_permits/features.py` — regex/selectors, no model call). Reserve Ollama (`bc_dev_permits/modeling/predict.py`,
+   contract in `references/extraction_prompt.md`) for the PDF-fallback path only — reading fields out of
    PDF documents when a page had no usable text. See `references/ollama_pdf_extraction.md`.
 6. **Upsert** into `dev_permit` keyed on `(municipality, permit_id)`; attach any
    documents to `dev_document`. Record `extraction_method`, `extraction_confidence`,
@@ -51,6 +48,7 @@ expensive local-LLM PDF pass for pages that genuinely need it.
 
 The extractor (whether run over page prose or PDF text) must return JSON matching the
 schema in `references/extraction_prompt.md`. Rules:
+
 - Any field not stated in the text → `null` (never guessed).
 - `unit_mix` is an object of type→count (e.g. `{"1-bed": 19, "2-bed": 12}`); set
   `units_total` to the stated total.
