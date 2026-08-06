@@ -1,9 +1,9 @@
 # Field extraction prompt (PDF text only)
 
 This contract is for the **Ollama PDF-fallback path** only. HTML pages and map attributes are 
-parsed deterministically by `harvesters/fields.py` and never reach a model. Use this when 
+parsed deterministically by `bc_dev_permits/features.py` and never reach a model. Use this when 
 extracting fields from PDF-derived text (or scanned-page images). Feed the model the raw 
-text and require JSON out. `scripts/ollama_extract.py` sends this as the system prompt with 
+text and require JSON out. `bc_dev_permits/modeling/predict.py` sends this as the system prompt with 
 a JSON-schema `format`, so the local model is constrained to valid output.
 
 ## System prompt
@@ -54,7 +54,7 @@ a JSON-schema `format`, so the local model is constrained to valid output.
 ## Worked example (real North Vancouver prose)
 This uses the North Vancouver prose only to show the target JSON shape. 
 In practice that particular text lives on an **HTML** page, so it's parsed 
-by `harvesters/fields.py`, not here. This contract kicks in when equivalent 
+by `bc_dev_permits/features.py`, not here. This contract kicks in when equivalent 
 descriptive text appears **inside a PDF** (e.g. a staff report) on the fallback path.
 
 Input text from 115 East 18th Street:

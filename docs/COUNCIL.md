@@ -25,7 +25,7 @@ the exact instructions you gave per site.
   (1-5 residential units)".
 - **Detail page** (example: `.../Active-Applications/115-East-18th-Street`):
   - Address ← page `<h1>` / breadcrumb.
-  - Prose paragraph(s) in the main content region → parse deterministically (`harvesters/fields.py`).
+  - Prose paragraph(s) in the main content region → parse deterministically (`bc_dev_permits/features.py`).
   - "Application Process & Information" table → milestones (dates) + PDF links (Documents column).
   - **Fallback:** pages with no relevant information for the field required (example: `.../651-East-1st-Street`, The Trails
     Future Phases) → store PDF links in `dev_document`, set `needs_pdf_extraction=true`.
@@ -41,7 +41,7 @@ the exact instructions you gave per site.
   attributes.
 - **Multiple features per polygon:** a single polygon can return more than one feature
   — parse **all** descriptions/features, one `dev_permit` each.
-- Parse the popup `description` attribute deterministically with `harvesters/fields.py`
+- Parse the popup `description` attribute deterministically with `bc_dev_permits/features.py`
 - capture FeatureServer `/query` URL from Network tab; record layerId + field names
   (project number field — e.g. the "22-039" id — description, status, dates).
 
@@ -57,14 +57,14 @@ the exact instructions you gave per site.
 
 - **App:** https://portmoody.maps.arcgis.com/apps/webappviewer/index.html?id=d42a4cd7ece44d2d8dbf759cdcdac203
 - ArcGIS Web AppViewer over a FeatureServer.
-- Parse the `purpose` attribute for the fields with `harvesters/fields.py` (deterministic parse).
+- Parse the `purpose` attribute for the fields with `bc_dev_permits/features.py` (deterministic parse).
 - capture FeatureServer `/query` URL + confirm the `purpose` field name and id/date fields.
 
 ## west_van — District of West Vancouver  (html)
 
 - **List:** https://westvancouver.ca/business-development/development-applications/active-development-applications
 - **Detail pages** (examples: `.../11-3085-deer-ridge-close`, `.../1337-ottawa-avenue-rezoning`):
-  : parse prose paragraphs/`<div>`s → parse deterministically (`harvesters/fields.py`).
+  : parse prose paragraphs/`<div>`s → parse deterministically (`bc_dev_permits/features.py`).
 - **Fallback:** pages with no relevant information for the field required → store PDF links, `needs_pdf_extraction=true`.
 - the main-content selector is div with class id `view-content`.
 
@@ -84,7 +84,7 @@ the exact instructions you gave per site.
 - Iterate **all pages** (pagination) and take **every development-permit entry**
   (examples: "ANSO Renewal - DP24027 Amendment 2 - MAC Expansion", "Wesbrook Place South
   Lot 8 & 9 - DP26024").
-- Parse prose paragraphs/`<div>` sections on each project page → parse deterministically (`harvesters/fields.py`).
+- Parse prose paragraphs/`<div>` sections on each project page → parse deterministically (`bc_dev_permits/features.py`).
 - **permit_id regex:** `DP\d{5}` (+ amendment suffix).
 - Note: UBC is federally/provincially planned (not a BC municipality proper) but fits the
   same html flow. development_class from prose (academic/institutional vs residential).

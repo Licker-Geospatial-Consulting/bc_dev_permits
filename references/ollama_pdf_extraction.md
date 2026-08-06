@@ -1,11 +1,11 @@
 # Reference: local Ollama field extraction (PDFs only)
 
 Runs entirely on your machine — no data leaves it. One JSON contract
-(`resources/extraction_prompt.md`) is reused for PDF text input.
-The implementation is `scripts/ollama_extract.py`.
+(`references/extraction_prompt.md`) is reused for PDF text input.
+The implementation is `bc_dev_permits/modeling/predict.py`.
 
 Scope: Ollama is used only for PDFs, on the fallback path. HTML pages and map 
-attributes are parsed deterministically by `harvesters/fields.py` — never sent to a model. 
+attributes are parsed deterministically by `bc_dev_permits/features.py` — never sent to a model. 
 Reach for this reference only when a row was flagged `needs_pdf_extraction=true`.
 
 ## When it runs
@@ -14,7 +14,7 @@ Reach for this reference only when a row was flagged `needs_pdf_extraction=true`
   (`needs_pdf_extraction=true`). Download the PDF, then call `extract_from_pdf(path)`.
 - `extract_from_pdf` internally calls `extract_from_text` on the PDF-derived text. 
    That helper is for PDF text only — do not call it on HTML page prose 
-   (use `harvesters/fields.py` for that).
+   (use `bc_dev_permits/features.py` for that).
 
 ## How it works
 
@@ -41,16 +41,16 @@ Ollama serves at `http://localhost:11434` by default; the script points there. C
 
 ```bash
 # from a PDF on disk
-python scripts/ollama_extract.py path/to/DP-24-031.pdf
+python -m bc_dev_permits.modeling.predict path/to/DP-24-031.pdf
 
 # from prose piped in (e.g. a page paragraph)
-echo "…6-storey purpose built rental… 40 residential units…" | python scripts/ollama_extract.py -
+echo "…6-storey purpose built rental… 40 residential units…" | python -m bc_dev_permits.modeling.predict -
 ```
 
 Or import it in the pipeline:
 
 ```python
-from scripts.ollama_extract import extract_from_text, extract_from_pdf
+from bc_dev_permits.modeling.predict import extract_from_text, extract_from_pdf
 
 fields = extract_from_text(page_prose)          # prose path
 fields = extract_from_pdf("staff_report.pdf")   # PDF path (auto text/vision)

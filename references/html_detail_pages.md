@@ -9,7 +9,7 @@ document/milestone table.
 
 ```
 list page ──> [application links] ──> detail page
-                                        ├── prose paragraph(s)                         → deterministic parse (fields.py)
+                                        ├── prose paragraph(s)                         → deterministic parse (features.py)
                                         ├── milestones table                           → dates + PDF links
                                         └── (no prose or no field to extract?)         → store PDF links only
 ```
@@ -24,7 +24,7 @@ list page ──> [application links] ──> detail page
 2. **For each detail page**, isolate the main content container (the article/main
    region, not header/nav/footer). Then:
    - **Prose** → concatenate the descriptive `<p>`/`<div>` text into `raw_text` and parse the fields 
-      deterministically with `harvesters/fields.py` (regex — no LLM).
+      deterministically with `bc_dev_permits/features.py` (regex — no LLM).
    - **Address** → usually the page `<h1>`/title and breadcrumb (e.g. "115 East 18th
      Street"). Take it deterministically; don't rely on the LLM for it.
    - **Milestones table** → each row is (Milestone, Date, Documents, How to
@@ -51,7 +51,7 @@ via JavaScript. Keep a per-domain rate limit and a descriptive User-Agent.
 ## Worked reference (CNV 115 East 18th Street)
 
 - **Address** from `<h1>`: "115 East 18th Street".
-- **Prose** (one paragraph) parsed deterministically by `harvesters/fields.py`, yields: 
+- **Prose** (one paragraph) parsed deterministically by `bc_dev_permits/features.py`, yields: 
   permit_type=Rezoning, 6 storeys, 40 units,
   unit_mix {1-bed 19, 2-bed 12, 3-bed 3, suite 6}, rental (4 mid-market + 36 market),
   21 vehicle + 56 bike stalls. This exact case is the fixture in `tests/test_north_van.py`

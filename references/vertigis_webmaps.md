@@ -25,7 +25,7 @@ service URLs — grep the network log for `.json` responses that contain
   geometry (→ same lat/lon).
 - **"Application details" section** = the attribute fields on those related records.
   Map each to the schema (permit_id, permit_type, status, description/purpose, dates).
-  Parse any prose attribute deterministically with `harvesters/fields.py`; take 
+  Parse any prose attribute deterministically with `bc_dev_permits/features.py`; take 
   structured attributes (status, dates, id) directly. No LLM on map attributes.
 
 If the layer has **no** relationship and instead stacks multiple features on the same

@@ -34,3 +34,6 @@ site/            # mkdocs build output
 
 # OS / editor
 .DS_Store
+
+# Claude Code session transcripts (stray dumps at repo root)
+/*.jsonl

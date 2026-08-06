@@ -72,7 +72,7 @@ Two common shapes; check which the layer uses:
 
 The useful attribute is usually a prose blob:
 - **Port Moody**: parse the **`purpose`** attribute — it's a sentence describing the
-  application — through `harvesters/fields.py`.
+  application — through `bc_dev_permits/features.py`.
 - **Coquitlam**: parse the popup `description` attribute the same way, once per feature.
 
 Set `extraction_method='arcgis'`, keep the raw attribute JSON in `raw_text`, and apply

@@ -58,7 +58,7 @@ SYSTEM_PROMPT = (
     "confidence from 0 to 1 reflecting how completely the text supported the fields."
 )
 
-# JSON schema handed to Ollama's `format` param — mirrors resources/extraction_prompt.md
+# JSON schema handed to Ollama's `format` param — mirrors references/extraction_prompt.md
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -166,7 +166,10 @@ def extract_from_pdf(
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("usage: ollama_extract.py <file.pdf | -  (read text from stdin)>")
+        print(
+            "usage: python -m bc_dev_permits.modeling.predict "
+            "<file.pdf | -  (read text from stdin)>"
+        )
         raise SystemExit(1)
     arg = sys.argv[1]
     result = sys.stdin.read() if arg == "-" else None

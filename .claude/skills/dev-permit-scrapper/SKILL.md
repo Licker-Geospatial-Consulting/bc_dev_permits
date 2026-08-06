@@ -8,7 +8,7 @@ description: Scrape development permit and development application data from BC 
 Harvest development permit / development application data from BC municipal
 sources into one normalized SQL table (`dev_permit`), regardless of the site's
 architecture. Cover **commercial vs residential** (plus mixed-use, industrial,
-institutional) with the same schema.
+institutional) with the same schema. The code should be ruff formatted.
 
 ## The one rule that shapes everything
 
@@ -26,9 +26,9 @@ expensive local-LLM PDF pass for pages that genuinely need it.
 
 ## Workflow
 
-1. **Read the schema.** `resources/schema.sql` is the target. Every source maps to
+1. **Read the schema.** `references/schema.sql` is the target. Every source maps to
    these columns. Read it before writing any parser.
-2. **Pick the source type** for the municipality from `COUNCIL.md`, then open the
+2. **Pick the source type** for the municipality from `docs/COUNCIL.md`, then open the
    matching reference file:
    - HTML application pages (North Van, West Van, UBC, New West detail pages) →
      `references/html_detail_pages.md`
@@ -40,8 +40,8 @@ expensive local-LLM PDF pass for pages that genuinely need it.
 4. **Classify** `development_class` (commercial / residential / mixed / industrial /
    institutional) — this is a required output for every row.
 5. **Extract prose → fields.** Parse fields that are already in the HTML/map content deterministically 
-   (`harvesters/fields.py` — regex/selectors, no model call). Reserve Ollama (`scripts/ollama_extract.py`, 
-   contract in `resources/extraction_prompt.md`) for the PDF-fallback path only — reading fields out of 
+   (`bc_dev_permits/features.py` — regex/selectors, no model call). Reserve Ollama (`bc_dev_permits/modeling/predict.py`, 
+   contract in `references/extraction_prompt.md`) for the PDF-fallback path only — reading fields out of 
    PDF documents when a page had no usable text. See `references/ollama_pdf_extraction.md`.
 6. **Upsert** into `dev_permit` keyed on `(municipality, permit_id)`; attach any
    documents to `dev_document`. Record `extraction_method`, `extraction_confidence`,
@@ -50,7 +50,7 @@ expensive local-LLM PDF pass for pages that genuinely need it.
 ## Field extraction contract
 
 The extractor (whether run over page prose or PDF text) must return JSON matching the
-schema in `resources/extraction_prompt.md`. Rules:
+schema in `references/extraction_prompt.md`. Rules:
 - Any field not stated in the text → `null` (never guessed).
 - `unit_mix` is an object of type→count (e.g. `{"1-bed": 19, "2-bed": 12}`); set
   `units_total` to the stated total.
@@ -65,5 +65,5 @@ schema in `resources/extraction_prompt.md`. Rules:
 - Store raw source text (`raw_text`) so fields can be re-extracted later with a better
   model without re-crawling.
 
-See `INSTRUCTIONS.md` for the full project brief and `COUNCIL.md` for the
+See `docs/INSTRUCTIONS.md` for the full project brief and `docs/COUNCIL.md` for the
 per-municipality registry and exact selectors/endpoints.
