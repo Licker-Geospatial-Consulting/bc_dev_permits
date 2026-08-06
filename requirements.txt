@@ -1,0 +1,19 @@
+# Runtime dependencies for reproducing the analysis environment.
+# Regenerate a pinned lockfile with:  pip freeze > requirements.txt
+
+# --- HTML harvesting (bc_dev_permits.harvesters, features) ---
+beautifulsoup4
+lxml
+requests
+
+# --- Postgres load (bc_dev_permits.load / dataset --out db) ---
+psycopg[binary]
+
+# --- PDF fallback via local Ollama (bc_dev_permits.modeling.predict) ---
+pdfplumber
+pymupdf
+
+# --- dev / docs (optional; also in pyproject [project.optional-dependencies].dev) ---
+# ruff
+# pytest
+# mkdocs

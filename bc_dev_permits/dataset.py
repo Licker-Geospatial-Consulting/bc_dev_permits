@@ -1,0 +1,100 @@
+"""Data acquisition entrypoint (`make data`).
+
+Harvests municipal development-permit applications and either prints them, writes
+them to data/processed/<municipality>.json, or upserts them into Postgres.
+
+    python -m bc_dev_permits.dataset --limit 3                 # eyeball 3 rows
+    python -m bc_dev_permits.dataset --limit 3 --out json      # -> data/processed/north_van.json
+    python -m bc_dev_permits.dataset --out db --dsn postgresql://user:pw@localhost/db
+
+Per-municipality scraping lives in bc_dev_permits.harvesters.*; deterministic field
+parsing in bc_dev_permits.features; the PDF fallback in bc_dev_permits.modeling.predict.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+
+from bc_dev_permits import config
+from bc_dev_permits.harvesters import north_van
+
+# slug -> harvest callable(limit=None, use_cache=True) -> list[dict]
+HARVESTERS = {
+    "north_van": north_van.harvest,
+}
+
+
+def harvest(
+    municipality: str = "north_van", limit: int | None = None, use_cache: bool = True
+) -> list[dict]:
+    """Harvest one municipality's applications into dev_permit rows."""
+    return HARVESTERS[municipality](limit=limit, use_cache=use_cache)
+
+
+def _run_cli(argv=None) -> int:
+    ap = argparse.ArgumentParser(description="Harvest BC development-permit applications.")
+    ap.add_argument(
+        "--municipality",
+        choices=sorted(HARVESTERS),
+        default="north_van",
+        help="Which municipal harvester to run (default: north_van).",
+    )
+    ap.add_argument(
+        "--limit",
+        type=int,
+        default=3,
+        help="Process only the first N applications (default 3; 0 = all).",
+    )
+    ap.add_argument(
+        "--out",
+        choices=("print", "json", "db"),
+        default="print",
+        help="Where results go (default: print to stdout).",
+    )
+    ap.add_argument(
+        "--json-path",
+        default=None,
+        help="Output file for --out json (default: data/processed/<municipality>.json).",
+    )
+    ap.add_argument(
+        "--dsn",
+        default=config.DATABASE_URL,
+        help="Postgres DSN for --out db (or set DATABASE_URL).",
+    )
+    ap.add_argument(
+        "--no-cache",
+        action="store_true",
+        help=f"Bypass the {config.HTTP_CACHE_TTL // 3600}h page cache and refetch.",
+    )
+    args = ap.parse_args(argv)
+
+    rows = harvest(args.municipality, args.limit or None, not args.no_cache)
+    print(f"Harvested {len(rows)} {args.municipality} application(s).", file=sys.stderr)
+
+    if args.out == "json":
+        path = args.json_path or (config.PROCESSED_DATA_DIR / f"{args.municipality}.json")
+        config.PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(rows, fh, indent=2, ensure_ascii=False)
+        print(f"Wrote {len(rows)} row(s) -> {path}", file=sys.stderr)
+    elif args.out == "db":
+        if not args.dsn:
+            ap.error("--out db needs --dsn or the DATABASE_URL env var.")
+        import psycopg  # pip install "psycopg[binary]"
+
+        from bc_dev_permits import load
+
+        with psycopg.connect(args.dsn) as conn:
+            for row in rows:
+                load.upsert(conn, row)
+        print(f"Upserted {len(rows)} row(s) into Postgres.", file=sys.stderr)
+    else:  # print
+        json.dump(rows, sys.stdout, indent=2, ensure_ascii=False, default=str)
+        print()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_run_cli())

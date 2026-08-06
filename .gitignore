@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Caches
+.http_cache/
+data/raw/http_cache/
+
+# Data — keep the folders (via .gitkeep) but not their contents by default.
+# Remove these lines if you want to version harvested outputs.
+data/raw/*
+data/interim/*
+data/processed/*
+data/external/*
+!data/**/.gitkeep
+!data/processed/north_van_test.json    # keep the sample harvester output in the repo
+
+# Models & reports artifacts
+models/*
+!models/.gitkeep
+reports/figures/*
+!reports/figures/.gitkeep
+
+# Tooling
+.mypy_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+site/            # mkdocs build output
+
+# OS / editor
+.DS_Store

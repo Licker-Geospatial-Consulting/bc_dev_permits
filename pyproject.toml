@@ -1,0 +1,65 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "bc_dev_permits"
+version = "0.0.1"
+description = "BC municipality development permit scraping and databasing"
+authors = [
+  { name = "LGeo" },
+]
+
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+
+]
+requires-python = "~=3.13.0"
+dependencies = [
+    "beautifulsoup4",
+    "lxml",
+    "requests",
+]
+
+[project.optional-dependencies]
+db = ["psycopg[binary]"]           # dataset --out db / bc_dev_permits.load
+pdf = ["pdfplumber", "pymupdf"]    # bc_dev_permits.modeling.predict (Ollama PDF fallback)
+dev = ["ruff", "pytest", "mkdocs"]
+
+[project.scripts]
+bc-dev-permits = "bc_dev_permits.dataset:_run_cli"
+
+
+[tool.ruff]
+line-length = 99
+src = ["bc_dev_permits"]
+include = ["pyproject.toml", "bc_dev_permits/**/*.py"]
+
+[tool.ruff.lint]
+extend-select = ["I"]  # Add import sorting
+select = ["ALL"]
+ignore = [
+    # --- your original ignores ---
+    "EM101", "TRY003", "E501", "S105", "S106",
+    # --- project design choices (trim any you'd rather enforce) ---
+    "CPY001",            # no per-file copyright headers
+    "T201",              # print() is the intended output of the CLI / report modules
+    "PLC0415",           # deliberate lazy imports of optional deps (requests, psycopg, argparse)
+    "S608",              # SQL f-strings inject only internal column/table names; values use %s params
+    "PLR2004",           # small magic numbers stay readable in this scraper
+    "ISC001", "ISC004",  # implicit string concatenation in multiline regex/prose literals
+    "PERF401",           # explicit loops kept for readability over comprehensions
+    "FBT001", "FBT002",  # boolean flags (e.g. use_cache=True) are ergonomic here
+    "PTH",               # os.path is fine for the small HTTP-cache layer
+    "DTZ007",            # parsing calendar dates (strptime); no timezone involved
+    "EM102",             # f-strings in exceptions (matches the existing EM101 ignore)
+    "ANN001", "ANN202",  # full arg/return typing not enforced on bs4/requests helpers
+    "COM812",            # conflicts with `ruff format` (ruff's own recommendation)
+]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["bc_dev_permits"]
+force-sort-within-sections = true
