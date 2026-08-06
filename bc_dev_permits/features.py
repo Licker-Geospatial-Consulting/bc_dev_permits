@@ -21,6 +21,27 @@ _WORD_TO_BED = {
     "five": "5-bed",
 }
 
+# Spelled-out cardinals CNV uses for small townhouse/infill counts ("three-unit ...").
+_WORD_TO_INT = {
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+}
+
+
+def _as_int(token: str) -> int:
+    """Convert a digit string or a spelled-out cardinal ('three') to an int."""
+    token = token.strip().lower()
+    return int(token) if token.isdigit() else _WORD_TO_INT[token]
+
+
 # Permit type keywords in priority order (a page may mention several; first wins as primary).
 _PERMIT_TYPES = [
     (r"\brezon", "Rezoning"),
@@ -79,7 +100,18 @@ def units_total(text: str) -> int | None:
         v = _first_int(pat, text)
         if v is not None:
             return v
-    return None
+    # Hyphenated compound form: "three-unit townhouse development", "6-unit rental
+    # building". The hyphen is required on purpose — it is how CNV writes a *proposal*
+    # count, and it keeps us from misreading a zone *name* that merely contains a number
+    # word with a space, e.g. "RT-1 (Two Unit Residential) zone".
+    m = re.search(
+        r"\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)-unit\s+"
+        r"(?:townhouse|dwelling|residential|apartment|rental|strata|housing|"
+        r"multi-?family|home|condo\w*|building|development)",
+        text,
+        re.IGNORECASE,
+    )
+    return _as_int(m.group(1)) if m else None
 
 
 def unit_mix(text: str) -> dict | None:
@@ -119,8 +151,14 @@ def parking_bike(text: str) -> int | None:
 
 
 def parking_notes(text: str) -> str | None:
-    """Return the sentence mentioning underground parking, if present."""
-    m = re.search(r"([^.]*\bunderground parking[^.]*\.)", text, re.IGNORECASE)
+    """Return the first sentence describing parking, if present.
+
+    Captures the underground-parking sentence used on larger applications, and also
+    per-unit stall notes like "Each townhouse unit will have ... one on-site parking
+    stall." — useful when parking is stated per unit rather than as a single total, so
+    the descriptive detail is preserved even when parking_vehicle() finds no digit total.
+    """
+    m = re.search(r"([^.]*\b(?:underground parking|parking stall)[^.]*\.)", text, re.IGNORECASE)
     return m.group(1).strip() if m else None
 
 

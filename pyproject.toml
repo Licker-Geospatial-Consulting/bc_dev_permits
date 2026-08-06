@@ -48,7 +48,7 @@ ignore = [
     "PLC0415",           # deliberate lazy imports of optional deps (requests, psycopg, argparse)
     "S608",              # SQL f-strings inject only internal column/table names; values use %s params
     "PLR2004",           # small magic numbers stay readable in this scraper
-    "ISC001", "ISC004",  # implicit string concatenation in multiline regex/prose literals
+    "ISC001", "ISC002",  # implicit string concatenation in multiline regex/prose literals
     "PERF401",           # explicit loops kept for readability over comprehensions
     "FBT001", "FBT002",  # boolean flags (e.g. use_cache=True) are ergonomic here
     "PTH",               # os.path is fine for the small HTTP-cache layer

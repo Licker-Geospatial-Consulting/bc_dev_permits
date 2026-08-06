@@ -170,9 +170,15 @@ def harvest(session=None, limit: int | None = None, use_cache: bool = True) -> l
 def _main_content(soup: BeautifulSoup):
     """Best-effort main-content container, excluding the site nav/header/footer.
 
-    TODO: confirm CNV's exact wrapper id/class in the browser and pin it here.
+    CNV renders the application content inside ``#page-content`` (and, nested within it,
+    ``.content-section`` / ``.infoPanel``). Pinning these first keeps the site chrome —
+    crucially the City Hall address in the footer — out of scope; without it we fell back
+    to the whole document and that footer address leaked into the parsed prose. The
+    generic selectors remain as a fallback for other page templates.
     """
     for sel in (
+        "#page-content",
+        ".content-section",
         "main",
         "article",
         "#content",
@@ -204,22 +210,26 @@ def _development_name(soup, address) -> str | None:
 
 
 def _prose(main) -> str:
-    """Concatenate the descriptive paragraphs from the main content (skip tables/nav)."""
-    parts = []
-    for p in main.find_all("p"):
-        # skip paragraphs that are inside the milestones table
-        if p.find_parent("table"):
+    """Concatenate the descriptive text from the main content region.
+
+    CNV puts the application blurb in a ``<p>`` on most pages but in a bare ``<div>`` on
+    others (e.g. 215 West Keith Road). Collect both, in document order, so a page whose
+    blurb is a ``<div>`` is not skipped just because some unrelated ``<p>`` exists — the
+    previous "divs only if no <p> at all" rule let the footer address win on such pages.
+    Tables (milestones) and container ``<div>``s that only hold other blocks are ignored
+    so we keep prose, not layout scaffolding.
+    """
+    parts, seen = [], set()
+    for el in main.find_all(["p", "div"]):
+        if el.find_parent("table"):
             continue
-        txt = p.get_text(" ", strip=True)
-        if len(txt) > 40:
+        if el.name == "div" and el.find(["div", "table", "p", "ul", "ol"]):
+            continue  # a container div, not a leaf carrying its own text
+        txt = el.get_text(" ", strip=True)
+        min_len = 40 if el.name == "p" else 60
+        if len(txt) > min_len and txt not in seen:
+            seen.add(txt)
             parts.append(txt)
-    if not parts:  # some pages put the blurb in a bare div
-        for div in main.find_all("div"):
-            if div.find(["div", "table", "p", "ul"]):
-                continue
-            txt = div.get_text(" ", strip=True)
-            if len(txt) > 60:
-                parts.append(txt)
     return re.sub(r"\s+", " ", " ".join(parts)).strip()
 
 

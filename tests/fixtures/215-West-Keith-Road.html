@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<title>215 West Keith Road</title>
+</head>
+<body>
+<div id="page-content">
+<div id="page-content-section">
+<h1>215 West Keith Road</h1>
+<div class="content-section" id="phcontent_0_phcontentsections_0_pnlContentSection">
+<div class="infoPanel" id="phcontent_0_phcontentsections_0_ctl02_pnlInfo">
+<h2>
+</h2>
+<div>
+<div>Golden Line Homes Ltd. has applied for a rezoning from the existing RT-1 (Two Unit Residential) zone to a new Comprehensive Development zone to allow for the construction of a three-unit townhouse development. Each townhouse unit will have one basement suite and one on-site parking stall.</div>
+<p><img alt="215 W Keith Road" src="/-/media/City-of-North-Vancouver/Documents/Major-Development/215-W-Keith-Road/215-W-Keith-Rd.png?h=542&amp;w=772&amp;hash=F6767F813F08023C0DED42CE47CAE8C2" style="width:772px; height:542px;"/></p>
+<h3>Application Process &amp; Information</h3>
+<table>
+<tbody>
+</tbody>
+<thead>
+<tr>
+<td>Milestone</td>
+<td>Date</td>
+<td>Documents</td>
+<td>How To Participate</td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Application Accepted</td>
+<td>August 30, 2023</td>
+<td>
+<p><a href="/-/media/City-of-North-Vancouver/Documents/Major-Development/215-W-Keith-Road/PLN2023-00017-215-W-Keith-Rd-Architectural-Drawing.pdf">Architectural Drawings</a></p>
+<p><a href="/-/media/City-of-North-Vancouver/Documents/Major-Development/215-W-Keith-Road/PLN2023-00017-215-W-Keith-Rd-Landscape-Drawing.pdf">Landscape Drawings</a></p>
+</td>
+<td>Contact City staff with questions or comments.</td>
+</tr>
+<tr>
+<td>Comment Period</td>
+<td>October 15, 2023</td>
+<td> </td>
+<td>Fill out the comment form below</td>
+</tr>
+<tr>
+<td>Revised Submission Based on Feedback</td>
+<td>TBD     </td>
+<td> -</td>
+<td>Contact City staff with questions or comments.</td>
+</tr>
+<tr>
+<td>Council Consideration</td>
+<td>TBD     </td>
+<td> -</td>
+<td><a href="/City-Hall/Council-Meetings"></a><a href="/City-Hall/Council-Meetings">View Council agenda or learn how to participate at a Council Meeting (link: https://www.cnv.org/City-Hall/Council-Meetings).</a></td>
+</tr>
+<tr>
+<td>Council Approval</td>
+<td>TBD     </td>
+<td> -</td>
+<td>Contact City staff or the Applicant with questions or comments.</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<div> </div>
+<h3>Contact Info</h3>
+<table class="noZebraStripes">
+<thead>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">
+<h4>City Contact</h4>
+<p>Linden Maultsaid-Blair<br/>
+            Planning Lead<br/>
+            Telephone: 604-983-7357<br/>
+            Email: <a href="mailto:planning@cnv.org?">planning@cnv.org</a></p>
+</td>
+<td style="text-align: left;">    </td>
+<td style="text-align: left;">
+<h4>Application Contact</h4>
+<p>Malinder Brar<br/>
+            Golden Line Homes LTD.<br/>
+            Telephone: 604-618-9219<br/>
+            Email: <a href="mailto:mindibrar22@gmail.com">mindibrar22@gmail.com</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div>
+</div>
+</div><div class="mvc-form" id="phcontent_0_phcontentsections_0_ctl03_pnlFormPanel">
+</div>
+<!--
+
+<script src="/sitecore%20modules/Web/ExperienceForms/scripts/jquery-3.4.1.min.js"></script>
+
+<script src="/sitecore%20modules/Web/ExperienceForms/scripts/jquery.validate.min.js"></script>
+
+<script src="/sitecore%20modules/Web/ExperienceForms/scripts/jquery.validate.unobtrusive.min.js"></script>
+
+<script src="/sitecore%20modules/Web/ExperienceForms/scripts/jquery.unobtrusive-ajax.min.js"></script>
+
+<script src="/sitecore%20modules/Web/ExperienceForms/scripts/form.validate.js"></script>
+
+<script src="/sitecore%20modules/Web/ExperienceForms/scripts/form.tracking.js"></script>
+
+<script src="/sitecore%20modules/Web/ExperienceForms/scripts/form.conditions.js"></script>
+
+-->
+<script type="text/javascript">
+
+
+
+    function customEcubedMVCFormSubmit(elementId) {
+
+
+
+        $('[data-val="true"]', $(elementId)).each(function () {
+
+
+
+            var mustAddRequiredClass = true;
+
+
+
+            if ($(this).attr('type') == 'email') {
+
+                mustAddRequiredClass = ($(this).attr('data-val-required') || '').length > 0;
+
+            }
+
+
+
+            if (mustAddRequiredClass) {
+
+
+
+                $(this)
+
+                    .closest('.input-wrapper')
+
+                    .find('.input-wrapper-title').addClass('required');
+
+            }
+
+        });
+
+
+
+
+
+        jQuery(elementId + ' input[type="submit"]').click(function (e) {
+
+
+
+            // make sure event is not propagated because we need to process the form
+
+            e.preventDefault();
+
+            e.stopPropagation();
+
+
+
+            // trigger validation
+
+            try {
+
+                var validator = $(elementId).validate();
+
+                if (validator.checkForm() == false) {
+
+                    validator.showErrors();
+
+
+
+                    $('label.error', $(elementId)).each(function () {
+
+                        $(this).appendTo($(this).closest('.input-wrapper'));
+
+                    });
+
+
+
+                    return false;
+
+                }
+
+            }
+
+            catch {
+
+                // if no validators it will throw error, we should post as is;
+
+            }
+
+
+
+            // jquery validation places the label errors next to input, we need it in the input wrapper, so we have to do it manualy
+
+
+
+            $('label.error', $(elementId)).each(function () {
+
+
+
+                $(this)
+
+                    .parent('.input-wrapper').append($(this));
+
+                    //.find('.input-wrapper-title').addClass('required');
+
+            });
+
+
+
+            // gather form data
+
+            var formJqObj = jQuery(elementId);
+
+            var formDataObj = new FormData();
+
+
+
+
+
+            (function () {
+
+                formJqObj.find(":input").not("[type='reset']").each(function () {
+
+                    var thisInput = $(this);
+
+                    var fieldName = thisInput.attr("name") || '';
+
+                    var isMultiselect = formJqObj.find("[name='" + fieldName + "']").length > 1;
+
+
+
+                    if (fieldName.length > 0) {
+
+
+
+                        if (thisInput.attr("type") == 'file') {
+
+
+
+                            if (thisInput[0].files && thisInput[0].files.length > 0) {
+
+                                formDataObj.append('X-Requested-With', 'XMLHttpRequest');
+
+                                formDataObj.append(fieldName, thisInput[0].files[0]);
+
+                            }
+
+
+
+                        } else if (thisInput.attr("type") == 'radio') {
+
+
+
+                            if (thisInput.prop('checked')) {
+
+                                formDataObj.append(fieldName, thisInput.val());
+
+                            }
+
+
+
+                        } else if (thisInput.attr("type") == 'checkbox') {
+
+
+
+                            if (isMultiselect) {
+
+                                if (thisInput.prop('checked'))
+
+                                    formDataObj.append(fieldName, thisInput.val());
+
+                            } else {
+
+                                formDataObj.append(fieldName, thisInput.prop('checked'));
+
+                            }
+
+                        } else {
+
+                            formDataObj.append(fieldName, thisInput.val());
+
+                        }
+
+                    }
+
+
+
+                });
+
+            })();
+
+
+
+
+
+            $.ajax({
+
+                type: "POST",
+
+                url: formJqObj.find('div[data-sc-fxb]').attr('action'),
+
+                data: formDataObj,
+
+                processData: false,
+
+                contentType: false,
+
+            })
+
+                .done(function (data, textStatus, jqXHR) {
+
+                    //console.log("Ajax completed: " + data);
+
+
+
+                    data = (data || '').replace('<form ', '<div ').replace('</form>', '</div>');
+
+
+
+
+
+                    formJqObj.html(data);
+
+
+
+                    
+
+
+
+                    // check if the result has any errors
+
+                    if ($('.validation-summary-errors ul', formJqObj).length > 0) {
+
+
+
+                        $('.validation-summary-errors ul', formJqObj).append('<li>We could not process your request, please try again later.</li>');
+
+                    }
+
+
+
+
+
+
+
+                    // rebind form event because we have replaced the html
+
+                    customEcubedMVCFormSubmit(elementId);
+
+
+
+                    $("div[data-sc-fxb]").track_fxbForms();
+
+
+
+                })
+
+                .fail(function (jqXHR, textStatus, errorThrown) {
+
+                    console.log("Ajax problem: " + textStatus + ". " + errorThrown);
+
+                });
+
+
+
+            //console.log('submitting form', e);
+
+            console.log('submitting formDataObj', formDataObj);
+
+        });
+
+    }
+
+
+
+
+
+    customEcubedMVCFormSubmit('#phcontent_0_phcontentsections_0_ctl03_pnlFormPanel');
+
+
+
+
+
+</script>
+</div>
+</div>
+<div>
+</div>
+<div id="socialSharing">
+<div class="socialSharing">
+<div class="addthis_toolbox addthis_default_style">
+<a class="addthis_button_compact">Share</a>
+<span class="addthis_separator">|</span>
+<a class="addthis_button_facebook"></a>
+<a class="addthis_button_twitter"></a>
+<a class="addthis_button_linkedin"></a>
+<a class="addthis_button_email"></a>
+<a class="addthis_button_print"></a>
+</div>
+</div>
+</div>
+</div>
+<footer><div class="left logo-address">
+<div><ul><li class="left logo"><div><a href="/"><img alt="" height="55" src="-/media/7d6d6a34b995422aad1bc16bdc14c202.ashx" width="73"/></a></div></li><li class="addressLabel"><div><p>141 West 14th Street<br/>
+North Vancouver<br/>
+BC V7M 1H9</p>
+<p>
+Reception: 604-985-7761</p>
+<p>Hours: Monday to Friday<br/>
+8:30am to 5:00pm<br/>
+<br/>
+<!--<em>The City of North Vancouver acknowledges that we are located on the traditional territories of the <br />
+Squamish and Tsleil‐Waututh Nations and we thank them for sharing their lands with us.</em>-->
+</p></div></li></ul></div>
+</div></footer>
+</body>
+</html>
