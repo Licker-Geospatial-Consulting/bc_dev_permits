@@ -6,6 +6,7 @@ build/
 dist/
 .venv/
 venv/
+.vscode/
 
 # Caches
 .http_cache/
