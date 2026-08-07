@@ -193,8 +193,10 @@ def _component_counts(text: str) -> dict[str, int]:
 
 
 def _units_stated_total(text: str) -> int | None:
-    """An explicitly stated total wins. When several are given ("167 market rental
-    units ... for a total of 186 units"), the grand (largest) total is the answer.
+    """Return the largest explicitly stated "total of <N> units".
+
+    When several are given ("167 market rental units ... for a total of 186 units"),
+    the grand (largest) total is the answer.
     """
     totals = [
         c
@@ -218,8 +220,10 @@ def _units_headline(text: str) -> int | None:
 
 
 def _units_subdivision(text: str) -> int | None:
-    """A subdivision's resulting lots / single-family homes ("from one to two lots",
-    "into two new single-family lots", "two single-family units").
+    """Return a subdivision's resulting lots / single-family homes.
+
+    Handles "from one to two lots", "into two new single-family lots" and
+    "two single-family units".
     """
     if not re.search(r"subdivi|\blots?\b", text, re.IGNORECASE):
         return None
@@ -239,7 +243,7 @@ def _units_component_sum(text: str) -> int | None:
 
 
 def _units_generic(text: str) -> int | None:
-    """Generic "<N> residential/rental/strata/dwelling units", or a bare "<N> unit(s)"."""
+    """Match a generic "<N> residential/rental/strata/dwelling units" or bare "<N> unit(s)"."""
     return _search_count(
         text,
         rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,2}}?(?:residential|rental|strata|dwelling)"
@@ -249,7 +253,7 @@ def _units_generic(text: str) -> int | None:
 
 
 def _units_plex(text: str) -> int | None:
-    """A "<prefix>plex" building word implies its own dwelling-unit count."""
+    """Map a "<prefix>plex" building word to its implied dwelling-unit count."""
     for word, n in _PLEX.items():
         if re.search(rf"\b{word}\b", text, re.IGNORECASE):
             return n
@@ -316,9 +320,10 @@ _UNIT_TYPES = (
 
 
 def unit_type_mix(text: str) -> dict | None:
-    """Count of building/unit TYPES, e.g. {"townhouse": 5, "apartment": 39} or
-    {"principal": 6, "lock-off": 6}. This is the "count of unit types" the schema notes
-    for unit_mix; complements unit_mix() which captures the bedroom split.
+    """Count of building/unit TYPES, e.g. {"townhouse": 5, "apartment": 39}.
+
+    Also handles {"principal": 6, "lock-off": 6}. This is the "count of unit types" the
+    schema notes for unit_mix; complements unit_mix() which captures the bedroom split.
     """
     out: dict[str, int] = {}
     for label, kw in _UNIT_TYPES:
@@ -511,14 +516,48 @@ def development_class(occ: list[str]) -> str:
 # ---------------------------------------------------------------------------
 
 # The set of fields we *hope* to find in a typical residential/mixed application,
-# used only to produce a rough confidence signal for HTML parses.
+# used only to produce a rough confidence signal for HTML parses. Each entry is one
+# "slot": a single field name, or a tuple of field names that forms an any-of slot
+# (satisfied when ANY member is present). number_of_stories and units_total are grouped
+# because a page that states either its height OR its unit count has given us a usable
+# size signal, so either alone is enough to credit that slot. Each slot counts once
+# toward the denominator, so grouping does not shrink the score of pages that state both.
 _CONFIDENCE_KEYS = (
     "permit_type",
-    "number_of_stories",
-    "units_total",
-    "parking_vehicle_stalls",
-    "rental_or_strata",
+    "development_class",
+    ("number_of_stories", "units_total"),
+    "address",
+    "floor_area",
+    # "parking_vehicle_stalls", # removed as it was not AS IMPORTANT
+    # "rental_or_strata", # removed as it was not AS IMPORTANT, can be imputed from development_class???
 )
+
+
+# Values that carry no real information, so they must not credit a confidence slot.
+# "unknown" is the development_class sentinel returned when nothing classifies, so it is
+# treated the same as a missing value here.
+_EMPTY_VALUES = (None, "", [], {}, "unknown")
+
+
+def _slot_present(fields: dict, slot: str | tuple[str, ...]) -> bool:
+    """Return True if a confidence slot is satisfied.
+
+    A slot is a single field name, or an any-of tuple of names that counts as satisfied
+    when any one of them holds a usable value (see _EMPTY_VALUES for what does not count).
+    """
+    names = (slot,) if isinstance(slot, str) else slot
+    return any(fields.get(name) not in _EMPTY_VALUES for name in names)
+
+
+def score_confidence(fields: dict) -> float:
+    """Rough 0-1 confidence: the fraction of expected slots (see _CONFIDENCE_KEYS) filled.
+
+    Shared by every municipality harvester so scores are comparable across sources. Pass
+    the FULL assembled row (prose-extracted fields plus harvester-provided ones such as
+    address), not just the prose output, so slots like "address" are credited.
+    """
+    present = sum(1 for slot in _CONFIDENCE_KEYS if _slot_present(fields, slot))
+    return round(present / len(_CONFIDENCE_KEYS), 2)
 
 
 def extract_all(text: str) -> dict:
@@ -549,6 +588,7 @@ def extract_all(text: str) -> dict:
         "floor_area": fa,
         "floor_area_unit": fa_unit,
     }
-    present = sum(1 for k in _CONFIDENCE_KEYS if out.get(k) not in (None, [], {}))
-    out["extraction_confidence"] = round(present / len(_CONFIDENCE_KEYS), 2)
+    # Provisional prose-only score; harvesters finalize it over the full row (with the
+    # harvester-provided address) via score_confidence(row).
+    out["extraction_confidence"] = score_confidence(out)
     return out

@@ -101,6 +101,10 @@ def parse_detail(html: str, url: str) -> dict:
         # Deterministic HTML parse — no LLM.
         row.update(features.extract_all(prose))
         row["is_parsed"] = True
+        # Finalize the confidence over the FULL row so harvester-provided fields (address)
+        # are credited. Every municipality harvester should score the assembled row this
+        # same way, via the shared features.score_confidence, to keep scores comparable.
+        row["extraction_confidence"] = features.score_confidence(row)
         row["needs_review"] = row["extraction_confidence"] < 0.6
     else:
         # Fallback: no usable text. Keep the document links; a later Ollama PDF pass
