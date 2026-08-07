@@ -21,7 +21,7 @@ _WORD_TO_BED = {
     "five": "5-bed",
 }
 
-# Spelled-out cardinals CNV uses for small townhouse/infill counts ("three-unit ...").
+# Spelled-out cardinals CNV uses in prose (1-20).
 _WORD_TO_INT = {
     "one": 1,
     "two": 2,
@@ -33,13 +33,74 @@ _WORD_TO_INT = {
     "eight": 8,
     "nine": 9,
     "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
 }
+
+# "<prefix>plex" building words -> the dwelling-unit count they imply.
+_PLEX = {
+    "duplex": 2,
+    "triplex": 3,
+    "fourplex": 4,
+    "quadplex": 4,
+    "quadruplex": 4,
+    "fiveplex": 5,
+    "sixplex": 6,
+}
+
+# A count token: comma-grouped digits, or a spelled cardinal. Longest words first so
+# the alternation prefers "twenty" over "two" when both could start a match.
+_NUM = r"(?:\d[\d,]*|" + "|".join(sorted(_WORD_TO_INT, key=len, reverse=True)) + r")"
+
+# Optional parenthetical digit that often restates a spelled number: "eighteen (18)".
+_PAREN = r"(?:\s*\(\s*(\d+)\s*\))?"
+
+
+def _to_int(token: str | None) -> int | None:
+    """Digit string or spelled cardinal ('eighteen') -> int, else None."""
+    if token is None:
+        return None
+    token = token.strip().lower().replace(",", "")
+    if token.isdigit():
+        return int(token)
+    return _WORD_TO_INT.get(token)
+
+
+def _count(m: re.Match | None) -> int | None:
+    """Resolve a count match to an int, preferring the parenthetical digit.
+
+    Group 1 is the number token; group 2 (if present) is the parenthetical digit "(18)".
+    """
+    if m is None:
+        return None
+    if m.lastindex and m.lastindex >= 2 and m.group(2):
+        return int(m.group(2))
+    return _to_int(m.group(1))
+
+
+def _search_count(text: str, *patterns: str) -> int | None:
+    """First pattern that matches, resolved to an int (parenthetical digit preferred)."""
+    for pat in patterns:
+        v = _count(re.search(pat, text, re.IGNORECASE))
+        if v is not None:
+            return v
+    return None
 
 
 def _as_int(token: str) -> int:
-    """Convert a digit string or a spelled-out cardinal ('three') to an int."""
-    token = token.strip().lower()
-    return int(token) if token.isdigit() else _WORD_TO_INT[token]
+    """Strict digit/cardinal -> int (kept for callers that expect a hard failure)."""
+    v = _to_int(token)
+    if v is None:
+        raise KeyError(token)
+    return v
 
 
 # Permit type keywords in priority order (a page may mention several; first wins as primary).
@@ -69,49 +130,159 @@ _RENTAL_QUAL = r"(market|mid-market|below-market|affordable|secured|purpose-buil
 _AREA_UNIT = r"(sq\.?\s?ft|sf|square\s?f(?:ee)?t|m2|m²|sq\.?\s?m|square\s?met\w*)"
 
 
-def _first_int(pattern: str, text: str) -> int | None:
-    m = re.search(pattern, text, re.IGNORECASE)
-    return int(m.group(1).replace(",", "")) if m else None
-
-
-def _first_num(pattern: str, text: str) -> float | None:
-    m = re.search(pattern, text, re.IGNORECASE)
-    return float(m.group(1).replace(",", "")) if m else None
+_STOREY = r"stor(?:e?y|ies|eys)"
 
 
 def number_of_stories(text: str) -> int | None:
-    """Return the storey count, tolerating CNV's "six (6) storeys" form."""
-    return _first_int(r"(\d+)\s*\)?\s*-?\s*stor(?:e?y|ies|eys)", text)
+    """Return the storey count, tolerating "six (6) storeys" and ranges.
 
-
-def units_total(text: str) -> int | None:
-    """Return the total dwelling/unit count, if stated.
-
-    Matches "40 residential units", "55 rental units", "proposed 40 units", or
-    "a total of 55 rental units" (an adjective may sit between the count and "units").
+    A range ("two to six storey", "2 and 3 storeys", "2-6 storey") collapses to the
+    tallest value, since number_of_stories is a single INTEGER in the schema.
     """
-    for pat in (
-        r"(\d+)\s+residential\s+units",
-        r"(\d+)\s+dwelling\s+units",
-        r"(\d+)\s+rental\s+units",
-        r"proposed\s+(\d+)\s+units",
-        r"total of\s+(\d+)\s+(?:[\w-]+\s+)?units",
-    ):
-        v = _first_int(pat, text)
-        if v is not None:
-            return v
-    # Hyphenated compound form: "three-unit townhouse development", "6-unit rental
-    # building". The hyphen is required on purpose — it is how CNV writes a *proposal*
-    # count, and it keeps us from misreading a zone *name* that merely contains a number
-    # word with a space, e.g. "RT-1 (Two Unit Residential) zone".
     m = re.search(
-        r"\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)-unit\s+"
-        r"(?:townhouse|dwelling|residential|apartment|rental|strata|housing|"
-        r"multi-?family|home|condo\w*|building|development)",
+        rf"({_NUM})\s*(?:to|and|through|&|-|–|—)\s*({_NUM})[\s-]*{_STOREY}",  # noqa: RUF001
         text,
         re.IGNORECASE,
     )
-    return _as_int(m.group(1)) if m else None
+    if m:
+        vals = [v for v in (_to_int(m.group(1)), _to_int(m.group(2))) if v is not None]
+        if vals:
+            return max(vals)
+    # Single value; skip a storey count that describes an *existing* building to keep, so
+    # the proposal's height wins ("existing three story ... proposed six storeys" -> 6).
+    matches = list(
+        re.finditer(
+            rf"({_NUM}){_PAREN}[\s-]*(?:plus\s+basement\s+)?{_STOREY}", text, re.IGNORECASE
+        )
+    )
+    non_existing = [
+        m for m in matches if not re.search(r"existing\W*$", text[: m.start()], re.IGNORECASE)
+    ]
+    chosen = non_existing or matches
+    return _count(chosen[0]) if chosen else None
+
+
+# Dwelling "component" building types whose counts add up to the project total
+# ("5 townhouse units and 39 apartment units" is 44 dwellings).
+_COMPONENTS = (
+    ("townhouse", r"townhouse|townhome"),
+    ("apartment", r"apartment"),
+    ("detached", r"detached\s+(?:home|house)"),
+)
+
+
+def _component_counts(text: str) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for label, kw in _COMPONENTS:
+        total, found = 0, False
+        # "N [unit] <type>" first; only if that finds nothing, try "N <type> unit(s)".
+        for pat in (
+            rf"({_NUM}){_PAREN}[\s-]+(?:unit\s+)?(?:{kw})",
+            rf"({_NUM}){_PAREN}[\s-]+(?:{kw})\s+units?",
+        ):
+            for m in re.finditer(pat, text, re.IGNORECASE):
+                c = _count(m)
+                if c:
+                    total += c
+                    found = True
+            if found:
+                break
+        if found:
+            out[label] = total
+    return out
+
+
+def _units_stated_total(text: str) -> int | None:
+    """An explicitly stated total wins. When several are given ("167 market rental
+    units ... for a total of 186 units"), the grand (largest) total is the answer.
+    """
+    totals = [
+        c
+        for m in re.finditer(
+            rf"(?:for\s+a\s+)?total\s+of\s+({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,2}}units?\b",
+            text,
+            re.IGNORECASE,
+        )
+        if (c := _count(m)) is not None
+    ]
+    return max(totals) if totals else None
+
+
+def _units_headline(text: str) -> int | None:
+    """Headline "<N> unit(s) ... building/development/housing"."""
+    return _search_count(
+        text,
+        rf"({_NUM}){_PAREN}[\s-]+units?\s+(?:of\s+[\w-]+\s+)?(?:[\w-]+\s+){{0,2}}?"
+        rf"(?:development|building|housing)\b",
+    )
+
+
+def _units_subdivision(text: str) -> int | None:
+    """A subdivision's resulting lots / single-family homes ("from one to two lots",
+    "into two new single-family lots", "two single-family units").
+    """
+    if not re.search(r"subdivi|\blots?\b", text, re.IGNORECASE):
+        return None
+    return _search_count(
+        text,
+        rf"(?:into|to)\s+({_NUM}){_PAREN}\s+(?:new\s+)?(?:single[\s-]family\s+)?lots?\b",
+        rf"({_NUM}){_PAREN}\s+(?:new\s+)?single[\s-]family\s+(?:homes?|houses?|units?|lots?)\b",
+    )
+
+
+def _units_component_sum(text: str) -> int | None:
+    """Sum of the distinct dwelling component types (townhouse + apartment + ...)."""
+    comp = _component_counts(text)
+    if not comp:
+        return None
+    return sum(comp.values()) if len(comp) > 1 else next(iter(comp.values()))
+
+
+def _units_generic(text: str) -> int | None:
+    """Generic "<N> residential/rental/strata/dwelling units", or a bare "<N> unit(s)"."""
+    return _search_count(
+        text,
+        rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,2}}?(?:residential|rental|strata|dwelling)"
+        rf"(?:\s+[\w-]+){{0,1}}?\s+units?\b",
+        rf"({_NUM}){_PAREN}[\s-]+units?\b",
+    )
+
+
+def _units_plex(text: str) -> int | None:
+    """A "<prefix>plex" building word implies its own dwelling-unit count."""
+    for word, n in _PLEX.items():
+        if re.search(rf"\b{word}\b", text, re.IGNORECASE):
+            return n
+    return None
+
+
+# Unit-count strategies, most-specific first. units_total() returns the first that hits,
+# so a new phrasing is added by writing one small strategy and slotting it in here.
+_UNIT_STRATEGIES = (
+    _units_stated_total,
+    _units_headline,
+    _units_subdivision,
+    _units_component_sum,
+    _units_generic,
+    _units_plex,
+)
+
+
+def units_total(text: str) -> int | None:
+    """Return the total dwelling/unit count across CNV's many phrasings.
+
+    Tries each strategy in _UNIT_STRATEGIES in order and returns the first hit:
+    an explicitly stated total, then a headline "<N> unit(s) ... building/development",
+    then a subdivision's resulting lots, then the sum of distinct dwelling component
+    types (townhouse + apartment), then a generic "<N> ... units", then a "<prefix>plex".
+    Commercial/retail unit counts are handled by unit_type_mix() and never inflate the
+    dwelling total.
+    """
+    for strategy in _UNIT_STRATEGIES:
+        v = strategy(text)
+        if v is not None:
+            return v
+    return None
 
 
 def unit_mix(text: str) -> dict | None:
@@ -131,23 +302,64 @@ def unit_mix(text: str) -> dict | None:
     return mix or None
 
 
+# Building/unit TYPES (as opposed to bedroom types). "N <type>" or "N <type> unit(s)".
+_UNIT_TYPES = (
+    ("townhouse", r"townhouse|townhome"),
+    ("apartment", r"apartment"),
+    ("strata", r"strata"),
+    ("principal", r"principal(?:\s+dwelling)?"),
+    ("lock-off", r"lock[\s-]?off"),
+    ("secondary-suite", r"accessory\s+dwelling|secondary\s+suite"),
+    ("commercial", r"commercial"),
+    ("detached", r"detached\s+(?:home|house)"),
+)
+
+
+def unit_type_mix(text: str) -> dict | None:
+    """Count of building/unit TYPES, e.g. {"townhouse": 5, "apartment": 39} or
+    {"principal": 6, "lock-off": 6}. This is the "count of unit types" the schema notes
+    for unit_mix; complements unit_mix() which captures the bedroom split.
+    """
+    out: dict[str, int] = {}
+    for label, kw in _UNIT_TYPES:
+        m = re.search(
+            rf"({_NUM}){_PAREN}[\s-]+(?:unit\s+)?(?:{kw})", text, re.IGNORECASE
+        ) or re.search(
+            rf"({_NUM}){_PAREN}[\s-]+(?:{kw})[\s-]+(?:unit|suite)s?", text, re.IGNORECASE
+        )
+        c = _count(m)
+        if c:
+            out[label] = c
+    return out or None
+
+
 def parking_vehicle(text: str) -> int | None:
-    """Return the count of vehicle parking stalls/spaces, if stated."""
-    for pat in (
-        r"(\d+)\s+vehicle\s+parking\s+stalls",
-        r"(\d+)\s+vehicle\s+(?:parking\s+)?stalls",
-        r"(\d+)\s+parking\s+(?:spaces|stalls)",
-        r"parking\s+for\s+(\d+)\s+vehicles?",
-    ):
-        v = _first_int(pat, text)
-        if v is not None:
-            return v
-    return None
+    """Return the count of vehicle parking stalls/spaces, if stated.
+
+    Handles "41 car parking spaces", "fourteen (14) vehicle parking stalls",
+    "120 underground vehicle parking spaces", "five parking stalls", "5 off-street
+    parking stalls", "additional eleven off-street parking stalls" and
+    "parking for 11 vehicles". Bicycle counts are excluded (see parking_bike()).
+    """
+    fillers = r"(?:secure\s+|underground\s+|off[\s-]?street\s+|on[\s-]?site\s+|surface\s+|new\s+)*"
+    return _search_count(
+        text,
+        rf"(?:additional\s+)?({_NUM}){_PAREN}\s+{fillers}(?:vehicle|car)\s+parking\s+(?:spaces?|stalls?)",
+        rf"(?:additional\s+)?({_NUM}){_PAREN}\s+{fillers}parking\s+(?:spaces?|stalls?)",
+        rf"parking\s+for\s+({_NUM}){_PAREN}\s+(?:vehicles?|cars?)",
+    )
 
 
 def parking_bike(text: str) -> int | None:
-    """Return the count of bicycle parking stalls, if stated."""
-    return _first_int(r"(\d+)\s+(?:bike|bicycle)\s+(?:parking\s+)?stalls", text)
+    """Return the count of bicycle parking stalls/spaces/storage, if stated.
+
+    Handles "56 bike stalls", "11 bicycle parking spaces", "6 Bike storage" and
+    "twenty-nine (29) secure bicycle parking stalls".
+    """
+    return _search_count(
+        text,
+        rf"({_NUM}){_PAREN}\s+(?:secure\s+)?(?:bike|bicycle)\s+(?:parking\s+)?(?:spaces?|stalls?|storage)",
+    )
 
 
 def parking_notes(text: str) -> str | None:
@@ -168,9 +380,21 @@ def zoning_density(text: str) -> str | None:
     return f"FSR {m.group(1)}" if m else None
 
 
-def floor_area(text: str) -> float | None:
-    """Return the gross floor area in m² when stated in metric units."""
-    return _first_num(r"([\d,]+(?:\.\d+)?)\s*(?:m2|m²|sq\.?\s?m|square met)", text)
+def floor_area(text: str) -> tuple[float | None, str | None]:
+    """Return (area, unit) for a single stated gross floor/site area — metric or acres.
+
+    Per-use imperial areas ("22,200 sq ft of commercial space") are routed to
+    floor_area_by_use() / dev_permit_occupancy instead, so they don't masquerade as a
+    single top-level gross area here.
+    """
+    for pat, unit in (
+        (r"([\d,]+(?:\.\d+)?)\s*(?:m2|m²|sq\.?\s?m|square\s?met\w*)", "m2"),
+        (r"([\d,]+(?:\.\d+)?)\s*(?:acres?|\bac\b)", "acre"),
+    ):
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            return float(m.group(1).replace(",", "")), unit
+    return None, None
 
 
 def rental_or_strata(text: str) -> tuple[str | None, str | None]:
@@ -234,16 +458,18 @@ def floor_area_by_use(text: str) -> dict:
     out: dict[str, dict] = {}
     for m in re.finditer(
         rf"([\d,]+(?:\.\d+)?)\s*{_AREA_UNIT}\.?\s+of\s+"
-        rf"([a-z][a-z,\s/&-]+?)\s+(?:space|floor\s?area|gfa)\b",
+        rf"((?:[a-z][a-z/&-]*\s+){{0,3}}?)"
+        rf"(space|floor\s?area|gfa|units?|building|retail|commercial|residential|office)\b",
         text,
         re.IGNORECASE,
     ):
-        use = _first_use(m.group(3))
+        phrase = (m.group(3) + m.group(4)).strip()
+        use = _first_use(phrase)
         if use and use not in out:
             out[use] = {
                 "floor_area": float(m.group(1).replace(",", "")),
                 "floor_area_unit": _norm_area_unit(m.group(2)),
-                "detail": m.group(3).strip() + " space",
+                "detail": phrase,
             }
     return out
 
@@ -303,6 +529,7 @@ def extract_all(text: str) -> dict:
     # Structured occupancy rows: each use, with a per-use floor area attached when stated.
     areas = floor_area_by_use(text)
     occupancies = [{"occupancy": o, **areas.get(o, {})} for o in occ]
+    fa, fa_unit = floor_area(text)
     out = {
         "permit_type": permit_type(text),
         "development_class": development_class(occ),
@@ -310,7 +537,8 @@ def extract_all(text: str) -> dict:
         "occupancies": occupancies,
         "number_of_stories": number_of_stories(text),
         "units_total": units_total(text),
-        "unit_mix": unit_mix(text),
+        # Bedroom split when stated; otherwise the building/unit-type split.
+        "unit_mix": unit_mix(text) or unit_type_mix(text),
         "rental_or_strata": tenure,
         "rental_subtype": subtype,
         "rental_mix": rental_mix(text),
@@ -318,7 +546,8 @@ def extract_all(text: str) -> dict:
         "parking_bike_stalls": parking_bike(text),
         "parking_notes": parking_notes(text),
         "zoning_density": zoning_density(text),
-        "floor_area": floor_area(text),
+        "floor_area": fa,
+        "floor_area_unit": fa_unit,
     }
     present = sum(1 for k in _CONFIDENCE_KEYS if out.get(k) not in (None, [], {}))
     out["extraction_confidence"] = round(present / len(_CONFIDENCE_KEYS), 2)

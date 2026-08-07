@@ -1,4 +1,4 @@
-.PHONY: help requirements data data-db train plots lint format test docs clean
+.PHONY: help requirements data data-db train plots lint format test docs qa clean
 
 PYTHON := python
 
@@ -34,6 +34,9 @@ test:  ## Run tests
 
 docs:  ## Serve the mkdocs site locally
 	mkdocs serve
+
+qa:  ## Serve the JSON QA viewer at http://localhost:8000/tools/qa/
+	$(PYTHON) -m http.server 8000
 
 clean:  ## Remove Python caches
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +

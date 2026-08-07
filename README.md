@@ -23,8 +23,8 @@ export DATABASE_URL=postgresql://user:pw@localhost/devpermits
 python -m bc_dev_permits.dataset --out db
 ```
 
-`make data`, `make train`, `make plots`, `make lint`, `make test` wrap the common
-commands (run `make help` for the list).
+`make data`, `make train`, `make plots`, `make lint`, `make test`, `make qa` wrap the
+common commands (run `make help` for the list).
 
 ## Pipeline
 
@@ -46,7 +46,7 @@ commands (run `make help` for the list).
 │   ├── interim        <- Intermediate data that has been transformed.
 │   ├── processed      <- Final datasets (harvested permit rows).
 │   └── raw            <- Original immutable dump (incl. http_cache/ raw HTML).
-├── docs               <- mkdocs project (Council list, Instructions, Skill).
+├── docs               <- mkdocs project (Home, Council registry).
 ├── models             <- Trained/serialized models (none yet).
 ├── notebooks          <- Jupyter notebooks.
 ├── pyproject.toml     <- Package metadata for bc_dev_permits + black/isort config.
@@ -54,6 +54,8 @@ commands (run `make help` for the list).
 ├── reports
 │   └── figures        <- Generated figures.
 ├── requirements.txt
+├── tools
+│   └── qa             <- Browser QA viewer for data/processed/*.json (make qa).
 ├── setup.cfg          <- flake8 config.
 └── bc_dev_permits     <- Source package.
     ├── __init__.py
@@ -76,3 +78,8 @@ commands (run `make help` for the list).
   fallback path — no page prose is sent to a model.
 - **Caching:** the harvester caches raw HTML under `data/raw/http_cache` for 6h so
   re-runs are instant. `--no-cache` forces a fresh fetch.
+- **QA viewer:** `make qa` serves a zero-build browser dashboard (`tools/qa/`) for
+  eyeballing harvested output — stats, filters, and per-row parsed-fields-vs-source-prose.
+  It auto-loads `data/processed/north_van_test.json` and has a "Load JSON" button for any
+  `data/processed/<municipality>.json`. No `make`? Run its one-line command directly from
+  the repo root: `python -m http.server 8000`, then open `http://localhost:8000/tools/qa/`.

@@ -43,6 +43,10 @@ expensive local-LLM PDF pass for pages that genuinely need it.
 6. **Upsert** into `dev_permit` keyed on `(municipality, permit_id)`; attach any
    documents to `dev_document`. Record `extraction_method`, `extraction_confidence`,
    and `source_url` on every row for provenance.
+7. **QA the output.** Save to `data/processed/<municipality>.json`, then run `make qa`
+   and open the viewer at http://localhost:8000/tools/qa/ (or use its "Load JSON" button).
+   Review the `needs_pdf_extraction`, `needs_review`, and low-confidence rows, and confirm
+   each row's `raw_text` actually matches the parsed fields.
 
 ## Field extraction contract
 
@@ -63,5 +67,5 @@ schema in `references/extraction_prompt.md`. Rules:
 - Store raw source text (`raw_text`) so fields can be re-extracted later with a better
   model without re-crawling.
 
-See `docs/INSTRUCTIONS.md` for the full project brief and `docs/COUNCIL.md` for the
+See `.claude/CLAUDE.md` for the project brief and rules, and `docs/COUNCIL.md` for the
 per-municipality registry and exact selectors/endpoints.

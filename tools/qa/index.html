@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dev Permit QA Viewer</title>
+  <!-- Inline favicon so the browser stops requesting /favicon.ico (harmless 404). -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🏗️</text></svg>" />
+
+  <!--
+    Zero-build QA viewer. React + Babel are pulled from a CDN and viewer.jsx is
+    compiled in the browser, so there is no npm / node toolchain to install.
+    Network is needed at runtime for the CDN scripts.
+
+    Run from the repo root so the default JSON path resolves:
+        make qa      # python -m http.server 8000
+    then open http://localhost:8000/tools/qa/
+  -->
+
+  <!-- Default dataset to auto-load (root-absolute, i.e. served from the repo root). -->
+  <script>window.QA_DEFAULT_JSON = "/data/processed/north_van_test.json";</script>
+
+  <!--
+    Pinned exact versions, not "@18" / unqualified "latest" — an unpinned floating
+    version is what silently pulled in a Babel major upgrade and its automatic-runtime
+    behavior above. Bump these deliberately, not by surprise.
+  -->
+  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.8/babel.min.js"></script>
+
+  <style>
+    body { margin: 0; background: #f9fafb; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!--
+    Explicit compile step instead of Babel's passive <script type="text/babel" src="...">
+    scanning: that path lets Babel default to the "automatic" JSX runtime, which injects
+    `import { jsx as _jsx } from "react/jsx-runtime"` into the transformed output — a
+    bare-specifier import a classic (non-module) script can't resolve, so it throws
+    "Cannot use import statement outside a module" even though viewer.jsx itself never
+    writes an import. Forcing the "classic" runtime compiles JSX to plain
+    React.createElement calls instead, which only need the React/ReactDOM globals above.
+  -->
+  <script>
+    fetch("viewer.jsx")
+      .then(function (res) {
+        if (!res.ok) throw new Error("fetching viewer.jsx: " + res.status + " " + res.statusText);
+        return res.text();
+      })
+      .then(function (source) {
+        var code = Babel.transform(source, {
+          presets: [["react", { runtime: "classic" }]],
+          filename: "viewer.jsx",
+        }).code;
+        var script = document.createElement("script");
+        script.text = code;
+        document.body.appendChild(script);
+      })
+      .catch(function (err) {
+        document.getElementById("root").innerHTML =
+          '<div style="font-family:sans-serif;max-width:640px;margin:40px auto;padding:16px 20px;' +
+          'border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:8px;line-height:1.5">' +
+          "<b>Viewer failed to start.</b><br>" + err.message +
+          "<br>Open DevTools (F12) &rarr; Console for more detail.</div>";
+      });
+  </script>
+</body>
+</html>

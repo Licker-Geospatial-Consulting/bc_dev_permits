@@ -20,7 +20,7 @@ PDF documents. Results land in a normalized Postgres schema (see
 ## Docs
 
 - [Municipalities (Council)](COUNCIL.md) — the municipality list and source types.
-- [Instructions](INSTRUCTIONS.md) — project rules and workflow.
-- [Skill](SKILL.md) — extraction skill / field contract.
 
-See the top-level `README.md` for the quickstart and full directory layout.
+Project rules and conventions live in `.claude/CLAUDE.md`; the harvesting workflow and field
+contract (the Agent Skill) live in `.claude/skills/dev-permit-scrapper/SKILL.md`. See the
+top-level `README.md` for the quickstart and full directory layout.

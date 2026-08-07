@@ -7,8 +7,9 @@ The project covers commercial, residential, mixed-use, industrial, and instituti
 ## Key information locations
 
 * `references/schema.sql`: authoritative database schema and field definitions.
-* `.claude/skills/dev-permit-scraper/SKILL.md`: workflow for adding, modifying, testing, and debugging municipal harvesters.
+* `.claude/skills/dev-permit-scrapper/SKILL.md`: workflow for adding, modifying, testing, and debugging municipal harvesters.
 * `references/`: source-specific implementation guidance. Read only the reference relevant to the current source type.
+* `tools/qa/`: browser QA viewer for eyeballing harvested `data/processed/*.json` (run `make qa`).
 
 ## Extraction rules
 
@@ -37,6 +38,9 @@ references/
   vertigis_webmaps.md
   ollama_pdf_extraction.md
 
+tools/
+  qa/ -> Browser QA viewer (index.html + viewer.jsx) for data/processed/*.json
+
 Keep retrieval logic in `harvesters/`. 
 Put reusable field parsing and normalization in `features.py`. 
 Do not duplicate common parsing logic across municipality modules.
@@ -57,3 +61,6 @@ Do not duplicate common parsing logic across municipality modules.
 ## Data handling
 
 Use public sources only. Rate-limit requests per host, and respect applicable access restrictions.
+Cache by checksum and skip unchanged sources on re-harvest. Development-application text can
+include personal names (applicants and owners), so decide what to store and surface before
+republishing.
