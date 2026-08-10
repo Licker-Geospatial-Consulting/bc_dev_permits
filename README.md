@@ -18,9 +18,28 @@ python -m bc_dev_permits.dataset --limit 3
 # 3. save to data/processed/north_van.json
 python -m bc_dev_permits.dataset --limit 3 --out json
 
-# 4. load into Postgres (create the DB + load references/schema.sql first)
-export DATABASE_URL=postgresql://user:pw@localhost/devpermits
+# 4. load into Postgres  (needs a running PostgreSQL server — see "Database" below)
+createdb devpermits
+psql -d devpermits -f references/schema.sql
+export DATABASE_URL=postgresql://user:pw@localhost:5432/devpermits
 python -m bc_dev_permits.dataset --out db
+```
+
+## Database (Postgres) for `--out db`
+
+`--out db` upserts into PostgreSQL and is Postgres-specific (JSONB columns,
+`INSERT ... ON CONFLICT`), so it needs a **running PostgreSQL server** — `psycopg`
+(the `[db]` extra) is only the client driver. `--out json` / `--out print` need no
+database.
+
+```bash
+# Install a server (once). Examples:
+winget install PostgreSQL.PostgreSQL.17     # Windows; installs the postgresql-x64-17 service + psql
+# brew install postgresql@17                # macOS
+# docker run -d --name pg -e POSTGRES_PASSWORD=pw -p 5432:5432 postgres:17   # any OS
+
+# Then create the DB, load the schema, point DATABASE_URL at it (steps 4 above),
+# and upsert. Re-runs are idempotent (upsert on municipality+permit_id).
 ```
 
 `make data`, `make train`, `make plots`, `make lint`, `make test`, `make qa` wrap the

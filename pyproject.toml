@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-db = ["psycopg[binary]"]           # dataset --out db / bc_dev_permits.load
+db = ["psycopg[binary]"]           # dataset --out db / bc_dev_permits.load (client driver; needs a running PostgreSQL server)
 pdf = ["pdfplumber", "pymupdf"]    # bc_dev_permits.modeling.predict (Ollama PDF fallback)
 dev = ["ruff", "pytest", "mkdocs"]
 

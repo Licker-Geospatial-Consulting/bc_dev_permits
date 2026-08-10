@@ -7,6 +7,8 @@ lxml
 requests
 
 # --- Postgres load (bc_dev_permits.load / dataset --out db) ---
+# Client driver only. `--out db` also needs a running PostgreSQL server (install
+# separately, e.g. `winget install PostgreSQL.PostgreSQL.17`); see README "Database".
 psycopg[binary]
 
 # --- PDF fallback via local Ollama (bc_dev_permits.modeling.predict) ---

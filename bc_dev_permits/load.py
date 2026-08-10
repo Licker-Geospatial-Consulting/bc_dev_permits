@@ -26,6 +26,7 @@ _PERMIT_COLS = [
     "development_class",
     "status",
     "floor_area",
+    "floor_area_unit",
     "footprint_area",
     "number_of_stories",
     "units_total",
