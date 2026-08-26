@@ -18,11 +18,17 @@ import json
 import sys
 
 from bc_dev_permits import config
-from bc_dev_permits.harvesters import north_van
+from bc_dev_permits.harvesters import north_van, victoria
 
 # slug -> harvest callable(limit=None, use_cache=True) -> list[dict]
 HARVESTERS = {
     "north_van": north_van.harvest,
+    "victoria": victoria.harvest,
+}
+
+# slug -> optional batch PDF-enricher(rows, use_cache=True) -> count (needs Ollama)
+ENRICHERS = {
+    "victoria": victoria.enrich_via_pdf,
 }
 
 
@@ -68,10 +74,25 @@ def _run_cli(argv=None) -> int:
         action="store_true",
         help=f"Bypass the {config.HTTP_CACHE_TTL // 3600}h page cache and refetch.",
     )
+    ap.add_argument(
+        "--pdf-enrich",
+        action="store_true",
+        help="After harvesting, fill low-signal rows from their PDFs via Ollama (slow; "
+        "needs a running Ollama server and the [pdf] extra). Supported: "
+        f"{', '.join(sorted(ENRICHERS))}.",
+    )
     args = ap.parse_args(argv)
 
     rows = harvest(args.municipality, args.limit or None, not args.no_cache)
     print(f"Harvested {len(rows)} {args.municipality} application(s).", file=sys.stderr)
+
+    if args.pdf_enrich:
+        enricher = ENRICHERS.get(args.municipality)
+        if enricher is None:
+            print(f"--pdf-enrich not supported for {args.municipality}; skipping.", file=sys.stderr)
+        else:
+            n = enricher(rows, use_cache=not args.no_cache)
+            print(f"PDF-enriched {n} low-signal row(s).", file=sys.stderr)
 
     if args.out == "json":
         path = args.json_path or (config.PROCESSED_DATA_DIR / f"{args.municipality}.json")

@@ -34,6 +34,7 @@ references/
   schema.sql
   extraction_prompt.md
   html_detail_pages.md
+  prospero_tracker.md
   arcgis_webmaps.md
   vertigis_webmaps.md
   ollama_pdf_extraction.md

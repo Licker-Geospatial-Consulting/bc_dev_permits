@@ -48,7 +48,11 @@ SCHEMA_SQL = REFERENCES_DIR / "schema.sql"
 # --------------------------------------------------------------------------- #
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/chat")
 OLLAMA_TEXT_MODEL = os.environ.get("OLLAMA_TEXT_MODEL", "qwen2.5:7b-instruct")
-OLLAMA_VISION_MODEL = os.environ.get("OLLAMA_VISION_MODEL", "llama3.2-vision")
+# qwen2.5-VL reads dense project-data tables on architectural sheets far better than
+# minicpm-v (which hallucinated round numbers): on 1708 Quadra it read the real unit mix,
+# storeys, floor area, and use from the FULL sheet in one call. minicpm-v / llava were
+# tried and are weaker; llama3.2-vision's 'mllama' architecture won't load on this build.
+OLLAMA_VISION_MODEL = os.environ.get("OLLAMA_VISION_MODEL", "qwen2.5vl:7b")
 EXTRACTION_PROMPT = REFERENCES_DIR / "extraction_prompt.md"
 
 # --------------------------------------------------------------------------- #
@@ -58,3 +62,9 @@ EXTRACTION_PROMPT = REFERENCES_DIR / "extraction_prompt.md"
 NORTH_VAN_LIST_URL = (
     "https://www.cnv.org/Business-Development/Building/Land-Use-Approvals/Active-Applications"
 )
+
+# Victoria publishes through the Prospero "OurCity" permit tracker (see
+# references/prospero_tracker.md). The search page defaults to the ACTIVE set; detail
+# pages are plain GETs keyed by folder number.
+VICTORIA_LIST_URL = "https://tender.victoria.ca/webapps/ourcity/prospero/search.aspx"
+VICTORIA_DETAIL_BASE = "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx"

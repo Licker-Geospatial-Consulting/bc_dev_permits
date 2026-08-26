@@ -117,9 +117,17 @@ def build_statements(row: dict) -> list[tuple[str, list]]:
     for d in row.get("documents", []):
         stmts.append(
             (
-                f"INSERT INTO dev_document (permit_id, municipality, url, title, doc_role) "
-                f"VALUES ({sub}, %s, %s, %s, %s) ON CONFLICT (municipality, url) DO NOTHING;",
-                [*pid, row["municipality"], d["url"], d.get("title"), d.get("doc_role")],
+                f"INSERT INTO dev_document (permit_id, municipality, url, title, doc_role, extracted) "
+                f"VALUES ({sub}, %s, %s, %s, %s, %s) ON CONFLICT (municipality, url) "
+                f"DO UPDATE SET extracted = dev_document.extracted OR EXCLUDED.extracted;",
+                [
+                    *pid,
+                    row["municipality"],
+                    d["url"],
+                    d.get("title"),
+                    d.get("doc_role"),
+                    bool(d.get("extracted", False)),
+                ],
             )
         )
 

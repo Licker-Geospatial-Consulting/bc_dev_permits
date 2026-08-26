@@ -15,6 +15,10 @@ psycopg[binary]
 pdfplumber
 pymupdf
 
+# --- Browser-driven pagination for Victoria's Prospero tracker (bc_dev_permits.harvesters.victoria) ---
+# After installing, fetch the browser binary once: `playwright install chromium`.
+playwright
+
 # --- dev / docs (optional; also in pyproject [project.optional-dependencies].dev) ---
 # ruff
 # pytest

@@ -189,6 +189,7 @@ function QADashboard({ data }) {
   const [filter, setFilter] = useState("all");
   const [classFilter, setClassFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [methodFilter, setMethodFilter] = useState("all");
   const [sortKey, setSortKey] = useState("conf_asc");
   const [expanded, setExpanded] = useState(new Set());
 
@@ -207,13 +208,20 @@ function QADashboard({ data }) {
 
     if (classFilter !== "all") rows = rows.filter(r => r.dev_class === classFilter);
     if (typeFilter !== "all") rows = rows.filter(r => (r.permit_type || "None") === typeFilter);
+    if (methodFilter !== "all") rows = rows.filter(r => (r.method || "None") === methodFilter);
 
     if (sortKey === "conf_asc") rows.sort((a, b) => (a.conf ?? 0) - (b.conf ?? 0));
     else if (sortKey === "conf_desc") rows.sort((a, b) => (b.conf ?? 0) - (a.conf ?? 0));
     else if (sortKey === "address") rows.sort((a, b) => (a.address || "").localeCompare(b.address || ""));
     else if (sortKey === "units_desc") rows.sort((a, b) => (b.units ?? 0) - (a.units ?? 0));
     return rows;
-  }, [data, search, filter, classFilter, typeFilter, sortKey]);
+  }, [data, search, filter, classFilter, typeFilter, methodFilter, sortKey]);
+
+  // Distinct extraction methods present in the data (e.g. html, html+ollama_pdf, arcgis).
+  const methods = useMemo(
+    () => Array.from(new Set(data.map(r => r.method || "None"))).sort(),
+    [data]
+  );
 
   const stats = useMemo(() => ({
     total: data.length,
@@ -278,6 +286,10 @@ function QADashboard({ data }) {
           <option value="OCP Amendment">OCP Amendment</option>
           <option value="Temporary Use Permit">TUP</option>
           <option value="None">No type parsed</option>
+        </select>
+        <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} style={selStyle}>
+          <option value="all">All methods</option>
+          {methods.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
         <select value={sortKey} onChange={e => setSortKey(e.target.value)} style={selStyle}>
           <option value="conf_asc">Confidence ↑ (worst first)</option>

@@ -115,7 +115,11 @@ _PERMIT_TYPES = [
 
 # Occupancy / use keywords -> canonical occupancy label.
 _OCCUPANCY = [
-    (r"residential|dwelling|apartment|townhouse|condominium|\bunits?\b", "residential"),
+    (
+        r"residential|dwelling|apartment|townhouse|condominium|\bunits?\b"
+        r"|duplex|triplex|fourplex|fiveplex|sixplex|quadruplex|quadplex|houseplex",
+        "residential",
+    ),
     (r"retail|shops?|commercial", "commercial"),
     (r"office", "office"),
     (r"industrial|warehouse|light industrial", "industrial"),
@@ -246,14 +250,24 @@ def _units_generic(text: str) -> int | None:
     """Match a generic "<N> residential/rental/strata/dwelling units" or bare "<N> unit(s)"."""
     return _search_count(
         text,
-        rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,2}}?(?:residential|rental|strata|dwelling)"
+        rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,3}}?(?:residential|rental|strata|dwelling)"
         rf"(?:\s+[\w-]+){{0,1}}?\s+units?\b",
         rf"({_NUM}){_PAREN}[\s-]+units?\b",
     )
 
 
 def _units_plex(text: str) -> int | None:
-    """Map a "<prefix>plex" building word to its implied dwelling-unit count."""
+    """Map a "<prefix>plex" building word to its implied dwelling-unit count.
+
+    "2 triplex buildings" is 2 x 3 = 6 dwellings, so a leading count multiplies the
+    per-building figure; a bare "triplex" is just its own count.
+    """
+    for word, n in _PLEX.items():
+        m = re.search(rf"({_NUM})\s+(?:new\s+)?{word}\s+buildings?\b", text, re.IGNORECASE)
+        if m:
+            c = _to_int(m.group(1))
+            if c:
+                return c * n
     for word, n in _PLEX.items():
         if re.search(rf"\b{word}\b", text, re.IGNORECASE):
             return n
@@ -569,9 +583,14 @@ def extract_all(text: str) -> dict:
     areas = floor_area_by_use(text)
     occupancies = [{"occupancy": o, **areas.get(o, {})} for o in occ]
     fa, fa_unit = floor_area(text)
+    # "mixed-use" is an explicit signal on its own: some descriptions name it without
+    # separately keywording both a residential and a commercial use.
+    dev_class = development_class(occ)
+    if dev_class != "mixed" and re.search(r"mixed[\s-]?use", text, re.IGNORECASE):
+        dev_class = "mixed"
     out = {
         "permit_type": permit_type(text),
-        "development_class": development_class(occ),
+        "development_class": dev_class,
         "occupancy_types": occ,
         "occupancies": occupancies,
         "number_of_stories": number_of_stories(text),

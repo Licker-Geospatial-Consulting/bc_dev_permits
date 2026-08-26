@@ -5,15 +5,16 @@ Fill the `TODO` blanks (exact selectors, service URLs, field mappings, id regexe
 you confirm them in the browser — the entries below capture everything known so far and
 the exact instructions you gave per site.
 
-| slug        | Municipality              | source_type | reference file            |
-|-------------|---------------------------|-------------|---------------------------|
-| north_van   | City of North Vancouver   | html        | html_detail_pages.md      |
-| coquitlam   | City of Coquitlam         | arcgis      | arcgis_webmaps.md         |
-| maple_ridge | City of Maple Ridge       | vertigis    | vertigis_webmaps.md       |
-| port_moody  | City of Port Moody        | arcgis      | arcgis_webmaps.md         |
-| west_van    | District of West Vancouver| html        | html_detail_pages.md      |
-| new_west    | City of New Westminster   | arcgis+html | arcgis_webmaps.md (+html) |
+| slug        | Municipality               | source_type | reference file            |
+|-------------|----------------------------|-------------|---------------------------|
+| north_van   | City of North Vancouver    | html        | html_detail_pages.md      |
+| coquitlam   | City of Coquitlam          | arcgis      | arcgis_webmaps.md         |
+| maple_ridge | City of Maple Ridge        | vertigis    | vertigis_webmaps.md       |
+| port_moody  | City of Port Moody         | arcgis      | arcgis_webmaps.md         |
+| west_van    | District of West Vancouver | html        | html_detail_pages.md      |
+| new_west    | City of New Westminster    | arcgis+html | arcgis_webmaps.md (+html) |
 | ubc         | UBC (Campus + Community Pl)| html        | html_detail_pages.md      |
+| victoria    | City of Victoria           | prospero    | prospero_tracker.md       |
 
 ---
 
@@ -90,3 +91,39 @@ the exact instructions you gave per site.
   same html flow. development_class from prose (academic/institutional vs residential).
 - pagination mechanism through card selector, can be fetched under class `view-content`
   and the next page is accessed by nav class `pager`
+
+## victoria — City of Victoria  (prospero)
+
+- **List (Development Tracker / Prospero):** https://tender.victoria.ca/webapps/ourcity/prospero/search.aspx
+- **Scope:** ACTIVE applications only ("active" = not yet decided by Council), across all
+  list pages. The list is a stateful ASP.NET AJAX grid whose pager rejects scripted
+  postbacks, so it is walked with **Playwright** (the `[browser]` extra; needs
+  `playwright install chromium`); detail pages are plain GETs. Without Playwright the
+  harvester degrades to the first page and warns. See `prospero_tracker.md` for the
+  `__doPostBack` injection quirk. A full harvest currently yields ~136 ACTIVE applications.
+- **Detail page:** `https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=<FOLDER>`
+  (server-rendered GET). Field mapping in `prospero_tracker.md`. In short:
+  - **permit_id** ← the `folderNumber` (e.g. `DPV00297`).
+  - **permit_type** ← the "Project Type" field (e.g. "Development Permit with Variance").
+  - **address** ← primary; an application can list **many addresses** (one `dev_permit`,
+    full list kept in `raw_text`).
+  - **status** ← the "Status" field (`ACTIVE`).
+  - **raw_text** ← Application Date + Status + description → parse with `features.py`.
+  - **milestones** ← the "Task Progress" rows.
+- **development_class** from the prose (retail at grade + dwellings → `mixed`; rental /
+  multi-family → `residential`).
+- **Concurrent rezonings:** descriptions like "CONCURRENT WITH REZ#xxxxx. REFER TO
+  REZONING FOR ALL APPLICATION MATERIALS" mean the documents live under the linked `REZ`
+  folder → record the id and set `needs_pdf_extraction=true`.
+- **permit_id regex:** `(?:DPV|DP|DVP|REZ|HAP)\d{4,5}` — confirm the full prefix set in
+  the browser.
+- **Worked examples (description → expected fields), from the user:**
+  - *"six storey residential building with retail at ground level"* → 6 storeys, `mixed`.
+  - *932 Balmoral Rd* — "129 new purpose built rental units" → 129 units, rental.
+  - *441 Government St* — "6 story, 51 unit multi-family development" → 6 storeys, 51 units.
+  - *1171 & 1173 May St* — "2 triplex buildings" → 6 units (two addresses, one permit;
+    needs the "N plex buildings" multiplier in `features.py`, see `prospero_tracker.md`).
+  - *1320 Purcell Pl* — "3 storey, 3 unit strata houseplex" → 3 storeys, 3 units, strata.
+- **Note:** the earlier "status = approved" example conflicts with the site — active
+  applications show `Status: ACTIVE` (no Council decision yet), so status is stored as
+  `ACTIVE`, not "approved".

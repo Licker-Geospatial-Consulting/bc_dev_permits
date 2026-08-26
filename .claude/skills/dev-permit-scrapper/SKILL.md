@@ -32,6 +32,8 @@ expensive local-LLM PDF pass for pages that genuinely need it.
    - ArcGIS webmaps (Coquitlam, Port Moody, New Westminster list) →
      `references/arcgis_webmaps.md`
    - VertiGIS Studio webmap (Maple Ridge) → `references/vertigis_webmaps.md`
+   - Prospero / "OurCity" ASP.NET permit tracker (Victoria) →
+     `references/prospero_tracker.md`
 3. **Harvest** the list of applications, then **enrich** each one (parse fields or
    store PDF links per the rule above).
 4. **Classify** `development_class` (commercial / residential / mixed / industrial /

@@ -20,17 +20,48 @@ Reach for this reference only when a row was flagged `needs_pdf_extraction=true`
 
 1. `pdfplumber` extracts text page by page.
 2. Pages with real text go to a **local text model** (default `qwen2.5:7b-instruct`).
-3. Pages that are image-only (scanned) are rasterized with PyMuPDF and sent to a
-   **local vision model** (`llama3.2-vision`) for OCR-style reading.
-4. Ollama's `format=<json schema>` constrains the model to emit valid JSON matching the
-   schema — no brittle regex on model output.
+3. Image-only PDFs (e.g. architectural plan sets whose project-data table is a drawing,
+   not text) go to the **tiled vision path** (`extract_from_pdf_vision`, default model
+   `minicpm-v`): each sheet is cut into overlapping **high-DPI tiles** with PyMuPDF, each
+   tile is OCR'd on its own (one image per request), and the fields are merged across
+   tiles. Sending a whole large-format sheet at once does NOT work — the table downscales
+   to unreadable and the model hallucinates (we saw `units=100`, `floor_area=12345`);
+   tiling keeps the cell text legible so it reads the real values. Split counts the model
+   transcribes verbatim into `parking_notes` (e.g. `9+1 VISITOR`, `7 SHORT TERM : 18 LONG
+   TERM`) are summed deterministically into the integer columns (10, 25).
+4. Output is requested in Ollama's lightweight JSON mode (`format="json"`) with the field
+   list given in the prompt, then `json.loads`d. NOTE: a full schema-grammar (`format=<json
+   schema>`) was tried first but its constrained decoder **stalls on long prompts** - a
+   ~4k-token letter hung past 600s on a warm GPU, while JSON mode finishes in ~9s and
+   extracts more fields. So we do not pass the schema as a grammar.
+5. `llama3.2-vision` was evaluated but its `mllama` architecture failed to load on this
+   Ollama build; `minicpm-v` handles the high-resolution table OCR and is the default.
+
+**Reliability note (tiled vision) — treat output as REVIEW-REQUIRED, not trusted.**
+The image path uses a **sliding-window** sweep (`_sliding_clips`): overlapping windows
+whose vertical step is smaller than the window height, so every table row appears WHOLE in
+at least one window (a fixed grid could bisect a row like "PARKING STALLS 9+1 VISITOR" and
+lose it). Fields merge across windows by **majority vote**, so a value several windows
+agree on beats a lone misread, and split counts are summed deterministically.
+
+This improves coverage (validation recovered floor area 1321 m2 and unit mix 9 = four
+4-bed + five 3-bed), but does NOT eliminate the core limitation: a local 7B vision model
+(minicpm-v) still **hallucinates** the occasional cell with high self-confidence — in one
+run it fabricated a bicycle-parking figure that was not on the sheet and reported
+`confidence: 1.0`. Because of this, `extract_from_pdf_vision` **caps its confidence at 0.4**
+so every vision-derived row trips `needs_review` and is never trusted as final. For
+reliable numbers, use a stronger model (a larger VLM or a cloud document-AI such as Azure
+Document Intelligence / Textract) — the sliding-window plumbing is model-agnostic and would
+carry a better model directly. The deterministic pieces (window geometry / no-bisection
+guarantee, majority-vote merge, split-count summing) are unit-tested in
+`tests/test_predict_vision.py`; the OCR itself needs a live model and is not.
 
 ## Setup
 
 ```bash
 # install Ollama from ollama.com, then:
 ollama pull qwen2.5:7b-instruct     # text extraction (swap for llama3.1:8b if preferred)
-ollama pull llama3.2-vision         # only needed for scanned PDFs
+ollama pull minicpm-v               # vision OCR for image-only PDFs (tiled path)
 pip install requests pdfplumber pymupdf
 ```
 

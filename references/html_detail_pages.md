@@ -5,6 +5,11 @@ Covers municipalities whose applications are individual web pages: **North Vanco
 same shape: a list/index page → per-application detail pages → a prose block + a
 document/milestone table.
 
+> **Victoria** parses its *detail* pages the same way these do (server-rendered prose →
+> `features.py`, a milestones table), but reaches them through a platform-specific
+> ASP.NET permit tracker (Prospero) rather than a plain link list — see
+> `prospero_tracker.md`.
+
 ## Pattern
 
 ```
