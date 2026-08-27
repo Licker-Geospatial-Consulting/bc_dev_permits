@@ -459,7 +459,9 @@ def extract_via_pdf(detail_html: str, url: str, session=None) -> dict | None:
         tmp.close()
         fields = predict.extract_from_pdf(tmp.name)
     finally:
-        os.unlink(tmp.name)
+        # Best-effort cleanup: never let a temp-file delete failure discard a good result.
+        with contextlib.suppress(OSError):
+            os.unlink(tmp.name)
     fields["extraction_method"] = "ollama_pdf"
     fields["pdf_source_url"] = src["source_url"]
     fields["pdf_document"] = doc

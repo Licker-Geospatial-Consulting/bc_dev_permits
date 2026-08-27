@@ -298,15 +298,18 @@ def extract_from_pdf(
     if fitz is None:
         raise RuntimeError("Reading PDFs needs PyMuPDF: pip install pymupdf")
 
-    doc = fitz.open(path)
-    long_side = max(doc[0].rect.width, doc[0].rect.height)
-    if long_side <= LARGE_FORMAT_PT:  # letter/report sized -> text model if it has real text
-        text = "\n\n".join(
-            doc[i].get_text() for i in range(min(len(doc), VISION_TEXT_SCAN_PAGES))
-        ).strip()
-        if len(text) >= MIN_CHARS_PER_PAGE:
-            return extract_from_text(text, model=model)
+    # Close the document before returning so the caller can delete a temp file on Windows
+    # (an open PyMuPDF handle blocks os.unlink there -> WinError 32).
+    with fitz.open(path) as doc:
+        long_side = max(doc[0].rect.width, doc[0].rect.height)
+        text = ""
+        if long_side <= LARGE_FORMAT_PT:  # letter/report sized -> text if it has real text
+            text = "\n\n".join(
+                doc[i].get_text() for i in range(min(len(doc), VISION_TEXT_SCAN_PAGES))
+            ).strip()
 
+    if len(text) >= MIN_CHARS_PER_PAGE:
+        return extract_from_text(text, model=model)
     # Large-format sheet, or a page-sized scan with no extractable text -> vision.
     return extract_from_pdf_vision(path, vision_model)
 
@@ -318,19 +321,20 @@ def extract_from_pdf_vision(path: str | Path, vision_model: str = VISION_MODEL) 
     which a capable VLM reads far more accurately than a crowded all-fields request; the
     passes then merge by majority vote so each contributes the cells it read cleanly.
     """
-    doc = fitz.open(path)
     results: list[dict] = []
-    for pno in range(min(len(doc), VISION_MAX_PAGES)):
-        image = _page_b64(doc[pno], VISION_DPI)
-        for prompt in VISION_PASSES:
-            messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt, "images": [image]},
-            ]
-            try:
-                results.append(_chat(messages, vision_model))
-            except (requests.RequestException, ValueError):
-                continue  # a bad/empty pass should not abort the sheet
+    # Close the document before returning so the caller can delete a temp file on Windows.
+    with fitz.open(path) as doc:
+        for pno in range(min(len(doc), VISION_MAX_PAGES)):
+            image = _page_b64(doc[pno], VISION_DPI)
+            for prompt in VISION_PASSES:
+                messages = [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt, "images": [image]},
+                ]
+                try:
+                    results.append(_chat(messages, vision_model))
+                except (requests.RequestException, ValueError):
+                    continue  # a bad/empty pass should not abort the sheet
 
     fields = _reduce_fields(results)
     _finalize_parking(fields)
