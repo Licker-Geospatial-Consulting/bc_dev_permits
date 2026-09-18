@@ -53,8 +53,24 @@ function normalize(rec) {
     occ: rec.occupancy_types ?? rec.occ ?? [],
     ms: ms.map((m) => ({ m: m.milestone ?? m.m ?? "", d: m.milestone_date ?? m.d ?? null })),
     docs: docs.map((d) => ({ t: d.title ?? d.t ?? null, r: d.doc_role ?? d.r ?? null, u: d.url ?? d.u ?? null })),
+    // Per-field provenance ({field: method}) and any HTML-vs-PDF disagreements.
+    methods: rec.field_methods ?? {},
+    conflicts: rec.conflicts ?? [],
   };
 }
+
+// How each extraction method is shown and whether it is trusted (deterministic) or a model
+// guess (non-deterministic). Deterministic reads green, model reads amber/orange.
+const METHOD_STYLE = {
+  html:             { label: "html",       bg: "#dcfce7", fg: "#166534", det: true },
+  pdf_text_regex:   { label: "pdf·regex",  bg: "#dcfce7", fg: "#166534", det: true },
+  pdf_geometry:     { label: "pdf·geom",   bg: "#dcfce7", fg: "#166534", det: true },
+  pdf_model_text:   { label: "pdf·model",  bg: "#fef3c7", fg: "#92400e", det: false },
+  pdf_model_vision: { label: "pdf·vision", bg: "#fed7aa", fg: "#9a3412", det: false },
+};
+
+const isNonDeterministic = (r) =>
+  Object.values(r.methods || {}).some((m) => METHOD_STYLE[m] && !METHOD_STYLE[m].det);
 
 const CONF_COLORS = {
   0: "#ef4444", 0.2: "#f97316", 0.4: "#eab308",
@@ -70,15 +86,27 @@ const Badge = ({ children, bg = "#e5e7eb", fg = "#374151" }) => (
   </span>
 );
 
-const Field = ({ label, value }) => {
+const MethodTag = ({ method }) => {
+  const s = METHOD_STYLE[method];
+  if (!s) return null;
+  return (
+    <span title={method} style={{ background: s.bg, color: s.fg, padding: "0 6px", borderRadius: 9999,
+      fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 }}>
+      {s.label}
+    </span>
+  );
+};
+
+const Field = ({ label, value, method }) => {
   if (value == null || value === "" || (Array.isArray(value) && !value.length)) return null;
   const display = typeof value === "object" && !Array.isArray(value)
     ? Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(", ")
     : Array.isArray(value) ? value.join(", ") : String(value);
   return (
-    <div style={{ display: "flex", gap: 6, padding: "3px 0", borderBottom: "1px solid #f3f4f6", fontSize: 13 }}>
+    <div style={{ display: "flex", gap: 6, padding: "3px 0", borderBottom: "1px solid #f3f4f6", fontSize: 13, alignItems: "center" }}>
       <span style={{ color: "#6b7280", minWidth: 120, flexShrink: 0, fontWeight: 500 }}>{label}</span>
-      <span style={{ color: "#111827" }}>{display}</span>
+      <span style={{ color: "#111827", flex: 1 }}>{display}</span>
+      <MethodTag method={method} />
     </div>
   );
 };
@@ -118,24 +146,39 @@ const Row = ({ r, idx, expanded, toggle }) => {
       {expanded && (
         <div style={{ padding: "12px 16px 16px", background: "#f8fafc", display: "grid",
           gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
+          {r.conflicts.length > 0 && (
+            <div style={{ gridColumn: "1/-1", marginBottom: 10, background: "#fff7ed",
+              border: "1px solid #fdba74", borderRadius: 6, padding: "8px 12px" }}>
+              <div style={{ fontWeight: 700, fontSize: 12, color: "#9a3412", marginBottom: 4 }}>
+                ⚠ Text vs PDF conflicts ({r.conflicts.length})
+              </div>
+              {r.conflicts.map((c, i) => (
+                <div key={i} style={{ fontSize: 12, color: "#7c2d12", padding: "1px 0" }}>
+                  <b>{c.field}</b>: kept <b>{String(c.kept?.value)}</b>
+                  <MethodTag method={c.kept?.method} /> &nbsp;vs PDF <b>{String(c.pdf?.value)}</b>
+                  <MethodTag method={c.pdf?.method} />
+                </div>
+              ))}
+            </div>
+          )}
           <div>
             <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".5px" }}>Parsed Fields</div>
             <Field label="Permit ID" value={r.permit_id} />
             <Field label="Dev Name" value={r.dev_name} />
-            <Field label="Type" value={r.permit_type} />
-            <Field label="Class" value={r.dev_class} />
-            <Field label="Occupancy" value={r.occ} />
-            <Field label="Stories" value={r.stories} />
-            <Field label="Units" value={r.units} />
-            <Field label="Unit Mix" value={r.unit_mix} />
-            <Field label="Rental" value={r.rental} />
-            <Field label="Rental Sub" value={r.rental_sub} />
+            <Field label="Type" value={r.permit_type} method={r.methods.permit_type} />
+            <Field label="Class" value={r.dev_class} method={r.methods.development_class} />
+            <Field label="Occupancy" value={r.occ} method={r.methods.occupancy_types} />
+            <Field label="Stories" value={r.stories} method={r.methods.number_of_stories} />
+            <Field label="Units" value={r.units} method={r.methods.units_total} />
+            <Field label="Unit Mix" value={r.unit_mix} method={r.methods.unit_mix} />
+            <Field label="Rental" value={r.rental} method={r.methods.rental_or_strata} />
+            <Field label="Rental Sub" value={r.rental_sub} method={r.methods.rental_subtype} />
             <Field label="Rental Mix" value={r.rental_mix} />
-            <Field label="Parking (V)" value={r.parking_v} />
-            <Field label="Parking (B)" value={r.parking_b} />
-            <Field label="Parking Notes" value={r.parking_notes} />
-            <Field label="Floor Area" value={r.floor_area} />
-            <Field label="Zoning" value={r.zoning} />
+            <Field label="Parking (V)" value={r.parking_v} method={r.methods.parking_vehicle_stalls} />
+            <Field label="Parking (B)" value={r.parking_b} method={r.methods.parking_bike_stalls} />
+            <Field label="Parking Notes" value={r.parking_notes} method={r.methods.parking_notes} />
+            <Field label="Floor Area" value={r.floor_area} method={r.methods.floor_area} />
+            <Field label="Zoning" value={r.zoning} method={r.methods.zoning_density} />
           </div>
           <div>
             <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".5px" }}>Extraction</div>
@@ -205,6 +248,8 @@ function QADashboard({ data }) {
     else if (filter === "needs_review") rows = rows.filter(r => r.review && !r.pdf_fb);
     else if (filter === "ok") rows = rows.filter(r => !r.review && !r.pdf_fb);
     else if (filter === "low_conf") rows = rows.filter(r => (r.conf ?? 0) <= 0.4);
+    else if (filter === "conflicts") rows = rows.filter(r => (r.conflicts || []).length);
+    else if (filter === "nondeterministic") rows = rows.filter(isNonDeterministic);
 
     if (classFilter !== "all") rows = rows.filter(r => r.dev_class === classFilter);
     if (typeFilter !== "all") rows = rows.filter(r => (r.permit_type || "None") === typeFilter);
@@ -228,7 +273,7 @@ function QADashboard({ data }) {
     parsed: data.filter(r => r.parsed).length,
     pdfFb: data.filter(r => r.pdf_fb).length,
     review: data.filter(r => r.review).length,
-    lowConf: data.filter(r => (r.conf ?? 0) <= 0.4).length,
+    conflicts: data.filter(r => (r.conflicts || []).length).length,
   }), [data]);
 
   const toggle = (i) => setExpanded(prev => {
@@ -248,7 +293,7 @@ function QADashboard({ data }) {
           { label: "Parsed", val: stats.parsed, bg: "#dcfce7" },
           { label: "PDF Fallback", val: stats.pdfFb, bg: "#fee2e2" },
           { label: "Needs Review", val: stats.review, bg: "#fef3c7" },
-          { label: "Low Conf (≤0.4)", val: stats.lowConf, bg: "#fce7f3" },
+          { label: "Conflicts", val: stats.conflicts, bg: "#ffedd5" },
         ].map(s => (
           <div key={s.label} style={{ background: s.bg, borderRadius: 8, padding: "8px 16px", minWidth: 90, textAlign: "center" }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>{s.val}</div>
@@ -267,7 +312,8 @@ function QADashboard({ data }) {
           <option value="pdf_fallback">PDF fallback only</option>
           <option value="needs_review">Needs review</option>
           <option value="ok">OK (no issues)</option>
-          <option value="low_conf">Low confidence (≤0.4)</option>
+          <option value="conflicts">Has text/PDF conflict</option>
+          <option value="nondeterministic">Has model-derived field</option>
         </select>
         <select value={classFilter} onChange={e => setClassFilter(e.target.value)} style={selStyle}>
           <option value="all">All classes</option>
@@ -299,7 +345,16 @@ function QADashboard({ data }) {
         </select>
       </div>
 
-      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>{filtered.length} of {stats.total} rows shown</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: "#6b7280" }}>{filtered.length} of {stats.total} rows shown</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#6b7280" }}>
+          <span>Field source:</span>
+          <MethodTag method="html" /> <MethodTag method="pdf_text_regex" /> <MethodTag method="pdf_geometry" />
+          <span style={{ color: "#9ca3af" }}>deterministic ·</span>
+          <MethodTag method="pdf_model_text" /> <MethodTag method="pdf_model_vision" />
+          <span style={{ color: "#9ca3af" }}>model (review)</span>
+        </div>
+      </div>
 
       {/* table header */}
       <div style={{ display: "grid", gridTemplateColumns: "minmax(180px,2fr) 1fr 90px 50px 50px 60px 42px",
