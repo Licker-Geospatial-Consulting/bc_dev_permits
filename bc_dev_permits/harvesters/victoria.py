@@ -472,34 +472,96 @@ def extract_via_pdf(detail_html: str, url: str, session=None) -> dict | None:
 # 5. Batch enrichment: fill low-signal rows from their PDFs (needs Ollama)
 # --------------------------------------------------------------------------- #
 # Fields carried on the model result that are metadata, not permit columns.
-_PDF_META = {"confidence", "extraction_method", "pdf_source_url", "pdf_document", "occupancies"}
+_PDF_META = {
+    "confidence", "extraction_method", "pdf_source_url", "pdf_document", "occupancies",
+    "field_methods",
+}
+
+# The substantive project-detail fields. Address, permit_type, and development_class are
+# page metadata present on nearly every Prospero record, so a page can score ~0.6 confidence
+# while telling us nothing about the actual development. A row that holds NONE of these is a
+# PDF-enrichment candidate regardless of its score (e.g. 1110 Caledonia: address + type +
+# class filled, but no storeys/units/floor area). See features.has_value for what counts.
+_SUBSTANCE_FIELDS = ("units_total", "number_of_stories", "floor_area")
 
 
 def _needs_pdf(row: dict) -> bool:
-    """Return True when the page gave us little to go on (a PDF-enrichment candidate)."""
-    return bool(row.get("needs_pdf_extraction")) or (row.get("extraction_confidence") or 0) <= 0.4
+    """Return True when the page gave us little to go on (a PDF-enrichment candidate).
+
+    A row qualifies when it is explicitly flagged, when its confidence is low, or when it
+    carries no substantive project detail at all - the last case catches metadata-only pages
+    whose ever-present address/type/class float the score above the confidence threshold.
+    """
+    if bool(row.get("needs_pdf_extraction")) or (row.get("extraction_confidence") or 0) <= 0.4:
+        return True
+    return not any(features.has_value(row.get(field)) for field in _SUBSTANCE_FIELDS)
+
+
+def _values_conflict(a, b) -> bool:
+    """Report whether two scalar values genuinely disagree (numeric- and case-insensitive)."""
+    if a == b:
+        return False
+    try:
+        return float(str(a).replace(",", "")) != float(str(b).replace(",", ""))
+    except (TypeError, ValueError):
+        pass
+    if isinstance(a, str) and isinstance(b, str):
+        return a.strip().lower() != b.strip().lower()
+    return True
+
+
+def _tag_existing_html(row: dict) -> dict:
+    """Stamp the row's pre-PDF content fields as deterministic HTML provenance."""
+    methods = row.setdefault("field_methods", {})
+    for key in features.CONTENT_FIELDS:
+        if key not in methods and features.has_value(row.get(key)):
+            methods[key] = features.METHOD_HTML
+    return methods
 
 
 def _merge_pdf_fields(row: dict, fields: dict) -> int:
-    """Fill only the row's MISSING permit fields from the model output; return count filled.
+    """Fill the row's MISSING permit fields from the PDF result; record provenance + conflicts.
 
-    Deterministic HTML values already on the row are never overwritten - the project rule
-    is that deterministic values take precedence over model-extracted ones.
+    Deterministic HTML values already on the row are never overwritten (deterministic beats
+    model). Each filled field is stamped with the method predict reported (regex / geometry /
+    model), and any real HTML-vs-PDF disagreement (441 Government: HTML 51 vs PDF 52) is logged
+    to row['conflicts'] rather than silently dropped. Returns the count of fields filled.
     """
+    pdf_methods = fields.get("field_methods") or {}
+    row_methods = _tag_existing_html(row)
+    conflicts = row.setdefault("conflicts", [])
     filled = 0
     for key, val in (fields or {}).items():
-        if key in _PDF_META or val in (None, [], {}, "unknown"):
+        if key in _PDF_META or not features.has_value(val):
             continue
-        if row.get(key) in (None, [], {}, "unknown"):
-            row[key] = val
-            filled += 1
+        method = pdf_methods.get(key, features.METHOD_PDF_MODEL_TEXT)
+        if features.has_value(row.get(key)):
+            # Keep the deterministic HTML value, but surface a genuine scalar disagreement.
+            if isinstance(val, (int, float, str)) and _values_conflict(row[key], val):
+                conflicts.append(
+                    {
+                        "field": key,
+                        "kept": {"value": row[key], "method": row_methods.get(key, features.METHOD_HTML)},
+                        "pdf": {"value": val, "method": method},
+                    }
+                )
+            continue
+        row[key] = val
+        row_methods[key] = method
+        filled += 1
     return filled
 
 
 def _record_pdf_provenance(row: dict, fields: dict) -> None:
-    """Note the PDF source, mark its document extracted, and force review of LLM values."""
+    """Note the PDF source, mark its document extracted, and set review from provenance.
+
+    needs_review is driven by trust, not by "is it a PDF": a row is flagged only when it holds
+    a non-deterministic (model) field or an unresolved HTML-vs-PDF conflict. A row filled purely
+    by deterministic parses (regex / geometry) is left unflagged.
+    """
     row["extraction_method"] = f"html+{fields.get('extraction_method', 'ollama')}"
-    row["needs_review"] = True  # model-derived fields are always human-checked
+    used = set((row.get("field_methods") or {}).values())
+    row["needs_review"] = bool(used & features.NONDETERMINISTIC_METHODS) or bool(row.get("conflicts"))
     row["extraction_confidence"] = features.score_confidence(row)
     doc = fields.get("pdf_document") or {}
     if doc.get("url"):
@@ -537,7 +599,11 @@ def enrich_via_pdf(rows, session=None, use_cache: bool = True, limit: int | None
         except (OSError, ValueError, RuntimeError) as exc:  # network / pdf / ollama
             print(f"victoria: pdf-enrich skipped {row.get('permit_id')}: {exc}", file=sys.stderr)
             continue
-        if fields and _merge_pdf_fields(row, fields):
+        if not fields:
+            continue
+        # Record provenance when the PDF filled a gap OR only disagreed with the page (a
+        # conflict is still a reviewable result even if nothing new was written).
+        if _merge_pdf_fields(row, fields) or row.get("conflicts"):
             _record_pdf_provenance(row, fields)
             enriched += 1
     return enriched

@@ -105,8 +105,26 @@ def test_select_returns_none_without_documents_or_active_related():
 def test_needs_pdf_predicate():
     assert victoria._needs_pdf({"needs_pdf_extraction": True})
     assert victoria._needs_pdf({"extraction_confidence": 0.4})
-    assert not victoria._needs_pdf({"extraction_confidence": 0.8})
+    # High confidence AND at least one substantive project field -> enough, skip the PDF.
+    assert not victoria._needs_pdf({"extraction_confidence": 0.8, "units_total": 12})
     assert victoria._needs_pdf({})  # no confidence at all -> treat as low signal
+
+
+def test_needs_pdf_flags_metadata_only_row_above_threshold():
+    # 1110 Caledonia: address + permit_type + development_class float the score to 0.6, but
+    # the row holds no storeys/units/floor area, so it must still be a PDF candidate.
+    metadata_only = {
+        "address": "1110 CALEDONIA AVE",
+        "permit_type": "Development Permit with Variance",
+        "development_class": "residential",
+        "extraction_confidence": 0.6,
+        "units_total": None,
+        "number_of_stories": None,
+        "floor_area": None,
+    }
+    assert victoria._needs_pdf(metadata_only)
+    # One real project field present -> no longer substance-empty, so the score gate governs.
+    assert not victoria._needs_pdf({**metadata_only, "number_of_stories": 4})
 
 
 def test_merge_pdf_fills_gaps_but_keeps_deterministic_values():
@@ -125,14 +143,57 @@ def test_merge_pdf_fills_gaps_but_keeps_deterministic_values():
     assert filled == 2
 
 
-def test_record_provenance_marks_document_and_forces_review():
-    row = {"development_class": "residential", "address": "846 BROUGHTON ST", "documents": []}
+def test_merge_tags_provenance_and_records_conflict():
+    # 441 Government shape: HTML already has 51; the PDF (model) says 52.
+    row = {"units_total": 51}
+    fields = {
+        "units_total": 52,  # disagrees with the kept HTML value -> conflict, not overwrite
+        "number_of_stories": 6,  # gap -> fill, tagged from the PDF method
+        "field_methods": {"units_total": "pdf_model_text", "number_of_stories": "pdf_model_text"},
+    }
+    filled = victoria._merge_pdf_fields(row, fields)
+    assert filled == 1
+    assert row["units_total"] == 51  # deterministic HTML kept
+    assert row["number_of_stories"] == 6
+    assert row["field_methods"]["units_total"] == "html"  # pre-existing field tagged html
+    assert row["field_methods"]["number_of_stories"] == "pdf_model_text"
+    conflict = row["conflicts"][0]
+    assert conflict["field"] == "units_total"
+    assert conflict["kept"]["value"] == 51 and conflict["pdf"]["value"] == 52
+
+
+def test_merge_matching_value_is_not_a_conflict():
+    row = {"units_total": 52}
+    victoria._merge_pdf_fields(row, {"units_total": 52, "field_methods": {"units_total": "pdf_model_text"}})
+    assert row.get("conflicts", []) == []
+
+
+def test_record_provenance_reviews_only_nondeterministic_or_conflicts():
+    # A model-derived field forces review.
+    row = {"documents": [], "field_methods": {"units_total": "pdf_model_text"}}
     fields = {
         "extraction_method": "ollama_pdf",
         "pdf_document": {"url": "https://x/letter.pdf", "title": "Letter to Council"},
     }
     victoria._record_pdf_provenance(row, fields)
-    assert row["needs_review"] is True  # LLM-derived values always reviewed
+    assert row["needs_review"] is True
     assert row["extraction_method"] == "html+ollama_pdf"
-    assert row["documents"][0]["url"] == "https://x/letter.pdf"
-    assert row["documents"][0]["extracted"] is True
+    assert row["documents"][0] == {
+        "url": "https://x/letter.pdf",
+        "title": "Letter to Council",
+        "doc_role": "ollama_source",
+        "extracted": True,
+    }
+
+
+def test_record_provenance_no_review_when_fully_deterministic():
+    # Everything came from deterministic parses (geometry / regex / html) and nothing conflicts.
+    row = {"documents": [], "field_methods": {"floor_area": "pdf_geometry", "units_total": "html"}}
+    victoria._record_pdf_provenance(row, {"extraction_method": "ollama_pdf"})
+    assert row["needs_review"] is False
+
+
+def test_record_provenance_reviews_on_conflict_even_if_all_deterministic():
+    row = {"conflicts": [{"field": "units_total"}], "field_methods": {"units_total": "html"}}
+    victoria._record_pdf_provenance(row, {"extraction_method": "ollama_pdf"})
+    assert row["needs_review"] is True
