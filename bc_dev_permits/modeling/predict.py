@@ -28,6 +28,7 @@ Deps:  pip install requests pymupdf
 from __future__ import annotations
 
 import base64
+import contextlib
 import json
 from pathlib import Path
 import re
@@ -41,6 +42,12 @@ try:
     import fitz  # PyMuPDF
 except ImportError:
     fitz = None
+else:
+    # MuPDF prints xref-repair warnings ("format error: cannot find object in xref (NNN 0 R)")
+    # straight to stderr for slightly malformed PDFs. It rebuilds the xref and opens the file
+    # anyway - extraction still works - so silence the noise. A genuinely unreadable PDF still
+    # raises on fitz.open(), which callers already handle.
+    fitz.TOOLS.mupdf_display_errors(False)  # noqa: FBT003 - third-party positional-bool API
 
 OLLAMA_URL = config.OLLAMA_URL
 TEXT_MODEL = config.OLLAMA_TEXT_MODEL  # any solid local instruct model works
@@ -92,6 +99,9 @@ SYSTEM_PROMPT = (
     "short-term bicycle parking spaces', or '54 residential and 7 visitor stalls'), record "
     "the COMBINED total in the numeric field (parking_bike_stalls -> 116, "
     "parking_vehicle_stalls -> 61) and keep the breakdown in the matching notes field. "
+    "Parking figures are counts of stalls or spaces (small whole numbers), NEVER an area: "
+    "never copy a square-foot or square-metre figure (e.g. '4,300 square feet of retail', a "
+    "'7,400-square-foot park') into a parking field. "
     "development_class must be exactly one of: residential, commercial, "
     "mixed, industrial, institutional, unknown (use 'mixed' when residential and "
     "non-residential uses are combined). List every distinct use in occupancy_types. "
@@ -146,12 +156,15 @@ SYSTEM_PROMPT += (
 
 # Count fields must be whole, non-negative, and within a sane ceiling. Models often misread
 # a dimension or area cell in a drawing table as a count (e.g. parking "27.62", bike "12.21")
-# or hallucinate absurd magnitudes - drop those rather than store a bogus number.
+# or hallucinate absurd magnitudes - drop those rather than store a bogus number. Parking
+# ceilings are deliberately low: real stall/space counts are a few hundred even for large
+# projects, so a 4-digit value is almost always a square-footage misread (517 Chatham read
+# "4,300 square feet of retail" and a "7,400-square-foot park" into the parking fields).
 _COUNT_LIMITS = {
-    "units_total": 100000,
+    "units_total": 10000,
     "number_of_stories": 200,
-    "parking_vehicle_stalls": 100000,
-    "parking_bike_stalls": 100000,
+    "parking_vehicle_stalls": 3000,
+    "parking_bike_stalls": 3000,
     "footprint_area": None,  # numeric, not a count -> left as-is
 }
 
@@ -172,6 +185,79 @@ def _coerce_counts(fields: dict) -> dict:
     return fields
 
 
+# The schema wants unit_mix as a flat {label: count} map, but the model returns it several
+# other ways that all render as "[object Object]" in the QA viewer: a list of objects
+# ([{"type": "1-bed", "count": 5}, ...] - 441 Government), or a nested dict grouping by
+# category ({"bedrooms": {"3": 10}} - 235 Russell). We flatten all of these to {label: int}.
+_UNIT_MIX_LABEL_KEYS = ("type", "unit_type", "bedrooms", "bedroom", "name", "label", "size")
+_UNIT_MIX_COUNT_KEYS = ("count", "units", "number", "qty", "quantity", "total")
+
+
+def _add_unit_mix_item(item: dict, add) -> None:
+    """Add one list-item object ({"type":..,"count":..} or bare {label: count}) via `add`."""
+    label = next((item[k] for k in _UNIT_MIX_LABEL_KEYS if item.get(k) is not None), None)
+    count = next((item[k] for k in _UNIT_MIX_COUNT_KEYS if item.get(k) is not None), None)
+    if label is not None and count is not None:
+        add(label, count)
+    else:  # no label/count keys: treat the object itself as {label: count} pairs
+        for key, value in item.items():
+            add(key, value)
+
+
+def _flatten_unit_mix(mix) -> dict | None:
+    """Coerce a unit_mix (flat dict, nested dict, or list of objects) to flat {label: int}."""
+    flat: dict = {}
+
+    def add(label, value) -> None:
+        with contextlib.suppress(TypeError, ValueError):
+            flat[str(label)] = int(value)
+
+    if isinstance(mix, dict):
+        for key, value in mix.items():
+            if isinstance(value, dict):
+                # Category group, e.g. {"bedrooms": {"3": 10}} -> {"3 bedrooms": 10}. A bare
+                # numeric inner key gets the outer category appended so the label reads.
+                for inner, count in value.items():
+                    label = f"{inner} {key}".strip() if str(inner).strip().isdigit() else inner
+                    add(label, count)
+            else:
+                add(key, value)
+    elif isinstance(mix, list):
+        for item in mix:
+            if isinstance(item, dict):
+                _add_unit_mix_item(item, add)
+    return flat or None
+
+
+def _normalize_unit_mix(fields: dict) -> dict:
+    """Flatten a list/nested unit_mix in place; leave a plain {label: int} map unchanged."""
+    if not isinstance(fields, dict):
+        return fields
+    mix = fields.get("unit_mix")
+    if isinstance(mix, (list, dict)):
+        fields["unit_mix"] = _flatten_unit_mix(mix)
+    return fields
+
+
+def _reconcile_units_total(fields: dict) -> dict:
+    """Prefer an itemized unit_mix sum when it exceeds a (mis)read units_total.
+
+    The model sometimes copies a summary count that reads LOW next to its own itemized mix
+    (441 Government: "51" stated, but the Junior/2/3-Bedroom lines sum to 52, which the letter
+    confirms). An itemized breakdown adding up to MORE than the summary means the summary was
+    misread, so the sum wins. A breakdown summing to LESS is likely partial (235 Russell lists
+    only the 3-bed subset), so the larger total is kept. Any 'total' line is excluded from the
+    sum, and at least two category lines are required, so a lone or summary entry never drives.
+    """
+    mix = fields.get("unit_mix")
+    if not isinstance(mix, dict):
+        return fields
+    parts = {k: v for k, v in mix.items() if isinstance(v, int) and "total" not in str(k).lower()}
+    if len(parts) >= 2 and sum(parts.values()) > (fields.get("units_total") or 0):
+        fields["units_total"] = sum(parts.values())
+    return fields
+
+
 def _chat(messages: list[dict], model: str) -> dict:
     """Call Ollama /api/chat in JSON mode, parse the object, and coerce count fields."""
     resp = requests.post(
@@ -186,7 +272,8 @@ def _chat(messages: list[dict], model: str) -> dict:
         timeout=600,  # a cold model load can still take a while before generation starts
     )
     resp.raise_for_status()
-    return _coerce_counts(json.loads(resp.json()["message"]["content"]))
+    fields = _coerce_counts(json.loads(resp.json()["message"]["content"]))
+    return _reconcile_units_total(_normalize_unit_mix(fields))
 
 
 def extract_from_text(text: str, model: str = TEXT_MODEL) -> dict:
@@ -284,6 +371,180 @@ def _reduce_fields(tiles: list[dict]) -> dict:
     return out
 
 
+# --------------------------------------------------------------------------- #
+# Stat-card geometry backfill (text path)
+#
+# Consultant "Letter to Mayor and Council" packages summarise the project in a graphic stat
+# card - a big number stacked with its label. Text extraction reads the label column and the
+# number column as SEPARATE runs, so the linear text loses the label->value adjacency (and the
+# card can sit past the text-scan cap entirely). The numbers survive in the word GEOMETRY: each
+# value starts in its label's x-column, just below it. We pair them deterministically and
+# backfill ONLY the numeric fields the text model missed, so a model value is never overwritten.
+# Limited to distinctive labels (not generic "units"/"storeys", which recur in prose and the
+# model already reads reliably).
+# --------------------------------------------------------------------------- #
+_STAT_LABELS = {
+    "floor_area": ("floor area",),
+    "parking_vehicle_stalls": ("car parking stalls", "vehicle parking stalls"),
+    "bike_short_stalls": ("short-term bike stalls", "short term bike stalls"),
+    "bike_long_stalls": ("long-term bike stalls", "long term bike stalls"),
+}
+_STAT_X_TOL = 40.0  # a value must start in its label's x-column (left edges align, points)
+_STAT_DY_RANGE = (-8.0, 55.0)  # value sits from just above the label baseline to just below it
+_NUM_RE = re.compile(r"\d[\d,]*(?:\.\d+)?$")
+
+
+def _label_spans(words: list) -> list[tuple[str, float, float]]:
+    """Group get_text('words') tuples into per-line (phrase, x_left, y_top) spans."""
+    from collections import defaultdict
+
+    lines: dict = defaultdict(list)
+    for w in words:
+        lines[(w[5], w[6])].append(w)  # group by (block, line)
+    spans = []
+    for ws in lines.values():
+        phrase = " ".join(w[4] for w in sorted(ws, key=lambda word: word[0])).lower()
+        spans.append((phrase, min(w[0] for w in ws), min(w[1] for w in ws)))
+    return spans
+
+
+def _pair_stats_from_words(words: list) -> dict:
+    """Pair each distinctive stat-card label to the number in its column (pure, testable).
+
+    A value token qualifies when it starts in the label's x-column (left edges aligned) and
+    sits within the vertical window of a stacked card; the closest such number wins. Numbers
+    are returned raw (commas stripped, int when whole); combining/validation is the caller's.
+    """
+    spans = _label_spans(words)
+    numbers = [(w[0], w[1], w[4].replace(",", "")) for w in words if _NUM_RE.match(w[4])]
+    dy_min, dy_max = _STAT_DY_RANGE
+    out: dict = {}
+    for field, labels in _STAT_LABELS.items():
+        span = next(((lx, ly) for (phrase, lx, ly) in spans if any(lab in phrase for lab in labels)), None)
+        if span is None:
+            continue
+        lx, ly = span
+        best = None
+        for nx, ny, ntext in numbers:
+            dx, dy = abs(nx - lx), ny - ly
+            if dx <= _STAT_X_TOL and dy_min <= dy <= dy_max:
+                score = dx + abs(dy)
+                if best is None or score < best[0]:
+                    best = (score, ntext)
+        if best is not None:
+            value = float(best[1])
+            out[field] = int(value) if value.is_integer() else value
+    return out
+
+
+def _find_stat_page_words(doc) -> list:
+    """Return get_text('words') for the page richest in distinctive stat-card labels.
+
+    Scores each page by how many distinct stat fields it names (parking, bike, floor area)
+    and returns the best, requiring at least two. A prose page that merely mentions one label
+    in a sentence scores 1 and is skipped, so we never backfill from the wrong page.
+    """
+    best_idx, best_score = None, 0
+    for i, page in enumerate(doc):
+        low = page.get_text().lower()
+        score = sum(any(lab in low for lab in labels) for labels in _STAT_LABELS.values())
+        if score > best_score:
+            best_idx, best_score = i, score
+    return doc[best_idx].get_text("words") if best_idx is not None and best_score >= 2 else []
+
+
+def _stats_fields(words: list) -> dict:
+    """Deterministic permit fields read from a stat card's geometry (pure).
+
+    Returns only the fields the card yields ({floor_area, parking_vehicle_stalls,
+    parking_bike_stalls, parking_notes}); the caller decides precedence against other sources.
+    """
+    if not words:
+        return {}
+    pairs = _pair_stats_from_words(words)
+    out: dict = {}
+    if pairs.get("floor_area") is not None:
+        out["floor_area"] = pairs["floor_area"]
+    if pairs.get("parking_vehicle_stalls") is not None:
+        out["parking_vehicle_stalls"] = pairs["parking_vehicle_stalls"]
+    short, long_ = pairs.get("bike_short_stalls"), pairs.get("bike_long_stalls")
+    if short is not None or long_ is not None:
+        out["parking_bike_stalls"] = (short or 0) + (long_ or 0)
+        parts = [f"{n} {kind}" for n, kind in ((long_, "long-term"), (short, "short-term")) if n is not None]
+        out["parking_notes"] = ", ".join(parts) + " bicycle parking (from summary sheet)"
+    return _coerce_counts(out)
+
+
+def _backfill_stats(fields: dict, words: list) -> dict:
+    """Fill numeric stat fields still missing on `fields` from stat-card geometry (never overwrite)."""
+    for key, value in _stats_fields(words).items():
+        if fields.get(key) is None:
+            fields[key] = value
+    return fields
+
+
+# Non-field metadata that rides along on an extraction result and must never be merged as a
+# permit column or given a provenance tag.
+_PDF_META_KEYS = frozenset(
+    {"confidence", "extraction_method", "pdf_source_url", "pdf_document", "occupancies",
+     "field_methods", "extraction_confidence", "rental_mix"}
+)
+
+
+def _merge_by_precedence(sources: list[tuple[str, dict]]) -> tuple[dict, dict]:
+    """Merge field dicts, highest precedence first; return (merged_fields, {field: method}).
+
+    The first source that supplies a real value for a field wins and stamps that field's
+    method, so a deterministic parse always beats a later model guess for the same field.
+    """
+    from bc_dev_permits.features import has_value
+
+    merged: dict = {}
+    methods: dict = {}
+    for method, fdict in sources:
+        for key, value in (fdict or {}).items():
+            if key in _PDF_META_KEYS or key in merged or not has_value(value):
+                continue
+            merged[key] = value
+            methods[key] = method
+    return merged, methods
+
+
+def _tag_all(fields: dict, method: str) -> dict:
+    """Stamp every real field on `fields` with `method` under fields['field_methods']."""
+    from bc_dev_permits.features import has_value
+
+    fields["field_methods"] = {
+        k: method for k, v in fields.items() if k not in _PDF_META_KEYS and has_value(v)
+    }
+    return fields
+
+
+def _extract_text_route(text: str, stat_words: list, model: str) -> dict:
+    """Text-PDF extraction with per-field provenance: deterministic sources beat the model.
+
+    Precedence: regex over the PDF text (pdf_text_regex) and stat-card geometry (pdf_geometry)
+    are deterministic and win; the local text model (pdf_model_text) fills only what is left.
+    """
+    from bc_dev_permits import features
+
+    regex_fields = features.extract_all(text)  # deterministic rule-based parse of the PDF text
+    geom_fields = _stats_fields(stat_words)  # deterministic stat-card geometry
+    model_fields = extract_from_text(text, model=model)  # non-deterministic local LLM
+    merged, methods = _merge_by_precedence(
+        [
+            (features.METHOD_PDF_REGEX, regex_fields),
+            (features.METHOD_PDF_GEOMETRY, geom_fields),
+            (features.METHOD_PDF_MODEL_TEXT, model_fields),
+        ]
+    )
+    merged.setdefault("development_class", model_fields.get("development_class") or "unknown")
+    merged.setdefault("occupancy_types", model_fields.get("occupancy_types") or [])
+    merged["confidence"] = model_fields.get("confidence")
+    merged["field_methods"] = methods
+    return merged
+
+
 def extract_from_pdf(
     path: str | Path, model: str = TEXT_MODEL, vision_model: str = VISION_MODEL
 ) -> dict:
@@ -303,15 +564,25 @@ def extract_from_pdf(
     with fitz.open(path) as doc:
         long_side = max(doc[0].rect.width, doc[0].rect.height)
         text = ""
+        stat_words: list = []
         if long_side <= LARGE_FORMAT_PT:  # letter/report sized -> text if it has real text
             text = "\n\n".join(
                 doc[i].get_text() for i in range(min(len(doc), VISION_TEXT_SCAN_PAGES))
             ).strip()
+            # Grab the stat-card page's word geometry now (doc closes after this block) so we
+            # can backfill numbers the linear text loses - see _backfill_stats.
+            stat_words = _find_stat_page_words(doc)
 
+    # Log the route + exact model so a run self-reports whether the text or vision model ran
+    # (only large-format/scanned sheets reach the vision model; letters use the text model).
     if len(text) >= MIN_CHARS_PER_PAGE:
-        return extract_from_text(text, model=model)
-    # Large-format sheet, or a page-sized scan with no extractable text -> vision.
-    return extract_from_pdf_vision(path, vision_model)
+        print(f"[predict] {path.name}: text route via {model}", file=sys.stderr)
+        return _extract_text_route(text, stat_words, model)
+    print(f"[predict] {path.name}: vision route via {vision_model}", file=sys.stderr)
+    # A plan set carries no usable text, so every field here is a vision-model read.
+    from bc_dev_permits import features
+
+    return _tag_all(extract_from_pdf_vision(path, vision_model), features.METHOD_PDF_MODEL_VISION)
 
 
 def extract_from_pdf_vision(path: str | Path, vision_model: str = VISION_MODEL) -> dict:
@@ -338,6 +609,7 @@ def extract_from_pdf_vision(path: str | Path, vision_model: str = VISION_MODEL) 
 
     fields = _reduce_fields(results)
     _finalize_parking(fields)
+    _reconcile_units_total(fields)  # itemized mix beats a low units_total (see the text path)
     fields.setdefault("development_class", "unknown")
     fields.setdefault("occupancy_types", [])
     # Vision reads of dense drawings are best-effort and can still hallucinate a confident

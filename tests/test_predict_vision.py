@@ -137,6 +137,78 @@ def test_coerce_counts_normalizes_whole_floats():
     assert out["parking_vehicle_stalls"] == 10
 
 
+def test_coerce_counts_drops_square_footage_misread_as_parking():
+    # 517 Chatham: the letter's "4,300 square feet of retail" and "7,400-square-foot park"
+    # were read into the parking fields. Real stall counts never reach four digits, so the
+    # tightened ceiling drops them.
+    out = predict._coerce_counts({"parking_vehicle_stalls": 4300, "parking_bike_stalls": 7400})
+    assert out["parking_vehicle_stalls"] is None
+    assert out["parking_bike_stalls"] is None
+
+
+# --------------------------------------------------------------------------- #
+# unit_mix normalization: a list-of-objects must flatten to {label: count}
+# (a list renders as "[object Object]" in the QA viewer - 441 Government)
+# --------------------------------------------------------------------------- #
+def test_normalize_unit_mix_list_of_type_count_objects():
+    out = predict._normalize_unit_mix(
+        {"unit_mix": [{"type": "1-bed", "count": 5}, {"type": "2-bed", "count": 3}]}
+    )
+    assert out["unit_mix"] == {"1-bed": 5, "2-bed": 3}
+
+
+def test_normalize_unit_mix_list_of_single_key_dicts():
+    out = predict._normalize_unit_mix({"unit_mix": [{"studio": 6}, {"1-bedroom": 10}]})
+    assert out["unit_mix"] == {"studio": 6, "1-bedroom": 10}
+
+
+def test_normalize_unit_mix_leaves_dict_and_null_untouched():
+    assert predict._normalize_unit_mix({"unit_mix": {"3-bed": 5}})["unit_mix"] == {"3-bed": 5}
+    assert predict._normalize_unit_mix({"unit_mix": None})["unit_mix"] is None
+
+
+def test_normalize_unit_mix_empty_or_unparseable_list_becomes_none():
+    assert predict._normalize_unit_mix({"unit_mix": []})["unit_mix"] is None
+    assert predict._normalize_unit_mix({"unit_mix": ["studio", "1-bed"]})["unit_mix"] is None
+
+
+def test_normalize_unit_mix_flattens_nested_category_dict():
+    # 235 Russell: the model grouped by category, {"bedrooms": {"3": 10}}, which renders as
+    # "[object Object]". The bare numeric inner key gets its category appended so it reads.
+    out = predict._normalize_unit_mix({"unit_mix": {"bedrooms": {"3": 10}}})
+    assert out["unit_mix"] == {"3 bedrooms": 10}
+
+
+def test_normalize_unit_mix_keeps_descriptive_nested_keys():
+    out = predict._normalize_unit_mix({"unit_mix": {"studios": {"studio": 6}}})
+    assert out["unit_mix"] == {"studio": 6}
+
+
+# --------------------------------------------------------------------------- #
+# units_total reconciliation: an itemized mix summing HIGHER than a misread total wins
+# (441 Government stated 51 but the bedroom lines sum to 52, which the letter confirms)
+# --------------------------------------------------------------------------- #
+def test_reconcile_units_total_prefers_itemized_sum_when_higher():
+    fields = {
+        "units_total": 51,
+        "unit_mix": {"Junior 1 Bedroom": 18, "Junior 2 Bedroom": 12, "2 Bedroom": 14,
+                     "Junior 3 Bedroom": 4, "3 Bedroom": 4},
+    }
+    assert predict._reconcile_units_total(fields)["units_total"] == 52
+
+
+def test_reconcile_units_total_keeps_larger_total_over_partial_mix():
+    # 235 Russell: the mix lists only the 3-bed subset (10) of a 30-home project -> keep 30.
+    fields = {"units_total": 30, "unit_mix": {"3 bedrooms": 10}}
+    assert predict._reconcile_units_total(fields)["units_total"] == 30
+
+
+def test_reconcile_units_total_excludes_total_line_and_leaves_matching_mix():
+    # A mix carrying its own 'total' line must not double-count it (Shelbourne shape).
+    fields = {"units_total": 9, "unit_mix": {"total": 9, "4-bedroom": 4, "3-bedroom": 5}}
+    assert predict._reconcile_units_total(fields)["units_total"] == 9
+
+
 # --------------------------------------------------------------------------- #
 # focused full-sheet passes: each pass scopes a few fields, and together they cover
 # the fields we care about (the reliable pattern for a strong VLM vs. spatial tiling)

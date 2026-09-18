@@ -553,14 +553,60 @@ _CONFIDENCE_KEYS = (
 _EMPTY_VALUES = (None, "", [], {}, "unknown")
 
 
+def has_value(value) -> bool:
+    """Return True when a field holds real information (see _EMPTY_VALUES for what does not).
+
+    Shared by harvesters so "is this field populated" is judged the same way everywhere the
+    confidence scorer judges it (missing, blank, empty collection, or the 'unknown' sentinel).
+    """
+    return value not in _EMPTY_VALUES
+
+
+# --------------------------------------------------------------------------- #
+# Field provenance (extraction method per field)
+#
+# Every stored permit field records HOW it was extracted, so QA can separate values we can
+# trust byte-for-byte from values a model guessed. DETERMINISTIC methods are repeatable rule
+# based parses (page HTML, regex over PDF text, stat-card geometry); NON_DETERMINISTIC methods
+# come from a local LLM and can vary run to run. needs_review keys off this, not off "is it a
+# PDF": a letter whose fields were all regex-parsed is trusted, a plan set read by vision is not.
+# --------------------------------------------------------------------------- #
+METHOD_HTML = "html"  # deterministic: parsed from the page prose/detail
+METHOD_PDF_REGEX = "pdf_text_regex"  # deterministic: features parse over the PDF's text
+METHOD_PDF_GEOMETRY = "pdf_geometry"  # deterministic: stat-card label/value bbox pairing
+METHOD_PDF_MODEL_TEXT = "pdf_model_text"  # non-deterministic: local text LLM
+METHOD_PDF_MODEL_VISION = "pdf_model_vision"  # non-deterministic: local vision LLM
+DETERMINISTIC_METHODS = frozenset({METHOD_HTML, METHOD_PDF_REGEX, METHOD_PDF_GEOMETRY})
+NONDETERMINISTIC_METHODS = frozenset({METHOD_PDF_MODEL_TEXT, METHOD_PDF_MODEL_VISION})
+
+# The permit-content fields we track provenance for (everything a reviewer reads). Excludes
+# bookkeeping columns (permit_id, source_url, status, milestones, documents, ...).
+CONTENT_FIELDS = (
+    "permit_type",
+    "development_class",
+    "occupancy_types",
+    "number_of_stories",
+    "units_total",
+    "unit_mix",
+    "rental_or_strata",
+    "rental_subtype",
+    "parking_vehicle_stalls",
+    "parking_bike_stalls",
+    "parking_notes",
+    "zoning_density",
+    "floor_area",
+    "floor_area_unit",
+)
+
+
 def _slot_present(fields: dict, slot: str | tuple[str, ...]) -> bool:
     """Return True if a confidence slot is satisfied.
 
     A slot is a single field name, or an any-of tuple of names that counts as satisfied
-    when any one of them holds a usable value (see _EMPTY_VALUES for what does not count).
+    when any one of them holds a usable value (see has_value for what does not count).
     """
     names = (slot,) if isinstance(slot, str) else slot
-    return any(fields.get(name) not in _EMPTY_VALUES for name in names)
+    return any(has_value(fields.get(name)) for name in names)
 
 
 def score_confidence(fields: dict) -> float:
