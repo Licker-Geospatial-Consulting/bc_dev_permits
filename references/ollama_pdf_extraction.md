@@ -59,14 +59,59 @@ guarantee, majority-vote merge, split-count summing) are unit-tested in
 ## Setup
 
 ```bash
-# install Ollama from ollama.com, then:
-ollama pull qwen2.5:7b-instruct     # text extraction (swap for llama3.1:8b if preferred)
-ollama pull minicpm-v               # vision OCR for image-only PDFs (tiled path)
-pip install requests pdfplumber pymupdf
+# install Ollama from ollama.com, then pull the models:
+ollama pull qwen2.5:7b-instruct     # text extraction (letters / reports)
+ollama pull qwen2.5vl:7b            # vision OCR for plan sets (default, ~6 GB VRAM)
+ollama pull qwen2.5vl:32b           # vision, far better on dense plan tables (~24 GB VRAM)
+pip install requests pymupdf        # or: pip install -e ".[pdf]"
 ```
 
-Ollama serves at `http://localhost:11434` by default; the script points there. Change
-`TEXT_MODEL` / `VISION_MODEL` at the top of the script to taste.
+Ollama serves at `http://localhost:11434` by default. Model choice comes from environment
+variables read in `bc_dev_permits/config.py` (no code edits needed):
+
+- `OLLAMA_TEXT_MODEL`   default `qwen2.5:7b-instruct`
+- `OLLAMA_VISION_MODEL` default `qwen2.5vl:7b`
+
+### Enabling the 32B vision model
+
+The vision model runs only on large-format plan sets (letters use the text model). To use the
+stronger `qwen2.5vl:32b`, set the env var **in the same shell that runs the harvest** so the
+Python process inherits it, then confirm the run logs `vision route via qwen2.5vl:32b`. A
+different terminal will not see it.
+
+PowerShell (this session only):
+```powershell
+$env:OLLAMA_VISION_MODEL = "qwen2.5vl:32b"
+python -m bc_dev_permits.dataset --municipality victoria --pdf-enrich --out json --limit 20
+```
+
+Command Prompt / cmd (this session only):
+```bat
+set OLLAMA_VISION_MODEL=qwen2.5vl:32b
+python -m bc_dev_permits.dataset --municipality victoria --pdf-enrich --out json --limit 20
+```
+
+Git Bash / Linux / macOS (this session only):
+```bash
+export OLLAMA_VISION_MODEL=qwen2.5vl:32b
+python -m bc_dev_permits.dataset --municipality victoria --pdf-enrich --out json --limit 20
+```
+
+Persist it for all future terminals on Windows (takes effect in NEW shells, not the current one):
+```powershell
+setx OLLAMA_VISION_MODEL "qwen2.5vl:32b"
+```
+
+Verify it is set before running:
+```powershell
+echo $env:OLLAMA_VISION_MODEL     # PowerShell -> qwen2.5vl:32b
+```
+```bat
+echo %OLLAMA_VISION_MODEL%        # cmd        -> qwen2.5vl:32b
+```
+
+Note: `qwen2.5vl:32b` needs roughly 24 GB of VRAM to stay on-GPU. On a smaller card
+(e.g. 12 GB) it still runs but spills to CPU and is much slower (minutes per plan set).
 
 ## Usage
 
