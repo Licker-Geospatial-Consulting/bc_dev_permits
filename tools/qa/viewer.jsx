@@ -48,6 +48,8 @@ function normalize(rec) {
     review: rec.needs_review ?? rec.review ?? false,
     conf: rec.extraction_confidence ?? rec.conf ?? 0,
     method: rec.extraction_method ?? rec.method ?? null,
+    // Real enrichment status: did a PDF (Ollama) actually contribute, not just "was it flagged".
+    enriched: /ollama/.test(rec.extraction_method ?? rec.method ?? ""),
     url: rec.source_url ?? rec.url ?? null,
     prose: rec.raw_text ?? rec.prose ?? null,
     occ: rec.occupancy_types ?? rec.occ ?? [],
@@ -183,7 +185,7 @@ const Row = ({ r, idx, expanded, toggle }) => {
           <div>
             <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".5px" }}>Extraction</div>
             <Field label="Parsed" value={r.parsed ? "✓" : "✗"} />
-            <Field label="PDF Fallback" value={r.pdf_fb ? "Yes — needs Ollama" : "No"} />
+            <Field label="PDF Enriched" value={r.enriched ? "Yes — via Ollama PDF" : "No"} />
             <Field label="Needs Review" value={r.review ? "⚠ Yes" : "No"} />
             <Field label="Confidence" value={conf} />
             <Field label="Method" value={r.method} />
@@ -244,10 +246,9 @@ function QADashboard({ data }) {
         (r.permit_id || "").toLowerCase().includes(q) ||
         (r.dev_name || "").toLowerCase().includes(q));
     }
-    if (filter === "pdf_fallback") rows = rows.filter(r => r.pdf_fb);
-    else if (filter === "needs_review") rows = rows.filter(r => r.review && !r.pdf_fb);
-    else if (filter === "ok") rows = rows.filter(r => !r.review && !r.pdf_fb);
-    else if (filter === "low_conf") rows = rows.filter(r => (r.conf ?? 0) <= 0.4);
+    if (filter === "enriched") rows = rows.filter(r => r.enriched);
+    else if (filter === "needs_review") rows = rows.filter(r => r.review);
+    else if (filter === "ok") rows = rows.filter(r => !r.review && !(r.conflicts || []).length);
     else if (filter === "conflicts") rows = rows.filter(r => (r.conflicts || []).length);
     else if (filter === "nondeterministic") rows = rows.filter(isNonDeterministic);
 
@@ -271,7 +272,7 @@ function QADashboard({ data }) {
   const stats = useMemo(() => ({
     total: data.length,
     parsed: data.filter(r => r.parsed).length,
-    pdfFb: data.filter(r => r.pdf_fb).length,
+    enriched: data.filter(r => r.enriched).length,
     review: data.filter(r => r.review).length,
     conflicts: data.filter(r => (r.conflicts || []).length).length,
   }), [data]);
@@ -291,7 +292,7 @@ function QADashboard({ data }) {
         {[
           { label: "Total", val: stats.total, bg: "#f3f4f6" },
           { label: "Parsed", val: stats.parsed, bg: "#dcfce7" },
-          { label: "PDF Fallback", val: stats.pdfFb, bg: "#fee2e2" },
+          { label: "PDF Enriched", val: stats.enriched, bg: "#dbeafe" },
           { label: "Needs Review", val: stats.review, bg: "#fef3c7" },
           { label: "Conflicts", val: stats.conflicts, bg: "#ffedd5" },
         ].map(s => (
@@ -309,7 +310,7 @@ function QADashboard({ data }) {
           style={{ ...selStyle, flex: "1 1 200px", minWidth: 160 }} />
         <select value={filter} onChange={e => setFilter(e.target.value)} style={selStyle}>
           <option value="all">All QA states</option>
-          <option value="pdf_fallback">PDF fallback only</option>
+          <option value="enriched">PDF-enriched only</option>
           <option value="needs_review">Needs review</option>
           <option value="ok">OK (no issues)</option>
           <option value="conflicts">Has text/PDF conflict</option>
