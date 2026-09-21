@@ -81,16 +81,36 @@ def _run_cli(argv=None) -> int:
         "needs a running Ollama server and the [pdf] extra). Supported: "
         f"{', '.join(sorted(ENRICHERS))}.",
     )
+    ap.add_argument(
+        "--address",
+        default=None,
+        help="Only process rows whose address or permit id contains this text "
+        "(case-insensitive), e.g. --address '23 Cook' or --address DPV00304. Pair with "
+        "--limit 0 so the target is not cut off by the harvest limit.",
+    )
     args = ap.parse_args(argv)
 
     rows = harvest(args.municipality, args.limit or None, not args.no_cache)
     print(f"Harvested {len(rows)} {args.municipality} application(s).", file=sys.stderr)
+
+    if args.address:
+        needle = args.address.lower()
+        rows = [
+            r for r in rows
+            if needle in (r.get("address") or "").lower()
+            or needle in (r.get("permit_id") or "").lower()
+        ]
+        print(f"Filtered to {len(rows)} row(s) matching '{args.address}'.", file=sys.stderr)
 
     if args.pdf_enrich:
         enricher = ENRICHERS.get(args.municipality)
         if enricher is None:
             print(f"--pdf-enrich not supported for {args.municipality}; skipping.", file=sys.stderr)
         else:
+            print(
+                f"[models] text={config.OLLAMA_TEXT_MODEL} vision={config.OLLAMA_VISION_MODEL}",
+                file=sys.stderr,
+            )
             n = enricher(rows, use_cache=not args.no_cache)
             print(f"PDF-enriched {n} low-signal row(s).", file=sys.stderr)
 
