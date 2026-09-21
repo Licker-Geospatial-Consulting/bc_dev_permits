@@ -600,6 +600,13 @@ def enrich_via_pdf(rows, session=None, use_cache: bool = True, limit: int | None
             print(f"victoria: pdf-enrich skipped {row.get('permit_id')}: {exc}", file=sys.stderr)
             continue
         if not fields:
+            # select_pdf_source found no document (empty/stale detail page, or the site
+            # served no docs this fetch). Say so instead of silently leaving it html-only.
+            print(
+                f"victoria: no PDF document found for {row.get('permit_id')}; left html-only "
+                "(try --no-cache if the detail page looks stale)",
+                file=sys.stderr,
+            )
             continue
         # Record provenance when the PDF filled a gap OR only disagreed with the page (a
         # conflict is still a reviewable result even if nothing new was written).
