@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Victoria Development Permit QA</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🏗️</text></svg>" />
+
+  <!--
+    Prototype QA dashboard for harvested City of Victoria development-permit data.
+    Zero-build: React + Babel load from a CDN and viewer.jsx compiles in the browser,
+    so this is served as plain static files on GitHub Pages (see the gh-pages branch).
+    All paths are RELATIVE so it works under the /bc_dev_permits/ project path.
+  -->
+
+  <!-- Default dataset to auto-load, co-located in this same folder. -->
+  <script>window.QA_DEFAULT_JSON = "victoria.json";</script>
+
+  <!-- Pinned exact versions so a floating upgrade cannot silently change behavior. -->
+  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.8/babel.min.js"></script>
+
+  <style>
+    body { margin: 0; background: #f9fafb; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!--
+    Compile viewer.jsx with the classic JSX runtime (plain React.createElement calls),
+    which only needs the React/ReactDOM globals above - no ES module resolution.
+  -->
+  <script>
+    fetch("viewer.jsx")
+      .then(function (res) {
+        if (!res.ok) throw new Error("fetching viewer.jsx: " + res.status + " " + res.statusText);
+        return res.text();
+      })
+      .then(function (source) {
+        var code = Babel.transform(source, {
+          presets: [["react", { runtime: "classic" }]],
+          filename: "viewer.jsx",
+        }).code;
+        var script = document.createElement("script");
+        script.text = code;
+        document.body.appendChild(script);
+      })
+      .catch(function (err) {
+        document.getElementById("root").innerHTML =
+          '<div style="font-family:sans-serif;max-width:640px;margin:40px auto;padding:16px 20px;' +
+          'border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:8px;line-height:1.5">' +
+          "<b>Viewer failed to start.</b><br>" + err.message +
+          "<br>Open DevTools (F12) &rarr; Console for more detail.</div>";
+      });
+  </script>
+</body>
+</html>

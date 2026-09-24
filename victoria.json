@@ -1,0 +1,2076 @@
+[
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00312",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00312",
+    "development_name": null,
+    "address": "512 PEMBROKE ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to relocate Heidelberg Material industrial operations to the westerly portion of the property.",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2026-07-09"
+      },
+      {
+        "milestone": "Application Review by City",
+        "milestone_date": "2026-07-10"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=62970C260526155810976547&folderId=00124C251106153921761760",
+        "title": "2026-05-26 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": true,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "industrial",
+    "occupancy_types": [
+      "industrial"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "industrial"
+      }
+    ],
+    "number_of_stories": 6,
+    "units_total": null,
+    "unit_mix": null,
+    "rental_or_strata": null,
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": null,
+    "zoning_density": "FSR .",
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "number_of_stories": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "development_class",
+        "kept": {
+          "value": "industrial",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "mixed",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "512 PEMBROKE ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "512 Pembroke Street (Matullia Lands at Rock Bay)",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Submitted",
+          "method": "pdf_model_text"
+        }
+      }
+    ]
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00307",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00307",
+    "development_name": "Broughton Street Parkade Rental Redevelopment",
+    "address": "617 BROUGHTON ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to increase density and building height for a mixed use thirteen storey building with ground floor commercial uses and a publicly accessible plaza. CONCURRENT WITH REZONING FILE #00911. REFER TO REZONING FILE FOR ATTACHMENTS.",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2026-01-26"
+      },
+      {
+        "milestone": "Advisory Design Panel (ADP) Meeting",
+        "milestone_date": "2026-07-22"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=001F0C79-C753-4799-8672-B59AF4B006CD&folderId=16346C251231152823520005",
+        "title": "2026-05-26 - Letter to the Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 1.0,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "mixed",
+    "occupancy_types": [
+      "commercial"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "commercial"
+      }
+    ],
+    "number_of_stories": 13,
+    "units_total": 242,
+    "unit_mix": null,
+    "rental_or_strata": "rental",
+    "rental_subtype": "purpose-built rental",
+    "rental_mix": null,
+    "parking_vehicle_stalls": 61,
+    "parking_bike_stalls": 583,
+    "parking_notes": "Three below-grade levels providing vehicle spaces, loading facilities, and bicycle parking, accessed via Courtney Street.",
+    "zoning_density": "FSR 5.9",
+    "floor_area": 1329.0,
+    "floor_area_unit": "m2",
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "number_of_stories": "html",
+      "units_total": "pdf_text_regex",
+      "rental_or_strata": "pdf_text_regex",
+      "rental_subtype": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex",
+      "floor_area": "pdf_text_regex",
+      "floor_area_unit": "pdf_text_regex",
+      "development_name": "pdf_model_text",
+      "parking_vehicle_stalls": "pdf_model_text",
+      "parking_bike_stalls": "pdf_model_text",
+      "parking_notes": "pdf_model_text",
+      "building_materials": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "number_of_stories",
+        "kept": {
+          "value": 13,
+          "method": "html"
+        },
+        "pdf": {
+          "value": 12,
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "617 BROUGHTON ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "617 – 635 Broughton Street and 901 – 919 Gordon Street, Victoria, BC",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Submitted",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": "Architectural response to the Old Town context, materials and architectural style consistent with the Edwardian commercial style."
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00303",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00303",
+    "development_name": null,
+    "address": "3075 DOUGLAS ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit application for a 22-storey residential building with ground-floor commercial uses. Refer to concurrent Rezoning application #00899.",
+    "extraction_method": "html",
+    "milestones": [
+      {
+        "milestone": "Committee of the Whole Meeting (COTW)",
+        "milestone_date": "2026-09-24"
+      },
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2025-12-09"
+      },
+      {
+        "milestone": "Advisory Design Panel (ADP) Meeting",
+        "milestone_date": "2026-08-26"
+      }
+    ],
+    "documents": [],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": false,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "mixed",
+    "occupancy_types": [
+      "residential",
+      "commercial"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      },
+      {
+        "occupancy": "commercial"
+      }
+    ],
+    "number_of_stories": 22,
+    "units_total": null,
+    "unit_mix": null,
+    "rental_or_strata": null,
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": null,
+    "zoning_density": null,
+    "floor_area": null,
+    "floor_area_unit": null
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00304",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00304",
+    "development_name": null,
+    "address": "23 COOK ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to convert an existing detached accessory building into an additional dwelling unit.\n\nAddresses: 23 COOK ST; 25 COOK ST; 27 COOK ST",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2025-11-21"
+      },
+      {
+        "milestone": "With Applicant",
+        "milestone_date": "2025-10-22"
+      },
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2026-03-18"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2026-03-20"
+      },
+      {
+        "milestone": "With Applicant",
+        "milestone_date": "2026-07-27"
+      },
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2026-09-02"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2026-09-02"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=94984C260902105841337244&folderId=04624C251121150356552519",
+        "title": "2026-09-03 - Plans_Revisions.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": true,
+    "extraction_confidence": 1.0,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": 2,
+    "units_total": 1,
+    "unit_mix": {
+      "1 bedroom": 1
+    },
+    "rental_or_strata": null,
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": 2,
+    "parking_bike_stalls": 2,
+    "parking_notes": "2 long-term vehicle stalls, 2 long-term bike stalls",
+    "zoning_density": null,
+    "floor_area": 1000,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "units_total": "pdf_model_vision",
+      "unit_mix": "pdf_model_vision",
+      "number_of_stories": "pdf_model_vision",
+      "floor_area": "pdf_model_vision",
+      "footprint_area": "pdf_model_vision",
+      "parking_vehicle_stalls": "pdf_model_vision",
+      "parking_bike_stalls": "pdf_model_vision",
+      "parking_notes": "pdf_model_vision"
+    },
+    "conflicts": [],
+    "footprint_area": 500
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00299",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00299",
+    "development_name": null,
+    "address": "517 CHATHAM ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application for a six storey residential building with retail at ground level along Chatham St. CONCURRENT WITH REZ#00907. REFER TO REZONING FOR ALL APPLICATION MATERIALS.\n\nAddresses: 517 CHATHAM ST; 533 CHATHAM ST; 530 HERALD ST; 1/2-533 HERALD ST; 536 HERALD ST",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2025-08-26"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=2F4FE4DF-5396-4738-A246-39E2F1E73269&folderId=77707C250825130002959277",
+        "title": "2026-05-12 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 1.0,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "mixed",
+    "occupancy_types": [
+      "residential",
+      "commercial"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      },
+      {
+        "occupancy": "commercial"
+      }
+    ],
+    "number_of_stories": 6,
+    "units_total": 133,
+    "unit_mix": "studios, 1-bedrooms, 2-bedrooms, 3-bedrooms, and ground-oriented units",
+    "rental_or_strata": "strata",
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": "Over 4,300 square feet of retail space fronting Chatham Street will serve the community, while creating new economic opportunities and activating the local public realm. The project also includes secure bicycle storage and shared vehicle access, promoting sustainable transportation options and reducing reliance on private vehicles.",
+    "zoning_density": "FSR 3.00",
+    "floor_area": 9500.0,
+    "floor_area_unit": "m2",
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "number_of_stories": "html",
+      "zoning_density": "pdf_text_regex",
+      "floor_area": "pdf_text_regex",
+      "floor_area_unit": "pdf_text_regex",
+      "units_total": "pdf_model_text",
+      "unit_mix": "pdf_model_text",
+      "rental_or_strata": "pdf_model_text",
+      "parking_notes": "pdf_model_text",
+      "building_materials": "pdf_model_text",
+      "energy_info": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "517 CHATHAM ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "517-533 Chatham Street, and 530-538 Herald Street, Victoria, BC",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Proposed",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": "high-quality brick, metal accents, and glazing",
+    "energy_info": "BC Energy Step Code 3 and Zero Carbon Emissions Level 4 standards"
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00298",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00298",
+    "development_name": "UKRAINIAN CHURCH – NEW HOUSING",
+    "address": "1110 CALEDONIA AVE",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit application to construct residential buildings. CONCURRENT WITH REZ00884 and HAP00267, SEE REZ00884 FOR PROJECT DETAILS.\n\nAddresses: 1110 CALEDONIA AVE; 1112 CALEDONIA AVE; 1909 COOK ST",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2025-08-15"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=08FD474A-83D6-4498-A831-8A47E8A71A48&folderId=92068C241122145630064084",
+        "title": "2025-05-26 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": true,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": 3,
+    "units_total": 11,
+    "unit_mix": null,
+    "rental_or_strata": "rental",
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": 19,
+    "parking_bike_stalls": 22,
+    "parking_notes": "Provided in accordance with Schedule C, Attached Dwelling",
+    "zoning_density": "FSR 0.5",
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "units_total": "pdf_text_regex",
+      "rental_or_strata": "pdf_text_regex",
+      "parking_vehicle_stalls": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex",
+      "development_name": "pdf_model_text",
+      "number_of_stories": "pdf_model_text",
+      "parking_bike_stalls": "pdf_model_text",
+      "parking_notes": "pdf_model_text",
+      "building_materials": "pdf_model_text",
+      "energy_info": "pdf_model_text",
+      "mechanical_system_info": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "development_class",
+        "kept": {
+          "value": "residential",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "mixed",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "1110 CALEDONIA AVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "1909 Cook Street / 1110 + 1112 Caledonia Avenue, Victoria, B.C.",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Revised and submitted for approval",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": "Low embodied carbon materials and/or carbon-sequestering materials, high performing durable and resilient materials",
+    "energy_info": "Near Zero Emissions, Building Retention and Reuse, Low Carbon Materials and Construction, Transportation, Rainwater Management and Green Infrastructure, Landscaping and Native Plants, Urban Gardening and Food Production, Climate Change Adaptation",
+    "mechanical_system_info": "Mechanical systems designed as fully electric, future climate predictions considered, measures for indoor air quality during forest fire smoke events"
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00297",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00297",
+    "development_name": "Oasis PARC Project",
+    "address": "846 BROUGHTON ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application for a mixed-use development of 329 new dwelling units and includes private and public amenities. CONCURRENT WITH REZ00901# APPLICATION. REFER TO REZONING FILE FOR APPLICATION MATERIALS.\n\nAddresses: 846 BROUGHTON ST; 854 BROUGHTON ST; 856 BROUGHTON ST; 829 FORT ST; 835 FORT ST; 841 FORT ST; 849 FORT ST; 891 FORT ST; 899 FORT ST",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2025-08-06"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=87672C260811144937268251&folderId=69772C250729104643138051",
+        "title": "2026-08-11 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "mixed",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": 23,
+    "units_total": 329,
+    "unit_mix": {
+      "2-bed": 126
+    },
+    "rental_or_strata": "rental",
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": 170,
+    "parking_bike_stalls": 540,
+    "parking_notes": "490 long-term and 54 short-term bicycle parking spots",
+    "zoning_density": "FSR 6.0",
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "units_total": "html",
+      "number_of_stories": "pdf_text_regex",
+      "unit_mix": "pdf_text_regex",
+      "rental_or_strata": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex",
+      "development_name": "pdf_model_text",
+      "parking_vehicle_stalls": "pdf_model_text",
+      "parking_bike_stalls": "pdf_model_text",
+      "parking_notes": "pdf_model_text",
+      "building_materials": "pdf_model_text",
+      "energy_info": "pdf_model_text",
+      "mechanical_system_info": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "units_total",
+        "kept": {
+          "value": 329,
+          "method": "html"
+        },
+        "pdf": {
+          "value": 289,
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "846 BROUGHTON ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Corners of Fort, Broughton, and Quadra Streets, Victoria",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Resubmission in August 2026",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": "tile, brick, cornice",
+    "energy_info": "Zero Carbon Step Code Emissions Level 4 and LEED v4 registration, with all-electric building systems",
+    "mechanical_system_info": "Health and safety through respectful, informed design is being applied to the seniors’ component of this project"
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00293",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00293",
+    "development_name": null,
+    "address": "932 BALMORAL RD",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a rezoning application to renovate the existing church and construct 129 new purpose built rental units. Concurrent with REZ00894 and HAP00271. Refer to rezoning file for all materials.",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Advisory Design Panel (ADP) Meeting",
+        "milestone_date": "2025-10-08"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=3F333AEC-9016-408F-9D28-2D5A3AEC3314&folderId=43190C250512112556278224",
+        "title": "2026-08-27 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "mixed",
+    "occupancy_types": [
+      "residential",
+      "institutional"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      },
+      {
+        "occupancy": "institutional"
+      }
+    ],
+    "number_of_stories": 6,
+    "units_total": 129,
+    "unit_mix": null,
+    "rental_or_strata": "rental",
+    "rental_subtype": "purpose-built rental",
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": null,
+    "zoning_density": null,
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "units_total": "html",
+      "rental_or_strata": "html",
+      "rental_subtype": "html",
+      "number_of_stories": "pdf_text_regex",
+      "building_materials": "pdf_model_text",
+      "retrofit_info": "pdf_model_text",
+      "energy_info": "pdf_model_text",
+      "mechanical_system_info": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "address",
+        "kept": {
+          "value": "932 BALMORAL RD",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "930-934 Balmoral Rd and 1701 Quadra St, Victoria, BC",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "REZ00894, DPV00293, HAP00271",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "unspecified",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": "colored glass elements, concrete plinth",
+    "retrofit_info": "adaptive reuse of existing United Commons building, modernized building systems, added washrooms, new accessible entry",
+    "energy_info": "Step Code 4 design for the new mixed-use residential building",
+    "mechanical_system_info": "robust mobility strategy, significant investments in bicycle infrastructure, car-share integration, and transit support programs"
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00294",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00294",
+    "development_name": null,
+    "address": "1908 FOUL BAY RD",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application for mulit-family purpose built rental building with parking variances. CONCURRENT WITH REZ00896",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2025-05-22"
+      },
+      {
+        "milestone": "Advisory Design Panel (ADP) Meeting",
+        "milestone_date": "2025-11-26"
+      },
+      {
+        "milestone": "Committee of the Whole Meeting (COTW)",
+        "milestone_date": "2026-06-25"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=3752CFE2-014A-424A-B3BD-5CCA9F0EA3BC&folderId=45150C250516134437243497",
+        "title": "2026-06-03 - Letter to Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": true,
+    "extraction_confidence": 1.0,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "mixed",
+    "occupancy_types": [
+      "residential",
+      "commercial",
+      "office",
+      "institutional"
+    ],
+    "occupancies": [],
+    "number_of_stories": 6,
+    "units_total": 87,
+    "unit_mix": null,
+    "rental_or_strata": "rental",
+    "rental_subtype": "purpose-built rental",
+    "rental_mix": null,
+    "parking_vehicle_stalls": 61,
+    "parking_bike_stalls": 116,
+    "parking_notes": "Project Overview The proposal consists of a six-storey, wood-frame purpose-built rental building over a single level of underground parking, delivering approximately 87 residential units at a moderate density of approximately 2.",
+    "zoning_density": "FSR .",
+    "floor_area": 46.0,
+    "floor_area_unit": "m2",
+    "field_methods": {
+      "permit_type": "html",
+      "rental_or_strata": "html",
+      "rental_subtype": "html",
+      "development_class": "pdf_text_regex",
+      "occupancy_types": "pdf_text_regex",
+      "number_of_stories": "pdf_text_regex",
+      "units_total": "pdf_text_regex",
+      "parking_notes": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex",
+      "floor_area": "pdf_text_regex",
+      "floor_area_unit": "pdf_text_regex",
+      "parking_vehicle_stalls": "pdf_model_text",
+      "parking_bike_stalls": "pdf_model_text",
+      "building_materials": "pdf_model_text",
+      "energy_info": "pdf_model_text",
+      "mechanical_system_info": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "1908 FOUL BAY RD",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "1908 Foul Bay Road, City of Victoria",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Revised proposal",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": "wood-frame",
+    "energy_info": "Step Code 3 and Zero Carbon Energy Step Code 4 standards, energy-efficient mechanical systems, passive solar shading, mechanical cooling for indoor comfort and wildfire smoke resilience, sustainable material and waste reduction practices, pollinator-friendly native and adapted landscaping, enhanced tree planting and soil volumes",
+    "mechanical_system_info": "energy-efficient mechanical systems, mechanical cooling for indoor comfort and wildfire smoke resilience"
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00292",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00292",
+    "development_name": null,
+    "address": "441 GOVERNMENT ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to build a 6 story 51 unit multi-family development. Concurrent with Rezoning file REZ00893. Refer to rezoning file for all materials.",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Advisory Design Panel (ADP) Meeting",
+        "milestone_date": "2026-07-22"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": null
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=52776C260424114332259668&folderId=42609C250509102706672636",
+        "title": "2026-04-23 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": 6,
+    "units_total": 51,
+    "unit_mix": {
+      "Junior 1 Bedroom": 18,
+      "Junior 2 Bedroom": 12,
+      "2 Bedroom": 14,
+      "Junior 3 Bedroom": 4,
+      "3 Bedroom": 4
+    },
+    "rental_or_strata": "strata",
+    "rental_subtype": "strata",
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": 64,
+    "parking_notes": "No on-site parking required due to location within the Legislature Transit-Oriented Area (TOA), but 64 long-term bike parking spaces are provided.",
+    "zoning_density": "FSR 2.5.",
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "number_of_stories": "html",
+      "units_total": "html",
+      "rental_or_strata": "pdf_text_regex",
+      "rental_subtype": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex",
+      "unit_mix": "pdf_model_text",
+      "parking_bike_stalls": "pdf_model_text",
+      "parking_notes": "pdf_model_text",
+      "building_materials": "pdf_model_text",
+      "energy_info": "pdf_model_text",
+      "mechanical_system_info": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "development_class",
+        "kept": {
+          "value": "residential",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "mixed",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "number_of_stories",
+        "kept": {
+          "value": 6,
+          "method": "html"
+        },
+        "pdf": {
+          "value": 10,
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "units_total",
+        "kept": {
+          "value": 51,
+          "method": "html"
+        },
+        "pdf": {
+          "value": 2,
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "441 GOVERNMENT ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "441 and 443 Government Street and 605 and 607 Michigan Street, Victoria, BC",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Resubmission",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": [
+      "brick masonry cladding"
+    ],
+    "energy_info": [
+      {
+        "step_code": "Step 3 of the BC Energy Step Code",
+        "emissions_level": "Emissions Level 4 of the BC Zero Carbon Step"
+      }
+    ],
+    "mechanical_system_info": [
+      {
+        "heating": "heat pump for both heating and cooling"
+      }
+    ]
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00291",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00291",
+    "development_name": "1964 Oak Bay Ave",
+    "address": "1513 AMPHION ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application for a six storey, 42-unit purpose-built rental development, which includes live-work units and a commercial retail unit. The proposal includes an amendment to the Official Community Plan. CONCURRENT WITH REZONING APPLICATION #00892. REFER TO REZONING FILE FOR APPLICATION MATERIALS.\n\nAddresses: 1513 AMPHION ST; 1964 OAK BAY AVE",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2025-04-22"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=36983C250422161158272778&folderId=35893C250416094330449089",
+        "title": "2025-04-22 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 1.0,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "mixed",
+    "occupancy_types": [
+      "residential",
+      "commercial"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      },
+      {
+        "occupancy": "commercial"
+      }
+    ],
+    "number_of_stories": 6,
+    "units_total": 42,
+    "unit_mix": {
+      "commercial": 1
+    },
+    "rental_or_strata": "rental",
+    "rental_subtype": "purpose-built rental",
+    "rental_mix": {
+      "purpose-built-rental": 42
+    },
+    "parking_vehicle_stalls": 2,
+    "parking_bike_stalls": 65,
+    "parking_notes": "59 long-term, 6 short-term bicycle parking (from summary sheet)",
+    "zoning_density": "FSR 3.21",
+    "floor_area": 35198,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "number_of_stories": "html",
+      "units_total": "html",
+      "rental_or_strata": "html",
+      "rental_subtype": "html",
+      "unit_mix": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex",
+      "floor_area": "pdf_geometry",
+      "parking_vehicle_stalls": "pdf_geometry",
+      "parking_bike_stalls": "pdf_geometry",
+      "parking_notes": "pdf_geometry",
+      "development_name": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "1513 AMPHION ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "1964 Oak Bay Ave, Victoria, BC",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Application submitted",
+          "method": "pdf_model_text"
+        }
+      }
+    ]
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00285",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00285",
+    "development_name": "SHELBOURNE MEWS",
+    "address": "2931 SHELBOURNE ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to build a new multifamily building.\n\nAddresses: 2931 SHELBOURNE ST; 2937 SHELBOURNE ST",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Advisory Design Panel (ADP) Meeting",
+        "milestone_date": "2025-09-24"
+      },
+      {
+        "milestone": "Application Review by City",
+        "milestone_date": "2025-10-02"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=13426C251217115516836427&folderId=95093C241203130842095404",
+        "title": "2025-10-30 - Plans_Revisions_Bubbled_Compressed for DT.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": true,
+    "extraction_confidence": 1.0,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [],
+    "number_of_stories": 3,
+    "units_total": 9,
+    "unit_mix": {
+      "4-BED": 4,
+      "3-BED": 5
+    },
+    "rental_or_strata": "strata",
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": 9,
+    "parking_bike_stalls": 1,
+    "parking_notes": "9 visitor vehicle stalls, 1 visitor bike stall",
+    "zoning_density": 1.05,
+    "floor_area": 1321,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_name": "pdf_model_vision",
+      "development_class": "pdf_model_vision",
+      "floor_area": "pdf_model_vision",
+      "number_of_stories": "pdf_model_vision",
+      "units_total": "pdf_model_vision",
+      "unit_mix": "pdf_model_vision",
+      "occupancy_types": "pdf_model_vision",
+      "rental_or_strata": "pdf_model_vision",
+      "parking_vehicle_stalls": "pdf_model_vision",
+      "parking_bike_stalls": "pdf_model_vision",
+      "parking_notes": "pdf_model_vision",
+      "zoning_density": "pdf_model_vision"
+    },
+    "conflicts": [
+      {
+        "field": "address",
+        "kept": {
+          "value": "2931 SHELBOURNE ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "2937 & 2931 SHELBOURNE ST, VICTORIA, BC",
+          "method": "pdf_model_vision"
+        }
+      },
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "ISSUED FOR COMMITTEE OF THE WHOLE MEETING",
+          "method": "pdf_model_vision"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "ISSUED",
+          "method": "pdf_model_vision"
+        }
+      }
+    ]
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00280",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00280",
+    "development_name": null,
+    "address": "235 RUSSELL ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application for additional floors to include residential rental units. CONCURRENT WITH REZ00881. REFER TO REZONING FILE FOR ALL APPLICATION MATERIALS.",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Advisory Design Panel (ADP) Meeting",
+        "milestone_date": "2026-01-28"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=961A7A26-7D39-4E89-8824-E817A79E20D9&folderId=77246C241009105507809214",
+        "title": "2025-10-30 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": 6,
+    "units_total": 30,
+    "unit_mix": {
+      "3 bedrooms": 10
+    },
+    "rental_or_strata": "rental",
+    "rental_subtype": "market rental",
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": null,
+    "zoning_density": "FSR .",
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "rental_or_strata": "html",
+      "number_of_stories": "pdf_text_regex",
+      "rental_subtype": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex",
+      "units_total": "pdf_model_text",
+      "unit_mix": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "development_class",
+        "kept": {
+          "value": "residential",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "mixed",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "235 RUSSELL ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "235 Russell Street, Victoria",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Application Submitted",
+          "method": "pdf_model_text"
+        }
+      }
+    ]
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00269",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00269",
+    "development_name": null,
+    "address": "603 PANDORA AVE",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application for hotel with commercial uses at ground level. CONCURRENT WITH REZONING APPLICATION #00873. REFER TO REZONING FILE FOR ALL DOCUMENTATION.",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2024-04-09"
+      },
+      {
+        "milestone": "Heritage Advisory Panel (HAPL) Meeting",
+        "milestone_date": "2024-09-10"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=21764901-835C-4136-A708-E1C8CD151D0E&folderId=28974C250325134726233962",
+        "title": "2025-03-25 -  Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 0.6,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "commercial",
+    "occupancy_types": [
+      "commercial",
+      "hotel"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "commercial"
+      },
+      {
+        "occupancy": "hotel"
+      }
+    ],
+    "number_of_stories": null,
+    "units_total": null,
+    "unit_mix": null,
+    "rental_or_strata": null,
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": null,
+    "zoning_density": null,
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "building_materials": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "address",
+        "kept": {
+          "value": "603 PANDORA AVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "2960 Jutland Road, Victoria BC V8T5K2",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Heritage Alteration Permit",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "requested",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": [
+      "polished granite columns",
+      "white glazed bricks",
+      "heavy timber posts",
+      "panels of sidewalk prisms"
+    ]
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00258",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00258",
+    "development_name": null,
+    "address": "1320 PURCELL PL",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to construct a three-storey, 3 unit strata houseplex on a newly subdivided lot.",
+    "extraction_method": "html",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2023-11-22"
+      },
+      {
+        "milestone": "With Applicant",
+        "milestone_date": "2023-12-18"
+      },
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2024-03-20"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2024-03-20"
+      },
+      {
+        "milestone": "With Applicant",
+        "milestone_date": "2024-04-12"
+      },
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2024-09-04"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2024-09-06"
+      },
+      {
+        "milestone": "With Applicant",
+        "milestone_date": "2024-09-04"
+      },
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2025-03-03"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2025-03-03"
+      },
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2025-06-19"
+      },
+      {
+        "milestone": "With Applicant",
+        "milestone_date": "2025-04-10"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2025-06-19"
+      },
+      {
+        "milestone": "With Applicant",
+        "milestone_date": "2025-06-20"
+      },
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2025-10-30"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2025-10-30"
+      },
+      {
+        "milestone": "Application Review by City",
+        "milestone_date": "2023-11-22"
+      }
+    ],
+    "documents": [],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": false,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": 3,
+    "units_total": 3,
+    "unit_mix": {
+      "strata": 3
+    },
+    "rental_or_strata": "strata",
+    "rental_subtype": "strata",
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": null,
+    "zoning_density": null,
+    "floor_area": null,
+    "floor_area_unit": null
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00313",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00313",
+    "development_name": "Rockland Redevelopment – Hotel",
+    "address": "1114 ROCKLAND AVE",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to allow for a hotel. CONCURRENT WITH REZONING FILE #00855. REFER TO REZONING FILE FOR ATTACHMENTS.",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2023-06-23"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=9675F3AF-87C8-4FA9-9519-C99766EB1CE9&folderId=34832C230623094052584819",
+        "title": "2026-05-04 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": true,
+    "needs_review": true,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "commercial",
+    "occupancy_types": [
+      "hotel"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "hotel"
+      }
+    ],
+    "number_of_stories": 6,
+    "units_total": 30,
+    "unit_mix": null,
+    "rental_or_strata": "rental",
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": 28,
+    "parking_bike_stalls": 6,
+    "parking_notes": "While the total number of parking stalls have been reduced, the proposal exceeds bicycle parking requirements by providing six oversized bicycle spaces where only two are required, supporting a broader range of mobility options.",
+    "zoning_density": null,
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "rental_or_strata": "pdf_text_regex",
+      "parking_notes": "pdf_text_regex",
+      "development_name": "pdf_model_text",
+      "number_of_stories": "pdf_model_text",
+      "units_total": "pdf_model_text",
+      "parking_vehicle_stalls": "pdf_model_text",
+      "parking_bike_stalls": "pdf_model_text",
+      "energy_info": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "development_class",
+        "kept": {
+          "value": "commercial",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "mixed",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "1114 ROCKLAND AVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "1114 Rockland Avenue, Victoria, B.C. V9A 3P2",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Approved and successfully rezoned",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "energy_info": "Promoting water conservation; contributing to the reduction of greenhouse gas emissions through compact, centrally located development"
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00239",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00239",
+    "development_name": "854-880 Pandora Avenue",
+    "address": "854 PANDORA AVE",
+    "status": "ACTIVE",
+    "raw_text": "See Rezoning Application #REZ00849 for project information. The City is considering a Development Permit with Variance application to construct a multi-storey mixed-use building.\n\nAddresses: 854 PANDORA AVE; 858 PANDORA AVE; 880 PANDORA AVE",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2023-06-01"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=373612DD-E44B-499C-9F73-C281E185CF2E&folderId=09635C230329103747177099",
+        "title": "2023-09-14 - Letter to Mayor and Council.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": true,
+    "extraction_confidence": 1.0,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "mixed",
+    "occupancy_types": [
+      "residential",
+      "commercial",
+      "institutional"
+    ],
+    "occupancies": [],
+    "number_of_stories": 20,
+    "units_total": 5,
+    "unit_mix": "various sizes, including 2- and 3-bedroom units, over 33% family-sized units",
+    "rental_or_strata": "rental",
+    "rental_subtype": "purpose-built rental",
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": 225,
+    "parking_notes": "In addition to the aforementioned built-in qualities that will reduce car dependency and justify this variance, we are proposing a number of TDM measures focusing on encouraging active transportation: we plan to provide 225 long-term bicycle parking stalls for residents and on-site workers housed in secure bike rooms with amenities such as a bike wash and repair station, including spaces for 8 cargo bikes.",
+    "zoning_density": "FSR .",
+    "floor_area": 665.0,
+    "floor_area_unit": "m2",
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "pdf_text_regex",
+      "number_of_stories": "pdf_text_regex",
+      "units_total": "pdf_text_regex",
+      "rental_or_strata": "pdf_text_regex",
+      "rental_subtype": "pdf_text_regex",
+      "parking_notes": "pdf_text_regex",
+      "zoning_density": "pdf_text_regex",
+      "floor_area": "pdf_text_regex",
+      "floor_area_unit": "pdf_text_regex",
+      "development_name": "pdf_model_text",
+      "unit_mix": "pdf_model_text",
+      "parking_bike_stalls": "pdf_model_text",
+      "building_materials": "pdf_model_text",
+      "energy_info": "pdf_model_text",
+      "mechanical_system_info": "pdf_model_text"
+    },
+    "conflicts": [
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Rezoning",
+          "method": "pdf_text_regex"
+        }
+      },
+      {
+        "field": "address",
+        "kept": {
+          "value": "854 PANDORA AVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "854 – 880 Pandora Avenue, Victoria, BC",
+          "method": "pdf_model_text"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "3rd submission, awaiting Council approval",
+          "method": "pdf_model_text"
+        }
+      }
+    ],
+    "building_materials": "podium: brick, tower: glazing and darker metal panel",
+    "energy_info": "Step 2 of the BC Building Code, 20% increase in total building efficiency, LED lights, induction cooktops, low-flow faucets, green waste disposal, in-suite PTHPs for heating and cooling",
+    "mechanical_system_info": "in-suite packaged terminal heat pumps (PTHP’s) for active heating and cooling"
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00227",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00227",
+    "development_name": null,
+    "address": "1171 MAY ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to construct two triplex buildings with variances. See REZ00846 for project details.\n\nAddresses: 1171 MAY ST; 1173 MAY ST",
+    "extraction_method": "html",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2023-03-03"
+      }
+    ],
+    "documents": [],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": false,
+    "extraction_confidence": 0.8,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": null,
+    "units_total": 6,
+    "unit_mix": null,
+    "rental_or_strata": null,
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": null,
+    "zoning_density": null,
+    "floor_area": null,
+    "floor_area_unit": null
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00213",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00213",
+    "development_name": null,
+    "address": "933 CONVENT PL",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to construct a multiple dwelling building with variance for parking.\n\nAddresses: 933 CONVENT PL; 935 CONVENT PL",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2026-06-29"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2026-06-29"
+      },
+      {
+        "milestone": "Application Review by City",
+        "milestone_date": "2026-07-07"
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=0C52FFB2-3A2F-4E24-96AF-7D5BBB4B7263&folderId=50046C220815145413300712",
+        "title": "2026-06-29 - Plans_Revisions.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": true,
+    "extraction_confidence": 1.0,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": 3,
+    "units_total": 18,
+    "unit_mix": {
+      "1 bedroom": 1,
+      "2 bedroom": 3,
+      "3 bedroom": 3
+    },
+    "rental_or_strata": "rental",
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": 45,
+    "parking_notes": "45 interior bike stalls provided.",
+    "zoning_density": null,
+    "floor_area": 1575.69,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "units_total": "pdf_model_vision",
+      "unit_mix": "pdf_model_vision",
+      "number_of_stories": "pdf_model_vision",
+      "floor_area": "pdf_model_vision",
+      "rental_or_strata": "pdf_model_vision",
+      "parking_bike_stalls": "pdf_model_vision",
+      "parking_notes": "pdf_model_vision"
+    },
+    "conflicts": []
+  },
+  {
+    "municipality": "victoria",
+    "permit_id": "DPV00209",
+    "source_url": "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx?folderNumber=DPV00209",
+    "development_name": "257 BELLEVILLE STREET",
+    "address": "257 BELLEVILLE ST",
+    "status": "ACTIVE",
+    "raw_text": "The City is considering a Development Permit with Variance application to construct a multiple dwelling building with variances. Associated with this application is an amendment to the existing zone to change the definition of \"community amenities\". See DP000575 for project details prior to June 8, 2022. APPROVED BY COUNCIL MAY 14, 2026",
+    "extraction_method": "html+ollama_pdf",
+    "milestones": [
+      {
+        "milestone": "Application Received",
+        "milestone_date": "2022-06-09"
+      },
+      {
+        "milestone": "Received Revised Plans",
+        "milestone_date": "2023-09-20"
+      },
+      {
+        "milestone": "With Applicant",
+        "milestone_date": "2022-10-27"
+      },
+      {
+        "milestone": "Staff Review of Revised Plans",
+        "milestone_date": "2023-09-21"
+      },
+      {
+        "milestone": "Application Review by City",
+        "milestone_date": "2022-06-09"
+      },
+      {
+        "milestone": "Committee of the Whole Meeting (COTW)",
+        "milestone_date": "2025-01-09"
+      },
+      {
+        "milestone": "Council Meeting",
+        "milestone_date": "2026-04-09"
+      },
+      {
+        "milestone": "Council Meeting - Public Comment",
+        "milestone_date": null
+      }
+    ],
+    "documents": [
+      {
+        "url": "https://tender.victoria.ca/webapps/ourcity/Prospero/FileDownload.aspx?fileId=80526C231205084650094290&folderId=31742C220609094816160529",
+        "title": "2023-10-31 - Plans - Revisions - bubbled.pdf",
+        "doc_role": "ollama_source",
+        "extracted": true
+      }
+    ],
+    "is_parsed": true,
+    "needs_pdf_extraction": false,
+    "needs_review": true,
+    "extraction_confidence": 0.6,
+    "permit_type": "Development Permit with Variance",
+    "development_class": "residential",
+    "occupancy_types": [
+      "residential"
+    ],
+    "occupancies": [
+      {
+        "occupancy": "residential"
+      }
+    ],
+    "number_of_stories": null,
+    "units_total": null,
+    "unit_mix": null,
+    "rental_or_strata": null,
+    "rental_subtype": null,
+    "rental_mix": null,
+    "parking_vehicle_stalls": null,
+    "parking_bike_stalls": null,
+    "parking_notes": null,
+    "zoning_density": null,
+    "floor_area": null,
+    "floor_area_unit": null,
+    "field_methods": {
+      "permit_type": "html",
+      "development_class": "html",
+      "occupancy_types": "html",
+      "development_name": "pdf_model_vision"
+    },
+    "conflicts": [
+      {
+        "field": "address",
+        "kept": {
+          "value": "257 BELLEVILLE ST",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "257 BELLEVILLE STREET, VICTORIA, BRITISH COLUMBIA",
+          "method": "pdf_model_vision"
+        }
+      },
+      {
+        "field": "permit_type",
+        "kept": {
+          "value": "Development Permit with Variance",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Development Permit",
+          "method": "pdf_model_vision"
+        }
+      },
+      {
+        "field": "status",
+        "kept": {
+          "value": "ACTIVE",
+          "method": "html"
+        },
+        "pdf": {
+          "value": "Reissued",
+          "method": "pdf_model_vision"
+        }
+      }
+    ]
+  }
+]
