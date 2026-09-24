@@ -613,6 +613,15 @@ def enrich_via_pdf(rows, session=None, use_cache: bool = True, limit: int | None
         if _merge_pdf_fields(row, fields) or row.get("conflicts"):
             _record_pdf_provenance(row, fields)
             enriched += 1
+        else:
+            # The document was found and read, but the model returned nothing usable (a common
+            # vision failure: the model errored per pass, or is not pulled). Surface it rather
+            # than leaving the row html-only with no explanation.
+            print(
+                f"victoria: PDF for {row.get('permit_id')} yielded no usable fields "
+                "(model returned empty); left html-only",
+                file=sys.stderr,
+            )
     return enriched
 
 
