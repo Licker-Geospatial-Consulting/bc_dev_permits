@@ -405,6 +405,13 @@ function App() {
   };
 
   useEffect(() => {
+    // Self-contained mode: data embedded on the page (window.QA_DATA) so the dashboard runs
+    // with no server and no fetch - used by the shareable single-file build (build_standalone.py).
+    if (Array.isArray(window.QA_DATA)) {
+      load(window.QA_DATA, window.QA_DATA_NAME || "embedded data");
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     fetch(DEFAULT)
       .then(res => {

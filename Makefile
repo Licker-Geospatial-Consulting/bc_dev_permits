@@ -1,4 +1,4 @@
-.PHONY: help requirements data data-db train plots lint format test docs qa clean
+.PHONY: help requirements data data-db train plots lint format test docs qa qa-standalone clean
 
 PYTHON := python
 
@@ -37,6 +37,9 @@ docs:  ## Serve the mkdocs site locally
 
 qa:  ## Serve the JSON QA viewer at http://localhost:8000/tools/qa/
 	$(PYTHON) -m http.server 8000
+
+qa-standalone:  ## Bundle the QA viewer + latest Victoria data into one shareable HTML
+	$(PYTHON) tools/qa/build_standalone.py data/processed/victoria_remote_machine.json tools/qa/victoria-qa-standalone.html "Victoria Development Permit QA"
 
 clean:  ## Remove Python caches
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
