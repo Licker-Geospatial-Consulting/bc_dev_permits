@@ -604,8 +604,14 @@ def extract_from_pdf_vision(path: str | Path, vision_model: str = VISION_MODEL) 
                 ]
                 try:
                     results.append(_chat(messages, vision_model))
-                except (requests.RequestException, ValueError):
-                    continue  # a bad/empty pass should not abort the sheet
+                except (requests.RequestException, ValueError) as exc:
+                    # Say WHY a pass failed (timeout, HTTP 500/OOM, bad JSON) instead of
+                    # silently swallowing it - this is what makes a whole sheet "return empty".
+                    print(
+                        f"[predict] vision pass failed on page {pno}: {type(exc).__name__}: {exc}",
+                        file=sys.stderr,
+                    )
+                    continue
 
     fields = _reduce_fields(results)
     _finalize_parking(fields)
