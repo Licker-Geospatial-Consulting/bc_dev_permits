@@ -108,7 +108,8 @@ def _run_cli(argv=None) -> int:
             print(f"--pdf-enrich not supported for {args.municipality}; skipping.", file=sys.stderr)
         else:
             print(
-                f"[models] text={config.OLLAMA_TEXT_MODEL} vision={config.OLLAMA_VISION_MODEL}",
+                f"[models] text={config.OLLAMA_TEXT_MODEL} vision={config.OLLAMA_VISION_MODEL} "
+                f"num_ctx={config.OLLAMA_NUM_CTX} dpi={config.OLLAMA_VISION_DPI}",
                 file=sys.stderr,
             )
             n = enricher(rows, use_cache=not args.no_cache)

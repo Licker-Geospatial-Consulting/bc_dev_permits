@@ -53,6 +53,15 @@ OLLAMA_TEXT_MODEL = os.environ.get("OLLAMA_TEXT_MODEL", "qwen2.5:7b-instruct")
 # storeys, floor area, and use from the FULL sheet in one call. minicpm-v / llava were
 # tried and are weaker; llama3.2-vision's 'mllama' architecture won't load on this build.
 OLLAMA_VISION_MODEL = os.environ.get("OLLAMA_VISION_MODEL", "qwen2.5vl:7b")
+# Context window sent with every request. Ollama's per-server default varies (some builds cap
+# at 4096), and a rendered plan sheet tokenizes to ~4.5k image tokens - which a 4096 window
+# rejects with HTTP 400 ("exceeds the available context size"), silently emptying the result.
+# Setting it explicitly makes machines behave the same regardless of their server default.
+OLLAMA_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "8192"))
+OLLAMA_TIMEOUT = int(os.environ.get("OLLAMA_TIMEOUT", "600"))  # seconds per request
+# Render resolution for the vision path. Lower it (e.g. 150) to cut image tokens and memory on
+# a constrained GPU; raise it for sharper tables if the model has context/VRAM to spare.
+OLLAMA_VISION_DPI = int(os.environ.get("OLLAMA_VISION_DPI", "220"))
 EXTRACTION_PROMPT = REFERENCES_DIR / "extraction_prompt.md"
 
 # --------------------------------------------------------------------------- #

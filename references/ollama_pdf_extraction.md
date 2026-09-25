@@ -71,6 +71,23 @@ variables read in `bc_dev_permits/config.py` (no code edits needed):
 
 - `OLLAMA_TEXT_MODEL`   default `qwen2.5:7b-instruct`
 - `OLLAMA_VISION_MODEL` default `qwen2.5vl:7b`
+- `OLLAMA_NUM_CTX`      default `8192` - context window sent with every request
+- `OLLAMA_TIMEOUT`      default `600` - seconds per request
+- `OLLAMA_VISION_DPI`   default `220` - plan-sheet render resolution
+
+The run prints these up front, e.g. `[models] text=… vision=… num_ctx=8192 dpi=220`.
+
+### Context size (HTTP 400 "exceeds the available context size")
+
+A rendered plan sheet tokenizes to ~4.5k image tokens. If Ollama's server default context is
+small (some builds cap at 4096), the request is rejected with HTTP 400 and the extraction comes
+back empty. We send `num_ctx` explicitly (default 8192) so this does not depend on the server
+default. If you still see the 400 (very large sheets), raise it or lower the image size:
+
+```powershell
+$env:OLLAMA_NUM_CTX = "12288"      # bigger context (uses more VRAM/RAM)
+$env:OLLAMA_VISION_DPI = "150"     # smaller image -> fewer tokens, less memory
+```
 
 ### Enabling the 32B vision model
 

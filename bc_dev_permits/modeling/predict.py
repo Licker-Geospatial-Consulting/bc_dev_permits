@@ -52,6 +52,9 @@ else:
 OLLAMA_URL = config.OLLAMA_URL
 TEXT_MODEL = config.OLLAMA_TEXT_MODEL  # any solid local instruct model works
 VISION_MODEL = config.OLLAMA_VISION_MODEL  # for scanned/image-only PDFs
+NUM_CTX = config.OLLAMA_NUM_CTX  # context window; sent explicitly so a small server default
+# (some Ollama builds cap at 4096) does not reject a plan-sheet image with HTTP 400
+OLLAMA_TIMEOUT = config.OLLAMA_TIMEOUT
 MIN_CHARS_PER_PAGE = 40  # below this, treat the page as scanned
 
 # Image-only PDFs (e.g. architectural plan sets) carry their facts in a small
@@ -70,7 +73,7 @@ MIN_CHARS_PER_PAGE = 40  # below this, treat the page as scanned
 # model a SINGLE pass is most accurate (splitting fields across passes made it worse), so
 # the default is one entry; for a weaker model you can list several focused prompts and
 # they merge by majority vote.
-VISION_DPI = 220  # full-sheet render resolution
+VISION_DPI = config.OLLAMA_VISION_DPI  # full-sheet render resolution (env-tunable)
 VISION_MAX_PAGES = 1  # the project-data table is on the cover sheet; raise to sweep more
 VISION_TEXT_SCAN_PAGES = 8  # cap the text-probe scan (plan sets are long)
 # Long side (points) above which a page is a large-format architectural sheet, whose data
@@ -267,9 +270,11 @@ def _chat(messages: list[dict], model: str) -> dict:
             "messages": messages,
             "format": "json",  # lightweight JSON mode (a full schema grammar hangs on long input)
             "stream": False,
-            "options": {"temperature": 0},
+            # num_ctx is set explicitly: a plan-sheet image is ~4.5k tokens, which a server
+            # defaulting to 4096 rejects with HTTP 400, silently emptying the extraction.
+            "options": {"temperature": 0, "num_ctx": NUM_CTX},
         },
-        timeout=600,  # a cold model load can still take a while before generation starts
+        timeout=OLLAMA_TIMEOUT,  # a cold model load can still take a while before generation
     )
     resp.raise_for_status()
     fields = _coerce_counts(json.loads(resp.json()["message"]["content"]))
