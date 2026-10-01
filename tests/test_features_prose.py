@@ -244,3 +244,38 @@ def test_prose_fields(label, prose, expected, mix):
         got = out['unit_mix'] or {}
         for k, v in mix.items():
             assert got.get(k) == v, f"{label}: unit_mix[{k!r}] expected {v!r}, got {got.get(k)!r}"
+
+
+# --------------------------------------------------------------------------- #
+# unit_mix: a count spanning a RANGE of bedroom types is not a single-type count
+# (846 Broughton: "126 two-bedroom and three-bedroom units" must NOT be {2-bed: 126})
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        ("126 two-bedroom and three-bedroom family-sized units", None),
+        ("40 two-bedroom or larger", None),
+        ("10 two-bedroom and 5 three-bedroom units", {"2-bed": 10, "3-bed": 5}),  # separate counts
+        ("6 one-bedroom units and 3 two-bedroom suites", {"1-bed": 6, "2-bed": 3}),
+    ],
+)
+def test_unit_mix_ignores_range_counts(prose, expected):
+    assert features.unit_mix(prose) == expected
+
+
+# --------------------------------------------------------------------------- #
+# parking_bike: qualifiers, "spots", and a long/short-term split that sums
+# (846 Broughton: "490 long-term and 54 short-term ... spots" -> 544, not the model's 540)
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        ("490 long-term and 54 short-term bicycle parking spots", 544),
+        ("7 short-term and 18 long-term bicycle parking stalls", 25),  # order-insensitive
+        ("54 short-term bicycle parking spots", 54),  # qualifier + 'spots'
+        ("56 bike stalls", 56),  # existing simple case still works
+        ("9 long-term and 1 short-term vehicle stalls", None),  # not bicycle -> ignored
+    ],
+)
+def test_parking_bike_handles_split_and_spots(prose, expected):
+    assert features.parking_bike(prose) == expected

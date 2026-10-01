@@ -303,16 +303,29 @@ def units_total(text: str) -> int | None:
     return None
 
 
+# A count that spans a RANGE of bedroom types, not one type, e.g. "126 two-bedroom and
+# three-bedroom units" or "40 two-bedroom or larger". Such a number must not be filed under a
+# single bedroom key. "10 two-bedroom and 5 three-bedroom" is NOT a range (a number follows the
+# connector), so it is left to match as two separate counts.
+_UNIT_MIX_RANGE = re.compile(
+    r"\s*(?:and|or|to|through|&|\+)\s*"
+    r"(?:(?:studio|one|two|three|four|five)[\s-]?bed|larger|bigger|more|up\b)",
+    re.IGNORECASE,
+)
+
+
 def unit_mix(text: str) -> dict | None:
     """Return the bedroom mix as {"1-bed": 19, "suite": 6, ...}, or None."""
     mix: dict[str, int] = {}
-    for n, word in re.findall(
+    for m in re.finditer(
         r"(\d+)\s+(?:are\s+|of\s+which\s+\d+\s+are\s+)?"
         r"(studio|one|two|three|four|five)[\s-]?bed(?:room)?s?",
         text,
         re.IGNORECASE,
     ):
-        mix[_WORD_TO_BED[word.lower()]] = int(n)
+        if _UNIT_MIX_RANGE.match(text, m.end()):
+            continue  # count spans a range of bedroom types, not this single type
+        mix[_WORD_TO_BED[m.group(2).lower()]] = int(m.group(1))
     for n in re.findall(r"(\d+)\s+(?:are\s+)?suites?\b", text, re.IGNORECASE):
         mix["suite"] = int(n)
     for n in re.findall(r"(\d+)\s+studios?\b", text, re.IGNORECASE):
@@ -369,15 +382,34 @@ def parking_vehicle(text: str) -> int | None:
     )
 
 
+def _sum_split_bike(text: str) -> int | None:
+    """Sum a long-term + short-term bicycle split, e.g. '490 long-term and 54 short-term'.
+
+    Only treats the two numbers as bicycle counts when 'bike'/'bicycle' appears nearby, so a
+    vehicle 'long-term' phrase is not picked up. Returns the combined total or None.
+    """
+    m = re.search(r"(\d+)\s*long[\s-]*term\D{0,40}?(\d+)\s*short[\s-]*term", text, re.IGNORECASE) or re.search(
+        r"(\d+)\s*short[\s-]*term\D{0,40}?(\d+)\s*long[\s-]*term", text, re.IGNORECASE
+    )
+    if m and re.search(r"bicycle|bike", text[max(0, m.start() - 40) : m.end() + 40], re.IGNORECASE):
+        return int(m.group(1)) + int(m.group(2))
+    return None
+
+
 def parking_bike(text: str) -> int | None:
     """Return the count of bicycle parking stalls/spaces/storage, if stated.
 
-    Handles "56 bike stalls", "11 bicycle parking spaces", "6 Bike storage" and
-    "twenty-nine (29) secure bicycle parking stalls".
+    Handles "56 bike stalls", "11 bicycle parking spaces", "6 Bike storage",
+    "twenty-nine (29) secure bicycle parking stalls", "54 short-term bicycle parking spots",
+    and sums a long/short-term split like "490 long-term and 54 short-term ... bicycle ...".
     """
+    combined = _sum_split_bike(text)
+    if combined is not None:
+        return combined
     return _search_count(
         text,
-        rf"({_NUM}){_PAREN}\s+(?:secure\s+)?(?:bike|bicycle)\s+(?:parking\s+)?(?:spaces?|stalls?|storage)",
+        rf"({_NUM}){_PAREN}\s+(?:secure\s+)?(?:long[\s-]*term\s+|short[\s-]*term\s+)?"
+        rf"(?:bike|bicycle)\s+(?:parking\s+)?(?:spaces?|stalls?|storage|spots?)",
     )
 
 
