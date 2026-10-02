@@ -155,10 +155,13 @@ const Row = ({ r, idx, expanded, toggle }) => {
                 ⚠ Text vs PDF conflicts ({r.conflicts.length})
               </div>
               {r.conflicts.map((c, i) => (
-                <div key={i} style={{ fontSize: 12, color: "#7c2d12", padding: "1px 0" }}>
-                  <b>{c.field}</b>: kept <b>{String(c.kept?.value)}</b>
-                  <MethodTag method={c.kept?.method} /> &nbsp;vs PDF <b>{String(c.pdf?.value)}</b>
-                  <MethodTag method={c.pdf?.method} />
+                <div key={i} style={{ fontSize: 12, color: "#7c2d12", padding: "1px 0", display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+                  <b>{c.field}:</b>
+                  <b>{String(c.kept?.value ?? c.claude ?? "—")}</b>
+                  <MethodTag method={c.kept?.method || "pdf_claude"} />
+                  <span>≠</span>
+                  <b>{String(c.pdf?.value ?? c.html ?? "—")}</b>
+                  <MethodTag method={c.pdf?.method || "html"} />
                 </div>
               ))}
             </div>
