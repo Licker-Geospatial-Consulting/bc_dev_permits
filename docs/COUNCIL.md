@@ -58,10 +58,29 @@ the exact instructions you gave per site.
 ## maple_ridge — City of Maple Ridge  (vertigis)
 
 - **App:** https://apps.vertigisstudio.com/web/?app=8b409970fec048b0940b60fe1e225e39
-- VertiGIS Studio Web over ArcGIS services (see vertigis_webmaps.md).
-- **Multiple application IDs per polygon:** use `queryRelatedRecords` — emit one
-  `dev_permit` per application in the polygon's "Application details" section.
-- capture layer URL + relationshipId + the "Application details" field names.
+- VertiGIS Studio Web over an ArcGIS MapServer (see vertigis_webmaps.md). The service was
+  found via the page's resource list (performance entries), not the app config.
+- **MapServer (query this directly):**
+  `https://geoservices.mapleridge.ca/server/rest/services/LandDevelopmentViewer/LandDevelopmentData/MapServer`
+  - layer **0 DevelopmentApplications** (polygons) — one application each, ~6757 total (~823 `StatusType='Active'`).
+  - table **2 ApplicationDetails** — key/value rows (`InfoDescription`/`InfoValue`), the
+    "Application details" section.
+  - table **1 Applicants** — personal names: **not fetched** (PII, no schema column).
+- **No declared relationship:** layer 0 and table 2 join by the shared **`FolderRSN`** key.
+  The harvester pages the applications, then bulk-fetches details for the harvested FolderRSNs
+  (`FolderRSN IN (...)`, chunked) and groups them — no `queryRelatedRecords` needed.
+- **Field mapping** (layer 0), handled by `harvesters/maple_ridge.py`:
+  - `ReferenceFile` → `permit_id` (e.g. "2019-255-RZ"); `FolderName` = "<id> - <address>" → `address`
+  - `FolderDesc` → `permit_type` (Rezoning / Development Permit / Subdivision / Variance Permit /
+    Soil Deposit Permit / Agricultural Land Reserve / Tree Cutting Permit)
+  - `Status` → `status`; `InDate` (epoch ms) → "Application Received"; First/Second/Third
+    `ReadingDate` + `PublicHearingDate` ("YYYYMMDDHHMMSS") and `IssueDate` → milestones
+  - geometry polygon → `latitude`/`longitude` (ring centroid)
+- **Details → fields** (deterministic key/value mapping): `CD Residential Unit` or (for multi-unit
+  RZ/DP) `Approx. Number of Proposed Lots/Units` → `units_total`; a Subdivision's "Lots/Units" is
+  **lots, not units**, so it is left null. `Current Zoning`→`Proposed Zoning` → `zoning_density`;
+  `Number of Proposed Rental Units` → rental; class derived from the type / zoning / OCP text.
+- `extraction_method = "arcgis"`. Shared ArcGIS transport lives in `harvesters/arcgis_common.py`.
 
 ## port_moody — City of Port Moody  (arcgis)
 

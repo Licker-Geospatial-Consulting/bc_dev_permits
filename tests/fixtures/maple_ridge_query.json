@@ -1,0 +1,134 @@
+{
+  "applications": [
+    {
+      "attributes": {
+        "FolderRSN": 471839,
+        "ReferenceFile": "2019-255-RZ",
+        "FolderName": "2019-255-RZ - 12297  222 ST",
+        "FolderType": "RZ",
+        "FolderDesc": "Rezoning",
+        "Status": "Final Reading",
+        "StatusType": "Active",
+        "StatusDescription": "Final Reading",
+        "ApplicationDescription": "",
+        "WorkProposed": "Multi-Family",
+        "Description": "Application under review.",
+        "NumberLots": "2",
+        "InDate": 1563519600000,
+        "IssueDate": null,
+        "FirstReadingDate": null,
+        "SecondReadingDate": null,
+        "ThirdReadingDate": null,
+        "PublicHearingDate": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [-122.60, 49.21],
+            [-122.59, 49.21],
+            [-122.59, 49.22],
+            [-122.60, 49.22],
+            [-122.60, 49.21]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "FolderRSN": 627720,
+        "ReferenceFile": "2026-094-SD",
+        "FolderName": "2026-094-SD - 23733 FERN CRES ",
+        "FolderType": "SD",
+        "FolderDesc": "Subdivision",
+        "Status": "Pending Review",
+        "StatusType": "Active",
+        "StatusDescription": "Pending Review",
+        "ApplicationDescription": "",
+        "WorkProposed": null,
+        "Description": "New application has been received.",
+        "NumberLots": "2",
+        "InDate": 1790619089000,
+        "IssueDate": null,
+        "FirstReadingDate": null,
+        "SecondReadingDate": null,
+        "ThirdReadingDate": null,
+        "PublicHearingDate": null
+      },
+      "geometry": { "rings": [] }
+    },
+    {
+      "attributes": {
+        "FolderRSN": 430156,
+        "ReferenceFile": "2017-462-RZ",
+        "FolderName": "2017-462-RZ - 22576 BROWN AVE",
+        "FolderType": "RZ",
+        "FolderDesc": "Rezoning",
+        "Status": "Third Reading",
+        "StatusType": "Active",
+        "StatusDescription": "Third Reading",
+        "ApplicationDescription": "The applicant is seeking to rezone the properties located at 22576, 22588, and 22596 Brown Avenue from C-3 (Town Centre Commercial) and RS-1 (Single Detached Residential) to CD-1-18 (Comprehensive Development), to allow for the future construction of a 35-storey apartment building with 252 market strata dwelling units.",
+        "WorkProposed": "Comprehensive Development",
+        "Description": "Council has granted 3rd Reading to the Bylaw.",
+        "NumberLots": "252",
+        "InDate": null,
+        "IssueDate": null,
+        "FirstReadingDate": null,
+        "SecondReadingDate": null,
+        "ThirdReadingDate": null,
+        "PublicHearingDate": null
+      },
+      "geometry": { "rings": [] }
+    },
+    {
+      "attributes": {
+        "FolderRSN": 627340,
+        "ReferenceFile": "2026-092-DP",
+        "FolderName": "2026-092-DP - 12039 223 STREET ",
+        "FolderType": "DP",
+        "FolderDesc": "Development Permit",
+        "Status": "Pending Review",
+        "StatusType": "Active",
+        "StatusDescription": "Pending Review",
+        "ApplicationDescription": "",
+        "WorkProposed": "Multi-Family",
+        "Description": "New application has been received.",
+        "NumberLots": null,
+        "InDate": 1790019178000,
+        "IssueDate": null,
+        "FirstReadingDate": "20260908000000",
+        "SecondReadingDate": "20260908000000",
+        "ThirdReadingDate": null,
+        "PublicHearingDate": null
+      },
+      "geometry": { "rings": [] }
+    }
+  ],
+  "details": [
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "Proposed Zoning", "InfoValue": "RM-4 (Multiple Family Residential District)" } },
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "Current Zoning", "InfoValue": "RS-1 (One Family Urban Residential)" } },
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "Approx. Number of Proposed Lots/Units", "InfoValue": "106" } },
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "Number of Original Lots", "InfoValue": "2" } },
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "Rezoning Type", "InfoValue": "Multi-Family use" } },
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "OCP Amendment?", "InfoValue": "No" } },
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "Number of Proposed Rental Units", "InfoValue": "106" } },
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "Proposed OCP", "InfoValue": "RES (Urban Residential)" } },
+    { "attributes": { "FolderRSN": 471839, "InfoDescription": "Current OCP", "InfoValue": "CONSRV (Conservation), RES (Urban Residential)" } },
+    { "attributes": { "FolderRSN": 627720, "InfoDescription": "Approx. Number of Proposed Lots/Units", "InfoValue": "2" } },
+    { "attributes": { "FolderRSN": 627720, "InfoDescription": "Current OCP", "InfoValue": "CONOPEN (Conservation &amp; Open Space), RMED (Medium Density Residential)" } },
+    { "attributes": { "FolderRSN": 627720, "InfoDescription": "Current Zoning", "InfoValue": "RS-2 (Single Detached Suburban Residential)" } },
+    { "attributes": { "FolderRSN": 627720, "InfoDescription": "Number of Original Lots", "InfoValue": "1" } },
+    { "attributes": { "FolderRSN": 627720, "InfoDescription": "Proposed Zoning", "InfoValue": "RS-2 (Single Detached Suburban Residential)" } },
+    { "attributes": { "FolderRSN": 627720, "InfoDescription": "Subdivision Type", "InfoValue": "More than 1 lot" } },
+    { "attributes": { "FolderRSN": 430156, "InfoDescription": "Approx. Number of Proposed Lots/Units", "InfoValue": "252" } },
+    { "attributes": { "FolderRSN": 430156, "InfoDescription": "Number of Original Lots", "InfoValue": "3" } },
+    { "attributes": { "FolderRSN": 430156, "InfoDescription": "Rezoning Type", "InfoValue": "Multi-Family use" } },
+    { "attributes": { "FolderRSN": 430156, "InfoDescription": "Current Zoning", "InfoValue": "C-3 (Town Centre Commercial)" } },
+    { "attributes": { "FolderRSN": 430156, "InfoDescription": "Proposed Zoning", "InfoValue": "CD (Comprehensive Development)" } },
+    { "attributes": { "FolderRSN": 430156, "InfoDescription": "Current OCP", "InfoValue": "APTH (Medium and High-Rise Apartment)" } },
+    { "attributes": { "FolderRSN": 627340, "InfoDescription": "Current OCP", "InfoValue": "TCCORE (Town Centre Core)" } },
+    { "attributes": { "FolderRSN": 627340, "InfoDescription": "Current Zoning", "InfoValue": "CD-1-17 (Comprehensive Development)" } },
+    { "attributes": { "FolderRSN": 627340, "InfoDescription": "Development Permit Type", "InfoValue": "Multi Family Residential" } },
+    { "attributes": { "FolderRSN": 627340, "InfoDescription": "Proposed OCP", "InfoValue": "TCCORE (Town Centre Core)" } },
+    { "attributes": { "FolderRSN": 627340, "InfoDescription": "Proposed Zoning", "InfoValue": "CD-1-17 (Comprehensive Development)" } }
+  ]
+}

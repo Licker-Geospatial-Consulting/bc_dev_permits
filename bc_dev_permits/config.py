@@ -89,3 +89,12 @@ COQUITLAM_SERVICE_URL = (
     "https://services2.arcgis.com/Q6Lq3evZUGfPrN7o/arcgis/rest/services/"
     "Development_Information_Demo/FeatureServer/0"
 )
+
+# Maple Ridge publishes through a VertiGIS Studio Web app (see references/vertigis_webmaps.md),
+# which is a UI over one ArcGIS MapServer. The harvester queries the service directly:
+# layer 0 DevelopmentApplications (polygons) joined to table 2 ApplicationDetails by FolderRSN.
+MAPLE_RIDGE_APP_URL = "https://apps.vertigisstudio.com/web/?app=8b409970fec048b0940b60fe1e225e39"
+MAPLE_RIDGE_SERVICE_URL = (
+    "https://geoservices.mapleridge.ca/server/rest/services/"
+    "LandDevelopmentViewer/LandDevelopmentData/MapServer"
+)
