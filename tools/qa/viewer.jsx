@@ -41,6 +41,15 @@ function normalize(rec) {
     parking_b: rec.parking_bike_stalls ?? rec.parking_b ?? null,
     parking_notes: rec.parking_notes ?? null,
     floor_area: rec.floor_area ?? null,
+    floor_area_unit: rec.floor_area_unit ?? "m2",
+    footprint: rec.footprint_area ?? null,
+    lot_area: rec.lot_area ?? null,
+    lot_area_unit: rec.lot_area_unit ?? "m2",
+    height: rec.height_m ?? null,
+    energy: rec.energy_info ?? null,
+    materials: rec.building_materials ?? null,
+    mechanical: rec.mechanical_system_info ?? null,
+    retrofit: rec.retrofit_info ?? null,
     zoning: rec.zoning_density ?? rec.zoning ?? null,
     dev_name: rec.development_name ?? rec.dev_name ?? null,
     parsed: rec.is_parsed ?? rec.parsed ?? false,
@@ -49,7 +58,7 @@ function normalize(rec) {
     conf: rec.extraction_confidence ?? rec.conf ?? 0,
     method: rec.extraction_method ?? rec.method ?? null,
     // Real enrichment status: did a PDF (Ollama) actually contribute, not just "was it flagged".
-    enriched: /ollama/.test(rec.extraction_method ?? rec.method ?? ""),
+    enriched: /ollama|claude_read/.test(rec.extraction_method ?? rec.method ?? ""),
     url: rec.source_url ?? rec.url ?? null,
     prose: rec.raw_text ?? rec.prose ?? null,
     occ: rec.occupancy_types ?? rec.occ ?? [],
@@ -69,6 +78,7 @@ const METHOD_STYLE = {
   pdf_geometry:     { label: "pdf·geom",   bg: "#dcfce7", fg: "#166534", det: true },
   pdf_model_text:   { label: "pdf·model",  bg: "#fef3c7", fg: "#92400e", det: false },
   pdf_model_vision: { label: "pdf·vision", bg: "#fed7aa", fg: "#9a3412", det: false },
+  pdf_claude:       { label: "pdf·claude", bg: "#e0e7ff", fg: "#3730a3", det: false },
 };
 
 const isNonDeterministic = (r) =>
@@ -174,6 +184,7 @@ const Row = ({ r, idx, expanded, toggle }) => {
             <Field label="Class" value={r.dev_class} method={r.methods.development_class} />
             <Field label="Occupancy" value={r.occ} method={r.methods.occupancy_types} />
             <Field label="Stories" value={r.stories} method={r.methods.number_of_stories} />
+            <Field label="Height (m)" value={r.height} method={r.methods.height_m} />
             <Field label="Units" value={r.units} method={r.methods.units_total} />
             <Field label="Unit Mix" value={r.unit_mix} method={r.methods.unit_mix} />
             <Field label="Rental" value={r.rental} method={r.methods.rental_or_strata} />
@@ -182,13 +193,19 @@ const Row = ({ r, idx, expanded, toggle }) => {
             <Field label="Parking (V)" value={r.parking_v} method={r.methods.parking_vehicle_stalls} />
             <Field label="Parking (B)" value={r.parking_b} method={r.methods.parking_bike_stalls} />
             <Field label="Parking Notes" value={r.parking_notes} method={r.methods.parking_notes} />
-            <Field label="Floor Area" value={r.floor_area} method={r.methods.floor_area} />
+            <Field label="Floor Area" value={r.floor_area != null ? `${r.floor_area} ${r.floor_area_unit}` : null} method={r.methods.floor_area} />
+            <Field label="Footprint" value={r.footprint != null ? `${r.footprint} ${r.floor_area_unit}` : null} method={r.methods.footprint_area} />
+            <Field label="Lot Area" value={r.lot_area != null ? `${r.lot_area} ${r.lot_area_unit}` : null} method={r.methods.lot_area} />
             <Field label="Zoning" value={r.zoning} method={r.methods.zoning_density} />
+            <Field label="Energy" value={r.energy} method={r.methods.energy_info} />
+            <Field label="Materials" value={r.materials} method={r.methods.building_materials} />
+            <Field label="Mechanical" value={r.mechanical} method={r.methods.mechanical_system_info} />
+            <Field label="Retrofit" value={r.retrofit} method={r.methods.retrofit_info} />
           </div>
           <div>
             <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".5px" }}>Extraction</div>
             <Field label="Parsed" value={r.parsed ? "✓" : "✗"} />
-            <Field label="PDF Enriched" value={r.enriched ? "Yes — via Ollama PDF" : "No"} />
+            <Field label="PDF Enriched" value={r.enriched ? (/claude_read/.test(r.method || "") ? "Yes — Claude read PDF" : "Yes — via Ollama PDF") : "No"} />
             <Field label="Needs Review" value={r.review ? "⚠ Yes" : "No"} />
             <Field label="Confidence" value={conf} />
             <Field label="Method" value={r.method} />
@@ -214,7 +231,8 @@ const Row = ({ r, idx, expanded, toggle }) => {
               <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", margin: "12px 0 4px", textTransform: "uppercase", letterSpacing: ".5px" }}>Documents ({r.docs.length})</div>
               {r.docs.map((d, i) => (
                 <div key={i} style={{ fontSize: 12, padding: "2px 0" }}>
-                  <a href={d.u} target="_blank" rel="noopener" style={{ color: "#2563eb", textDecoration: "none" }}>
+                  {/* Always a link: the document's own URL, falling back to the source page. */}
+                  <a href={d.u || r.url} target="_blank" rel="noopener" style={{ color: "#2563eb", textDecoration: "underline" }}>
                     {d.t || "Untitled"}</a>
                   <Badge>{d.r}</Badge>
                 </div>
