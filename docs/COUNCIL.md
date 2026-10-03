@@ -38,13 +38,22 @@ the exact instructions you gave per site.
 ## coquitlam — City of Coquitlam  (arcgis)
 
 - **App:** https://experience.arcgis.com/experience/346bbb6ec0024422abcf27b0e338dbad/page/Page?org=Coquitlam
-- ArcGIS Experience Builder over a FeatureServer. Click a polygon → popup = feature
-  attributes.
-- **Multiple features per polygon:** a single polygon can return more than one feature
-  — parse **all** descriptions/features, one `dev_permit` each.
-- Parse the popup `description` attribute deterministically with `bc_dev_permits/features.py`
-- capture FeatureServer `/query` URL from Network tab; record layerId + field names
-  (project number field — e.g. the "22-039" id — description, status, dates).
+- **FeatureServer layer (query this directly):**
+  `https://services2.arcgis.com/Q6Lq3evZUGfPrN7o/arcgis/rest/services/Development_Information_Demo/FeatureServer/0`
+  — layer 0 "Development_Information", polygon, ~484 features. Harvested with
+  `?where=1=1&outFields=...&returnGeometry=true&outSR=4326&f=json`, paged by `resultOffset`.
+- Discovered via the Experience item config:
+  `https://www.arcgis.com/sharing/rest/content/items/<itemid>/data?f=json`.
+- **Field mapping** (attribute → `dev_permit`), handled by `harvesters/coquitlam.py`:
+  - `PROJECT_NUMBER` → `permit_id` (e.g. "23-078")
+  - `ADDRESS` → `address`
+  - `PROJECT_STATUS` → `status` (Active Application / Approved / Conditional Approval / Pre-Application / Declined)
+  - `PROJECT_DESCRIPTION` → `raw_text`, parsed into fields by `bc_dev_permits/features.py`
+  - `SUBMISSION_DATE` (epoch ms) → "Application Received" milestone
+  - polygon geometry → `latitude`/`longitude` (ring centroid)
+  - `APPLICANT` → **excluded** (personal name; no schema column, PII)
+- `extraction_method = "arcgis"`. Bare lot subdivisions / lot-line adjustments / zoning-only
+  rezonings state no building use and correctly land as `development_class = "unknown"`.
 
 ## maple_ridge — City of Maple Ridge  (vertigis)
 

@@ -18,12 +18,13 @@ import json
 import sys
 
 from bc_dev_permits import config
-from bc_dev_permits.harvesters import north_van, victoria
+from bc_dev_permits.harvesters import coquitlam, north_van, victoria
 
 # slug -> harvest callable(limit=None, use_cache=True) -> list[dict]
 HARVESTERS = {
     "north_van": north_van.harvest,
     "victoria": victoria.harvest,
+    "coquitlam": coquitlam.harvest,
 }
 
 # slug -> optional batch PDF-enricher(rows, use_cache=True) -> count (needs Ollama)

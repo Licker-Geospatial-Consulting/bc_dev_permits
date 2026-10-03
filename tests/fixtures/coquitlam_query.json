@@ -1,0 +1,68 @@
+{
+  "objectIdFieldName": "OBJECTID",
+  "geometryType": "esriGeometryPolygon",
+  "spatialReference": { "wkid": 4326 },
+  "fields": [
+    { "name": "OBJECTID", "type": "esriFieldTypeOID" },
+    { "name": "PROJECT_NUMBER", "type": "esriFieldTypeString" },
+    { "name": "PROJECT_DESCRIPTION", "type": "esriFieldTypeString" },
+    { "name": "PROJECT_STATUS", "type": "esriFieldTypeString" },
+    { "name": "SUBMISSION_DATE", "type": "esriFieldTypeDate" },
+    { "name": "ADDRESS", "type": "esriFieldTypeString" }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "OBJECTID": 142,
+        "PROJECT_NUMBER": "23-078",
+        "PROJECT_DESCRIPTION": "Five 6 storey buildings with 474 rental units. To rezone and subdivide one lot from RT-2 and RM-1 to two RM-3 lots.",
+        "PROJECT_STATUS": "Approved",
+        "SUBMISSION_DATE": 1691625600000,
+        "ADDRESS": "1144 Inlet St"
+      },
+      "geometry": {
+        "rings": [
+          [
+            [-122.801, 49.281],
+            [-122.800, 49.281],
+            [-122.800, 49.282],
+            [-122.801, 49.282],
+            [-122.801, 49.281]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 143,
+        "PROJECT_NUMBER": "24-012",
+        "PROJECT_DESCRIPTION": "Development Permit.",
+        "PROJECT_STATUS": "Active Application",
+        "SUBMISSION_DATE": null,
+        "ADDRESS": "3030 Example Ave"
+      },
+      "geometry": { "rings": [] }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 144,
+        "PROJECT_NUMBER": "",
+        "PROJECT_DESCRIPTION": "A 12 storey mixed-use building with 88 strata units and ground-floor commercial space.",
+        "PROJECT_STATUS": "Under Review",
+        "SUBMISSION_DATE": 1700000000000,
+        "ADDRESS": "2900 Barnet Hwy"
+      },
+      "geometry": {
+        "rings": [
+          [
+            [-122.790, 49.275],
+            [-122.788, 49.275],
+            [-122.788, 49.277],
+            [-122.790, 49.277],
+            [-122.790, 49.275]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -77,3 +77,15 @@ NORTH_VAN_LIST_URL = (
 # pages are plain GETs keyed by folder number.
 VICTORIA_LIST_URL = "https://tender.victoria.ca/webapps/ourcity/prospero/search.aspx"
 VICTORIA_DETAIL_BASE = "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx"
+
+# Coquitlam publishes through an ArcGIS Experience Builder app (see
+# references/arcgis_webmaps.md). The app is just a UI over one FeatureServer layer, so the
+# harvester queries the service directly rather than scraping the map. COQUITLAM_SERVICE_URL
+# is that layer; COQUITLAM_APP_URL is the human-facing page recorded as each row's source_url.
+COQUITLAM_APP_URL = (
+    "https://experience.arcgis.com/experience/346bbb6ec0024422abcf27b0e338dbad/page/Page?org=Coquitlam"
+)
+COQUITLAM_SERVICE_URL = (
+    "https://services2.arcgis.com/Q6Lq3evZUGfPrN7o/arcgis/rest/services/"
+    "Development_Information_Demo/FeatureServer/0"
+)
