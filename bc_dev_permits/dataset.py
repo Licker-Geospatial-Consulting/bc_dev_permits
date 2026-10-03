@@ -31,6 +31,7 @@ HARVESTERS = {
 # slug -> optional batch PDF-enricher(rows, use_cache=True) -> count (needs Ollama)
 ENRICHERS = {
     "victoria": victoria.enrich_via_pdf,
+    "north_van": north_van.enrich_via_pdf,
 }
 
 

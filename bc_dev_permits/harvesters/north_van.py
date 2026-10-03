@@ -18,6 +18,7 @@ bc_dev_permits.features; the PDF fallback in bc_dev_permits.modeling.predict. Th
 
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime
 import hashlib
 import os
@@ -28,6 +29,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from bc_dev_permits import config, features
+from bc_dev_permits.harvesters import pdf_enrich
 
 LIST_URL = config.NORTH_VAN_LIST_URL
 MUNICIPALITY = "north_van"
@@ -166,6 +168,140 @@ def harvest(session=None, limit: int | None = None, use_cache: bool = True) -> l
         html = _cached_get(session, link, use_cache)
         rows.append(parse_detail(html, link))
     return rows
+
+
+# --------------------------------------------------------------------------- #
+# 4. PDF enrichment: fill low-signal rows from their documents (needs Ollama)
+# --------------------------------------------------------------------------- #
+# CNV publishes the application materials in the "Application Process & Information" table:
+# each milestone row has a Documents column, and the substantive project data lives in the
+# "Application Accepted" milestone's documents (the original submission's architectural
+# drawings - a plan set the vision model reads). Some pages use an older template with no such
+# table; there the materials are inline links (an OCP amendment / application package the text
+# model reads), which we fall back to. Merge / provenance is shared (pdf_enrich).
+_DOC_PRIORITY = (
+    ("architect", 0),                                   # architectural drawings - the plan set
+    ("drawing", 1), ("plan", 1),
+    ("application package", 0), ("amendment", 0), ("booklet", 0), ("package", 1),
+    ("report", 2), ("summary", 2),
+)
+_MONTHS = {m: i for i, m in enumerate(
+    ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
+
+
+def _process_table(main):
+    """Return the 'Application Process & Information' table (milestone + documents), or None."""
+    for table in main.find_all("table"):
+        head = [c.get_text(" ", strip=True).lower() for c in table.find_all(["th", "td"])[:6]]
+        if any("milestone" in h for h in head) and any("document" in h for h in head):
+            return table
+    return None
+
+
+def _table_documents(main, base_url: str) -> list[dict]:
+    """PDFs from the process table's Documents column, each tagged with its milestone."""
+    table = _process_table(main)
+    if not table:
+        return []
+    header = next((row for row in table.find_all("tr")
+                   if any("milestone" in c.get_text(strip=True).lower()
+                          for c in row.find_all(["td", "th"]))), None)
+    header_texts = [c.get_text(" ", strip=True).lower() for c in header.find_all(["td", "th"])] if header else []
+    doc_col = next((i for i, t in enumerate(header_texts) if "document" in t), 2)
+    out, seen = [], set()
+    for tr in table.find_all("tr"):
+        cells = tr.find_all(["td", "th"])
+        if len(cells) <= doc_col or any("milestone" in c.get_text(strip=True).lower() for c in cells):
+            continue  # too short, or the header row itself
+        milestone = cells[0].get_text(" ", strip=True)
+        for a in cells[doc_col].find_all("a", href=True):
+            href = urljoin(base_url, a["href"])
+            if not re.search(r"\.pdf(\?|$)", href, re.IGNORECASE) or href in seen:
+                continue
+            seen.add(href)
+            out.append({"milestone": milestone, "title": a.get_text(" ", strip=True) or None, "url": href})
+    return out
+
+
+def _doc_rank(title: str | None) -> int:
+    """Lower is preferred: drawings / application packages first, then plans, reports, rest."""
+    t = (title or "").lower()
+    return next((rank for key, rank in _DOC_PRIORITY if key in t), 3)
+
+
+def _title_recency(title: str | None) -> tuple[int, int]:
+    """(year, month) parsed from a document title, for 'newest wins' among equal-rank docs."""
+    t = title or ""
+    year = re.search(r"\b(20\d{2})\b", t)
+    month = re.search(r"\b([A-Za-z]{3})[a-z]*\.?\s*\d{0,2},?\s*20\d{2}", t)
+    return (int(year.group(1)) if year else 0, _MONTHS.get(month.group(1).lower(), 0) if month else 0)
+
+
+def _pick_document(docs: list[dict]) -> dict | None:
+    """Prefer the 'Application Accepted' milestone's documents; best-ranked, newest first."""
+    if not docs:
+        return None
+    accepted = [d for d in docs if "application accepted" in (d.get("milestone") or "").lower()]
+    pool = sorted(accepted or docs, key=lambda d: _title_recency(d.get("title")), reverse=True)
+    return min(pool, key=lambda d: _doc_rank(d.get("title")))  # stable: newest among best rank
+
+
+def select_pdf_source(detail_html: str, url: str) -> dict | None:
+    """Choose the PDF to extract for a low-signal row: {source_url, document{title,url}}.
+
+    Primary source is the application-process table's Documents column; pages that use the older
+    template without that table fall back to their inline application documents.
+    """
+    soup = BeautifulSoup(detail_html, "lxml")
+    main = _main_content(soup) or soup
+    doc = _pick_document(_table_documents(main, url)) or _pick_document(_documents(main, url))
+    return {"source_url": url, "document": doc} if doc else None
+
+
+def extract_via_pdf(detail_html: str, url: str, session=None) -> dict | None:
+    """Download the selected PDF and run the Ollama extractor; return permit fields or None.
+
+    Needs the [pdf] extra and a running Ollama server (see references/ollama_pdf_extraction.md);
+    source selection is unit-tested separately via select_pdf_source.
+    """
+    import tempfile
+
+    from bc_dev_permits.modeling import predict
+
+    session = session or _build_session()
+    src = select_pdf_source(detail_html, url)
+    if not src:
+        return None
+    doc = src["document"]
+    pdf_bytes = session.get(doc["url"], timeout=TIMEOUT).content
+    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)  # noqa: SIM115
+    try:
+        tmp.write(pdf_bytes)
+        tmp.close()
+        fields = predict.extract_from_pdf(tmp.name)
+    finally:
+        # Best-effort cleanup: never let a temp-file delete failure discard a good result.
+        with contextlib.suppress(OSError):
+            os.unlink(tmp.name)
+    fields["extraction_method"] = "ollama_pdf"
+    fields["pdf_source_url"] = src["source_url"]
+    fields["pdf_document"] = doc
+    return fields
+
+
+def enrich_via_pdf(rows, session=None, use_cache: bool = True, limit: int | None = None) -> int:
+    """Fill each low-signal row from its best application PDF via Ollama (in place).
+
+    North Van selects the document from the application-process table (extract_via_pdf); the
+    shared pdf_enrich loop handles the queue, gap-filling, conflicts, and provenance.
+    """
+    session = session or _build_session()
+    return pdf_enrich.enrich(
+        rows,
+        fetch_html=lambda url, cache: _cached_get(session, url, cache),
+        extract=lambda html, url, s: extract_via_pdf(html, url, session=s),
+        session=session, use_cache=use_cache, limit=limit, label="north_van",
+    )
 
 
 # --------------------------------------------------------------------------- #

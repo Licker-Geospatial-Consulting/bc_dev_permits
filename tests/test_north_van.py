@@ -118,6 +118,74 @@ def test_453_west_24th_fallback():
     print("PASSED ✓")
 
 
+def test_select_pdf_prefers_accepted_architectural():
+    """The enrichment source is the Application Accepted milestone's architectural drawings."""
+    html = _load("115-East-18th-Street.html")
+    url = "https://www.cnv.org/Business-Development/Building/Land-Use-Approvals/Active-Applications/115-East-18th-Street"
+    src = north_van.select_pdf_source(html, url)
+    print("\n=== select_pdf_source 115 East 18th ===")
+    print(json.dumps(src, indent=2))
+
+    assert src is not None
+    assert src["document"]["title"] == "Architectural Drawings"
+    assert "Architectural-Drawings" in src["document"]["url"]
+    assert "Oct-17-2025" in src["document"]["url"]       # the Application Accepted (original) set
+    print("PASSED ✓")
+
+
+def test_table_documents_reads_documents_column_only():
+    """Only the Documents column is harvested, not the How-To-Participate boilerplate link."""
+    from bs4 import BeautifulSoup
+    html = _load("115-East-18th-Street.html")
+    main = north_van._main_content(BeautifulSoup(html, "lxml"))
+    docs = north_van._table_documents(main, "https://www.cnv.org/x")
+    titles = {d["title"] for d in docs}
+    milestones = {d["milestone"] for d in docs}
+    print("\n=== table documents ===")
+    print(json.dumps(docs, indent=2))
+
+    assert "Application Accepted" in milestones
+    assert {"Architectural Drawings", "Landscape Drawings", "DIS Summary Report"} <= titles
+    # The Council Consideration row links a generic notice in its How-To-Participate column.
+    assert not any("Public-Hearing-Process-Update" in d["url"] for d in docs)
+    print("PASSED ✓")
+
+
+def test_453_select_pdf_from_accepted():
+    """A no-prose page still exposes its Application Accepted document for enrichment."""
+    html = _load("453-West-24th-Street.html")
+    src = north_van.select_pdf_source(html, "https://www.cnv.org/x/453-West-24th-Street")
+    assert src and src["document"]["title"] == "Architectural Plans"
+    assert src["document"]["url"].lower().endswith(".pdf")
+    print("\n453 select_pdf PASSED ✓")
+
+
+def test_select_pdf_none_without_table():
+    """No table and no inline documents -> no enrichment source."""
+    assert north_van.select_pdf_source("<html><body><p>nothing</p></body></html>", "u") is None
+    print("no-table select_pdf PASSED ✓")
+
+
+def test_pick_document_prefers_accepted_then_package_then_newest():
+    """Accepted-milestone docs win; otherwise the newest application package is chosen."""
+    # Application Accepted drawings beat a later milestone's docs.
+    table = [
+        {"milestone": "Revised Submission", "title": "Architectural Drawings", "url": "revised"},
+        {"milestone": "Application Accepted", "title": "Landscape Drawings", "url": "landscape"},
+        {"milestone": "Application Accepted", "title": "Architectural Drawings", "url": "accepted"},
+    ]
+    assert north_van._pick_document(table)["url"] == "accepted"
+
+    # Inline (no-table) page: an OCP amendment package beats a summary report, newest wins.
+    inline = [
+        {"title": "DIS Summary Report", "url": "dis"},
+        {"title": "OCP Amendment Booklet (March 2025)", "url": "old"},
+        {"title": "OCP Amendment Revised Package (Feb 2026)", "url": "new"},
+    ]
+    assert north_van._pick_document(inline)["url"] == "new"
+    print("pick_document PASSED ✓")
+
+
 def test_link_discovery():
     list_html = """
     <main>
@@ -138,5 +206,10 @@ if __name__ == "__main__":
     test_115_east_18th_happy_path()
     test_215_west_keith_div_prose_regression()
     test_453_west_24th_fallback()
+    test_select_pdf_prefers_accepted_architectural()
+    test_table_documents_reads_documents_column_only()
+    test_453_select_pdf_from_accepted()
+    test_select_pdf_none_without_table()
+    test_pick_document_prefers_accepted_then_package_then_newest()
     test_link_discovery()
     print("\nAll North Van harvester tests passed.")
