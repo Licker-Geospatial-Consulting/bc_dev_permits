@@ -36,6 +36,9 @@ CREATE TABLE dev_permit (
     floor_area             NUMERIC,                -- gross floor area (m^2); keep unit consistent, see floor_area_unit
     floor_area_unit        TEXT DEFAULT 'm2',
     footprint_area         NUMERIC,                -- building footprint (m^2)
+    lot_area               NUMERIC,                -- site / lot area (see lot_area_unit); total across subdivided lots
+    lot_area_unit          TEXT DEFAULT 'm2',
+    height_m               NUMERIC,                -- building height in metres; a proxy for storeys when storeys aren't stated
     number_of_stories      INTEGER,
     units_total            INTEGER,                -- total dwelling/unit count
     unit_mix               JSONB,                  -- {"1-bed":19,"2-bed":12,"3-bed":3,"suite":6}  ("count of unit types")
