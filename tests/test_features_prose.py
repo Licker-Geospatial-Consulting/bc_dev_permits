@@ -233,6 +233,14 @@ CASES = [
         {'units_total': 178, 'number_of_stories': 6, 'development_class': 'residential', 'floor_area': 1.44, 'floor_area_unit': 'acre'},
         {'apartment': 161, 'townhouse': 17},
     ),
+    (
+        # Coquitlam 19-032 (3469 Baycrest Ave): "townhomes" is the only residential cue -
+        # no "apartment"/"dwelling"/"units", so it must classify residential on its own.
+        'Coquitlam 3469 Baycrest Ave',
+        'Project Proposal: To construct 16 townhomes within 3 buildings with proposed variance to internal road width.',
+        {'units_total': 16, 'development_class': 'residential'},
+        {'townhouse': 16},
+    ),
 ]
 
 @pytest.mark.parametrize("label,prose,expected,mix", CASES)

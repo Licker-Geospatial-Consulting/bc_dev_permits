@@ -116,7 +116,7 @@ _PERMIT_TYPES = [
 # Occupancy / use keywords -> canonical occupancy label.
 _OCCUPANCY = [
     (
-        r"residential|dwelling|apartment|townhouse|condominium|\bunits?\b"
+        r"residential|dwelling|apartment|townhouse|townhome|condominium|\bunits?\b"
         r"|duplex|triplex|fourplex|fiveplex|sixplex|quadruplex|quadplex|houseplex",
         "residential",
     ),
