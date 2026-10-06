@@ -99,7 +99,8 @@ def _civic_and_key(address_line: str | None) -> tuple[int | None, str | None]:
 
     "80 ELECTRONIC AVE"       -> (80, "electronic")
     "2805 ST JOHNS STREET"    -> (2805, "johns")   # Saint prefix is not the street name
-    "A205B-205 MOUNT ROYAL DR" -> (205, "royal")
+    "A205B-205 MOUNT ROYAL DR" -> (205, "royal")   # unit A205B, civic 205
+    "24-2914 ST JOHNS ST"     -> (2914, "johns")   # unit 24, civic 2914 (the number after "-")
     " HENRY ST"               -> (None, "henry")   # no civic number present
     """
     if not address_line:
@@ -108,9 +109,11 @@ def _civic_and_key(address_line: str | None) -> tuple[int | None, str | None]:
     civic = None
     name_start = 0
     for i, tok in enumerate(tokens):
-        m = re.search(r"\d+", tok)
-        if m:
-            civic = int(m.group())
+        nums = re.findall(r"\d+", tok)
+        if nums:
+            # A "<unit>-<civic>" or "<unit>-<civic>" token (24-2914, A205B-205) puts the civic
+            # number last; a bare "80" has one number. Take the last number as the civic.
+            civic = int(nums[-1])
             name_start = i + 1
             break
     name_tokens = [t for t in tokens[name_start:] if t.isalpha()]
@@ -472,6 +475,7 @@ def harvest(session=None, limit: int | None = None, use_cache: bool = True) -> l
 
     rows = parse_applications(applications, milestones_by_folder)
     enrich_from_engage(session, rows, use_cache=use_cache)
+    consolidate_by_address(rows)
     return [finalize(r) for r in rows]
 
 
@@ -541,7 +545,8 @@ def _merge_related(primary: dict, secondaries: list[dict]) -> None:
         "status": s.get("status"),
         "purpose": s.get("_purpose"),
     } for s in secondaries]
-    primary["related_permits"] = related
+    # Append, so a second merge pass (e.g. address consolidation after Engage) keeps earlier siblings.
+    primary["related_permits"] = (primary.get("related_permits") or []) + related
 
     # Keep the project geocodable: if the primary folder has no polygon, borrow a sibling's
     # centroid (same site, so close enough for a project marker).
@@ -612,3 +617,68 @@ def enrich_from_engage(session, rows: list[dict], use_cache: bool = True) -> tup
     if dropped:
         rows[:] = [r for r in rows if id(r) not in dropped]
     return enriched, merged
+
+
+def _address_key(address: str | None) -> str | None:
+    """Return a normalized civic address for grouping, or None when no civic number is present.
+
+    A civic number is required: a bare " HENRY ST" could be any of several Henry St lots, so
+    such rows are never merged by address.
+    """
+    norm = re.sub(r"\s+", " ", (address or "").upper()).strip()
+    return norm if norm and re.search(r"\d", norm) else None
+
+
+def _is_strong(row: dict) -> bool:
+    """Return True for a record worth keeping on its own: Engage-enriched or with a real program."""
+    return (row.get("extraction_method") != "arcgis"
+            or features.has_value(row.get("units_total"))
+            or features.has_value(row.get("number_of_stories"))
+            or features.has_value(row.get("floor_area")))
+
+
+def _best_record(group: list[dict]) -> dict:
+    """Pick the representative record: most canonical permit type, then geocoded, then most text."""
+    def key(row: dict) -> tuple:
+        pid = (row.get("permit_id") or "").upper()
+        prefix = re.match(r"[A-Z]+", pid)
+        rank = _PRIMARY_PREFIX_RANK.get(prefix.group() if prefix else "", 0)
+        has_geom = 1 if row.get("latitude") is not None else 0
+        return (rank, has_geom, len(row.get("raw_text") or ""))
+    return max(group, key=key)
+
+
+def consolidate_by_address(rows: list[dict]) -> int:
+    """Collapse thin, low-signal records that share one civic address into a single record.
+
+    Several administrative permits (subdivisions, minor development permits, variances) can sit
+    at the same address with no building program of their own. Those thin records are absorbed
+    into the strongest record at that address (ids/types/statuses combined into related_permits,
+    milestones merged) so the address has one record. Records that carry a real program or Engage
+    enrichment ("score more") are kept on their own - so an address with several distinct strong
+    applications keeps them separate. Mutates `rows` in place; returns how many were folded away.
+    """
+    groups: dict[str, list[dict]] = {}
+    for row in rows:
+        key = _address_key(row.get("address"))
+        if key:
+            groups.setdefault(key, []).append(row)
+
+    dropped: set[int] = set()
+    for group in groups.values():
+        weak = [r for r in group if not _is_strong(r)]
+        if not weak:
+            continue  # every record here is distinct/strong - leave them separate
+        strong = [r for r in group if _is_strong(r)]
+        # Absorb the thin records into the best strong record, or - when none is strong - into
+        # the best thin record (which then becomes the single surviving address record).
+        absorber = _best_record(strong) if strong else _best_record(weak)
+        victims = [r for r in weak if r is not absorber]
+        if not victims:
+            continue
+        _merge_related(absorber, victims)
+        dropped.update(id(r) for r in victims)
+
+    if dropped:
+        rows[:] = [r for r in rows if id(r) not in dropped]
+    return len(dropped)

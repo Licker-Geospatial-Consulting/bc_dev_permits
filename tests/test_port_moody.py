@@ -157,10 +157,55 @@ def test_small_file_uses_own_purpose():
     assert row["latitude"] is not None
 
 
+def test_unit_prefixed_civic_number():
+    """A unit-prefixed address ("24-2914 St Johns") takes the civic from after the hyphen."""
+    assert pm._civic_and_key("24-2914 ST JOHNS ST") == (2914, "johns")   # unit 24, civic 2914
+    assert pm._civic_and_key("A205B-205 MOUNT ROYAL DR") == (205, "royal")
+    assert pm._civic_and_key("80 ELECTRONIC AVE") == (80, "electronic")   # bare civic unaffected
+
+
+def _thin(pid, addr, **kw):
+    """A base row for consolidation tests (pre-finalize shape)."""
+    row = {"permit_id": pid, "address": addr, "extraction_method": "arcgis", "permit_type": "MDP",
+           "status": kw.get("status", "ACTIVE"), "units_total": kw.get("units"),
+           "number_of_stories": None, "floor_area": None, "latitude": kw.get("lat", 49.28),
+           "longitude": -122.8, "milestones": [], "raw_text": "x", "_subject": None, "_purpose": None}
+    return row
+
+
+def test_address_consolidation():
+    """Thin same-address records collapse into one; strong records stay separate."""
+    rows = [
+        _thin("MDP1", "2305 ST GEORGE ST"), _thin("MDP2", "2305 ST GEORGE ST"),
+        _thin("SA1", "2305 ST GEORGE ST", status="IN-PROGRESS"),            # 3 thin -> 1
+        _thin("DP1", "296 ANGELA DR", units=328), _thin("DP2", "296 ANGELA DR"),  # strong absorbs thin
+        _thin("MDP10", "2213 CLARKE ST", units=6), _thin("MDP11", "2213 CLARKE ST", units=6),  # 2 strong stay
+        _thin("SOLO", "100 MAIN ST"),                                       # single -> untouched
+        _thin("NOCIVIC1", "HENRY ST"), _thin("NOCIVIC2", "HENRY ST"),       # no civic -> never merged
+    ]
+    pm.consolidate_by_address(rows)
+    by = {r["permit_id"]: r for r in rows}
+
+    george = [r for r in rows if r["address"] == "2305 ST GEORGE ST"]
+    assert len(george) == 1
+    rel = {p["permit_id"]: p["status"] for p in george[0]["related_permits"]}
+    assert set(rel) == {"MDP1", "MDP2", "SA1"} - {george[0]["permit_id"]}   # others folded with status
+    assert rel.get("SA1") == "IN-PROGRESS"                                  # statuses combined
+
+    assert "DP1" in by and "DP2" not in by                                  # strong absorbs the thin one
+    assert by["DP1"]["related_permits"][0]["permit_id"] == "DP2"
+
+    assert "MDP10" in by and "MDP11" in by                                  # two strong kept separate
+    assert "SOLO" in by                                                     # lone record untouched
+    assert "NOCIVIC1" in by and "NOCIVIC2" in by                            # no civic -> both kept
+
+
 if __name__ == "__main__":
     test_dedupe_and_milestones()
     test_address_matching()
     test_engage_enriches_master_folder()
     test_consolidates_sibling_applications()
     test_small_file_uses_own_purpose()
+    test_unit_prefixed_civic_number()
+    test_address_consolidation()
     print("\nAll Port Moody harvester tests passed.")

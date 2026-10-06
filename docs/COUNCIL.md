@@ -121,13 +121,22 @@ the exact instructions you gave per site.
     and "FAR of up to 4" (allowed max) must yield to the proposed "FAR of 2.79", never a storey
     count; units appear as "48 market rental apartments", "207 rental homes", "40 housing units";
     unit mix as "Four 1-bedroom units"; parking as "120 total vehicle" / "208 vehicular" spaces.
-- **Consolidation:** several map folders (an OCP/rezoning master, its subdivisions, a TUP, etc.)
-  can be the *same* project and match one Engage page. They are grouped by matched slug and
-  collapsed into **one geocodable record**: the primary (the folder the Engage page names in
-  "Application #...", else the most canonical permit type) carries the enriched program once; the
-  siblings fold in as `related_permits` (id/type/address/status/purpose) with their milestones
-  merged, and are not emitted as separate rows. A primary with no polygon inherits a sibling's
-  centroid. (170 features to ~126 folders to ~113 rows.)
+- **Address parsing:** the civic number is the number after any unit prefix - "24-2914 St Johns"
+  is unit 24, civic **2914** (so it matches the "2914-2934 St Johns" project), and "A205B-205 Mount
+  Royal" is civic 205. Matching is by civic + distinctive street token.
+- **Consolidation (two passes):**
+  1. *By Engage project* - several map folders (an OCP/rezoning master, its subdivisions, a TUP,
+     etc.) can be the *same* project and match one Engage page. They are grouped by matched slug and
+     collapsed into **one geocodable record**: the primary (the folder the Engage page names in
+     "Application #...", else the most canonical permit type) carries the enriched program once.
+  2. *By address* - thin administrative permits (subdivisions, minor DPs, variances) with no
+     building program that share one civic address are absorbed into the strongest record there, so
+     an address has one record. A record that carries a real program (units/storeys/floor area) or
+     Engage enrichment ("score more") is kept separate, so an address with several distinct strong
+     applications keeps them. Addresses without a civic number are never merged (too ambiguous).
+  In both passes the folded siblings become `related_permits` (id/type/address/status/purpose) with
+  milestones merged, and a primary with no polygon inherits a sibling's centroid.
+  (170 features to ~126 folders to ~78 records.)
 - `extraction_method = "arcgis"`, or `"arcgis+engage"` when enriched (always `needs_review`,
   with the Engage URL + description kept in `raw_text` for re-extraction).
 - Shared ArcGIS transport lives in `harvesters/arcgis_common.py`.
