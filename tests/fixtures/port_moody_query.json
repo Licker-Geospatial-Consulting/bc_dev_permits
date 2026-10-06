@@ -1,0 +1,283 @@
+{
+  "applications": [
+    {
+      "attributes": {
+        "Folder_Number": "ORD00008",
+        "Address": "3060 SPRING ST\r\nPORT MOODY BC  V3H 0G1",
+        "Type": "MASTER FOLDER",
+        "Project_Number": "PLAN000167",
+        "Subject": "OCP Amendment with Rezoning",
+        "Purpose": null,
+        "Folder_Status": "ACTIVE",
+        "Application_Date": 1697587200000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.85,
+              49.28
+            ],
+            [
+              -122.849,
+              49.28
+            ],
+            [
+              -122.849,
+              49.281
+            ],
+            [
+              -122.85,
+              49.281
+            ],
+            [
+              -122.85,
+              49.28
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "Folder_Number": "ORD00008",
+        "Address": "3060 SPRING ST\r\nPORT MOODY BC  V3H 0G1",
+        "Type": "MASTER FOLDER",
+        "Project_Number": "PLAN000167",
+        "Subject": "OCP Amendment with Rezoning",
+        "Purpose": null,
+        "Folder_Status": "ACTIVE",
+        "Application_Date": 1697587200000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": null
+    },
+    {
+      "attributes": {
+        "Folder_Number": "ORD00006",
+        "Address": "2335 ST JOHNS ST\r\nPORT MOODY BC  V3H 2C1",
+        "Type": "MASTER FOLDER",
+        "Project_Number": "PLAN000000",
+        "Subject": "OCP Amendment and Rezoning",
+        "Purpose": null,
+        "Folder_Status": "ACTIVE",
+        "Application_Date": 1690000000000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": null
+    },
+    {
+      "attributes": {
+        "Folder_Number": "SA000076",
+        "Address": "2335 ST JOHNS ST\r\nPORT MOODY BC  V3H 2C1",
+        "Type": "SUBDIVISION",
+        "Project_Number": "PLAN000000",
+        "Subject": "x",
+        "Purpose": "Consolidation of lots",
+        "Folder_Status": "ACTIVE",
+        "Application_Date": 1690500000000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.85,
+              49.28
+            ],
+            [
+              -122.849,
+              49.28
+            ],
+            [
+              -122.849,
+              49.281
+            ],
+            [
+              -122.85,
+              49.281
+            ],
+            [
+              -122.85,
+              49.28
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "Folder_Number": "SA000047",
+        "Address": "2325 ST JOHNS ST\r\nPORT MOODY BC  V3H 2C1",
+        "Type": "SUBDIVISION",
+        "Project_Number": "PLAN000000",
+        "Subject": "x",
+        "Purpose": "Strata title conversion",
+        "Folder_Status": "ACTIVE",
+        "Application_Date": 1691000000000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.85,
+              49.28
+            ],
+            [
+              -122.849,
+              49.28
+            ],
+            [
+              -122.849,
+              49.281
+            ],
+            [
+              -122.85,
+              49.281
+            ],
+            [
+              -122.85,
+              49.28
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "Folder_Number": "TUP00026",
+        "Address": "2325 ST JOHNS ST\r\nPORT MOODY BC  V3H 2C1",
+        "Type": "TEMPORARY USE PERMIT",
+        "Project_Number": "PLAN000000",
+        "Subject": "x",
+        "Purpose": "Use of the existing commercial unit as a yoga studio",
+        "Folder_Status": "ACTIVE",
+        "Application_Date": 1692000000000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.85,
+              49.28
+            ],
+            [
+              -122.849,
+              49.28
+            ],
+            [
+              -122.849,
+              49.281
+            ],
+            [
+              -122.85,
+              49.281
+            ],
+            [
+              -122.85,
+              49.28
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "Folder_Number": "DVP00027",
+        "Address": "832 BALLANTRAE CRT\r\nPORT MOODY BC  V3H 1A8",
+        "Type": "DEVELOPMENT VARIANCE PERMIT",
+        "Project_Number": "PLAN000090",
+        "Subject": "Setback variance",
+        "Purpose": "To reduce the rear yard setback from 7.5 m to 5.0 m for a single family dwelling.",
+        "Folder_Status": "ACTIVE",
+        "Application_Date": 1700000000000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.85,
+              49.28
+            ],
+            [
+              -122.849,
+              49.28
+            ],
+            [
+              -122.849,
+              49.281
+            ],
+            [
+              -122.85,
+              49.281
+            ],
+            [
+              -122.85,
+              49.28
+            ]
+          ]
+        ]
+      }
+    }
+  ],
+  "milestones": [
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ORD00008",
+        "Milestone": "APPLICATION SUBMISSION",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1697673600000,
+        "Milestone_Completion_Date": 1697673600000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ORD00008",
+        "Milestone": "APPLICATION SUBMISSION",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1697673600000,
+        "Milestone_Completion_Date": 1697673600000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ORD00008",
+        "Milestone": "1ST READING",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": null,
+        "Milestone_Completion_Date": 1721692800000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ORD00006",
+        "Milestone": "1ST READING",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": null,
+        "Milestone_Completion_Date": 1700500000000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "SA000076",
+        "Milestone": "APPLICATION SUBMISSION",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1690600000000,
+        "Milestone_Completion_Date": 1690600000000
+      }
+    }
+  ],
+  "engage_projects_html": "<html><body><a href=\"/3060-3092-spring-street-and-80-85-electronic-avenue-ocp-amendment-rezoning\">3060-3088 Spring Street, 80-85 Electronic Avenue OCP amendment</a><a href=\"/2331-2335-st-johns-ocp-amendment-and-rezoning\">2331-2335 St. Johns St - OCP amendment and Rezoning</a><a href=\"/2026-budget-consultation\">2026 Budget Consultation</a></body></html>",
+  "engage_descriptions": {
+    "3060-3092-spring-street-and-80-85-electronic-avenue-ocp-amendment-rezoning": "Thank you to everyone who provided feedback on this development application. The public input period has concluded.\nApplication #ORD00008\nLocation: 3060-3088 Spring Street, 80-85 Electronic Avenue, and a portion of the Electronic Avenue road right-of-way\nDeveloper website:\nhttps://springst.beedie.ca/\nWe would like your feedback on an OCP amendment, rezoning and development permit application at 3060-3088 Spring Street, 80-85 Electronic Avenue, and a portion of the Electronic Avenue road right-of-way. The applicant would like to amend the Official Community Plan from 26 to 32, 34, and 38 storeys and rezone the site from Light Industrial (M1) to a new Comprehensive Development (CD) zoning to allow for three towers—32, 34, and 38 storeys—above a commercial podium, adjacent to the Moody Central Transit Station.\nThis proposal includes:\nApproximately 983 residential units in market condos/strata homes, divided into three residential towers as follows:\nWest Tower: 34 storeys\nMid Tower: 38 storeys\nEast Tower: 32 storeys\nA maximum of 80,080m\n2\n(861, 974ft\n2\n) of residential floor space;\nA minimum of 6,300m\n2\n(67,813ft\n2\n) commercial floor space;\nA minimum of 1,975m\n2\n(21,259ft\n2\n) common amenity space;\nA minimum of 868 parking spaces (687 residential spaces and 181 commercial and visitor spaces)\nThe applicant is proposing to provide approximately 40-60 below-market units at a separate site located at\n2806 Spring Street.\nNext Steps\nOn November 25, 2025, City Council adopted the OCP Amendment Bylaw and Zoning Amendment Bylaw, and endorsed the associated Development Agreement. The proposal is now approved to move forward with the next phase of applications for development permits and building permits.\nQuestions for City planning staff can be emailed to\nplanning@portmoody.ca\n.",
+    "2331-2335-st-johns-ocp-amendment-and-rezoning": "Thank you to everyone who provided feedback on this development application. The public input period has concluded.\nApplication #ORD00006\nLocation: 2331-2335 St. Johns Street\nWe would like your feedback on an OCP amendment and rezoning application at 2331-2335 St. Johns Street. The applicant would like to build a Mixed Use building up to 6 storeys containing a retail food store and apartments above.\nThis proposal includes:\nOne mixed commercial and residential building\n6 storeys (retail food store on the first two floors and apartments in the upper storeys)\n48 market rental apartments\n55,206m2 (56,033.5ft2) including 885m2 (9,525ft2) of commercial space\nA gross floor area ratio of 2.63\n80 proposed parking spaces(73 Long-Term and 6 Short-Term Bicycle Parking Spaces for residential portion, 1 long term bicycle spaces and 6 short term stalls for commercial portion)\n5.5m wide portion of Queens St to be closed and consolidated with the site\nNext Steps\nOn March 11, 2025, Council approved the development permit for issuance\n.\nThe proposal will move forward with the next phase, which includes building permits and servicing agreements.\nQuestions for City planning staff can be emailed to\nplanning@portmoody.ca\n."
+  },
+  "slugs": {
+    "spring_electronic": "3060-3092-spring-street-and-80-85-electronic-avenue-ocp-amendment-rezoning",
+    "st_johns": "2331-2335-st-johns-ocp-amendment-and-rezoning"
+  }
+}

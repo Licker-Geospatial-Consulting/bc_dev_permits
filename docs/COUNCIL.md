@@ -82,12 +82,55 @@ the exact instructions you gave per site.
   `Number of Proposed Rental Units` → rental; class derived from the type / zoning / OCP text.
 - `extraction_method = "arcgis"`. Shared ArcGIS transport lives in `harvesters/arcgis_common.py`.
 
-## port_moody — City of Port Moody  (arcgis)
+## port_moody — City of Port Moody  (arcgis + engage cross-reference)
 
 - **App:** https://portmoody.maps.arcgis.com/apps/webappviewer/index.html?id=d42a4cd7ece44d2d8dbf759cdcdac203
-- ArcGIS Web AppViewer over a FeatureServer.
-- Parse the `purpose` attribute for the fields with `bc_dev_permits/features.py` (deterministic parse).
-- capture FeatureServer `/query` URL + confirm the `purpose` field name and id/date fields.
+- ArcGIS Web AppViewer over a hosted FeatureServer (found via the webappviewer item config →
+  webmap `/data?f=json` → operationalLayers), handled by `harvesters/port_moody.py`.
+- **FeatureServer (query this directly):**
+  `https://services9.arcgis.com/XMHGoEc3tdJ8TphG/arcgis/rest/services/Development_Applications_and_Milestones_3_WFL1/FeatureServer`
+  - layer **0 DevelopmentApplicationsView** (polygons, ~170 features → ~126 unique folders).
+    Multiple polygons can share a `Folder_Number` (a master folder spans parcels), so rows are
+    **deduped by `Folder_Number`** (keep the richest: has geometry, longest Purpose).
+  - table **1 Milestones** keyed by `FOLDER_NUMBER` — process milestones; duplicated per parcel,
+    so collapsed by (name, date) and ordered by date.
+- **Field mapping** (layer 0):
+  - `Folder_Number` → `permit_id` (e.g. "ORD00008"); `Address` (first line; "PORT MOODY BC
+    <postal>" tail dropped) → `address`; `Type` → `permit_type`; `Folder_Status` → `status`
+  - `Application_Date`/`Folder_Completion_Date` (epoch ms) → milestones; geometry → centroid lat/lon
+  - `Subject`/`Purpose` → `raw_text`, parsed by `features.py`; `Applicant`/`File_Manager` →
+    **excluded** (personal / staff names, PII, no schema column)
+- **Engage cross-reference:** the map's `Purpose` is usually thin or empty for the large
+  rezoning/OCP files — their building programs live on **Engage Port Moody**
+  (https://engage.portmoody.ca/projects), one page per site. The harvester scrapes that listing
+  into an address-keyed index, matches each application by **civic number + distinctive street
+  token** (e.g. "80 ELECTRONIC AVE" → `.../80-85-electronic-avenue-...`), and parses the matched
+  project's description prose with the same `features.py` (e.g. ORD00008: 983 units, 38 storeys,
+  868 parking, mixed, strata; ORD00006: 48 rental apartments, 6 storeys, 885 m2 commercial, FSR 2.63).
+  - The description region (`#project_description_text`) renders the body **twice** (a
+    `.truncated-description` preview + a hidden `.full-description` copy) plus the title/share
+    links; `engage_description` takes one full copy only, or counts double (48 becomes 96).
+  - Trusted Engage overlays: `units_total`, `number_of_stories`, parking, `floor_area`,
+    `rental_or_strata`, `zoning_density` (FSR/FAR), a concrete `development_class`, and per-use
+    floor areas (e.g. 885 m2 commercial) as structured `occupancies`. `unit_mix`/`occupancy_types`
+    are **not** overlaid (Engage parking prose like "181 commercial … spaces" misparses).
+  - The Engage page URL each enriched row's rich fields came from is stored as `enrichment_url`.
+  - Engage prose quirks that `features.py` handles deterministically (added for this source, shared
+    by all): m2/ft2 render as superscripts that flatten to "m 2"; the gross floor area must beat
+    indoor/outdoor amenity figures (largest non-amenity wins); FAR is phrased "floor area ratio"
+    and "FAR of up to 4" (allowed max) must yield to the proposed "FAR of 2.79", never a storey
+    count; units appear as "48 market rental apartments", "207 rental homes", "40 housing units";
+    unit mix as "Four 1-bedroom units"; parking as "120 total vehicle" / "208 vehicular" spaces.
+- **Consolidation:** several map folders (an OCP/rezoning master, its subdivisions, a TUP, etc.)
+  can be the *same* project and match one Engage page. They are grouped by matched slug and
+  collapsed into **one geocodable record**: the primary (the folder the Engage page names in
+  "Application #...", else the most canonical permit type) carries the enriched program once; the
+  siblings fold in as `related_permits` (id/type/address/status/purpose) with their milestones
+  merged, and are not emitted as separate rows. A primary with no polygon inherits a sibling's
+  centroid. (170 features to ~126 folders to ~113 rows.)
+- `extraction_method = "arcgis"`, or `"arcgis+engage"` when enriched (always `needs_review`,
+  with the Engage URL + description kept in `raw_text` for re-extraction).
+- Shared ArcGIS transport lives in `harvesters/arcgis_common.py`.
 
 ## west_van — District of West Vancouver  (html)
 

@@ -98,3 +98,19 @@ MAPLE_RIDGE_SERVICE_URL = (
     "https://geoservices.mapleridge.ca/server/rest/services/"
     "LandDevelopmentViewer/LandDevelopmentData/MapServer"
 )
+
+# Port Moody publishes through an ArcGIS Web AppViewer over a hosted FeatureServer (see
+# references/arcgis_webmaps.md): layer 0 DevelopmentApplicationsView (polygons) + table 1
+# Milestones. The map's building program is thin, so the harvester cross-references the city's
+# engagement site, Engage Port Moody, where large rezoning/OCP files have a page per site.
+# PORT_MOODY_APP_URL is the human-facing map recorded as each row's source_url.
+PORT_MOODY_APP_URL = (
+    "https://portmoody.maps.arcgis.com/apps/webappviewer/index.html"
+    "?id=d42a4cd7ece44d2d8dbf759cdcdac203"
+)
+PORT_MOODY_SERVICE_URL = (
+    "https://services9.arcgis.com/XMHGoEc3tdJ8TphG/arcgis/rest/services/"
+    "Development_Applications_and_Milestones_3_WFL1/FeatureServer"
+)
+PORT_MOODY_ENGAGE_BASE = "https://engage.portmoody.ca"
+PORT_MOODY_ENGAGE_PROJECTS_URL = "https://engage.portmoody.ca/projects"
