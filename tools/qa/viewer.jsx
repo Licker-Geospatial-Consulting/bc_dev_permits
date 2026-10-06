@@ -2,7 +2,7 @@
  * Dev Permit QA viewer — browser dashboard for eyeballing harvester output.
  *
  * Dynamic input: instead of a hard-coded data blob, this loads a JSON file at
- * runtime — either the default sample (data/processed/north_van_test.json, fetched
+ * runtime — either the default sample (data/processed/north_van.json, fetched
  * on start) or any file you pick with the "Load JSON" button. Point it at any
  * data/processed/<municipality>.json the harvester writes.
  *
@@ -60,6 +60,10 @@ function normalize(rec) {
     // Real enrichment status: did a PDF (Ollama) actually contribute, not just "was it flagged".
     enriched: /ollama|claude_read/.test(rec.extraction_method ?? rec.method ?? ""),
     url: rec.source_url ?? rec.url ?? null,
+    // The external page (e.g. Engage Port Moody) the rich fields were cross-referenced from.
+    enrichmentUrl: rec.enrichment_url ?? null,
+    // Sibling applications folded into this record at consolidation (same project).
+    related: rec.related_permits ?? [],
     prose: rec.raw_text ?? rec.prose ?? null,
     occ: rec.occupancy_types ?? rec.occ ?? [],
     ms: ms.map((m) => ({ m: m.milestone ?? m.m ?? "", d: m.milestone_date ?? m.d ?? null })),
@@ -238,11 +242,27 @@ const Row = ({ r, idx, expanded, toggle }) => {
                 </div>
               ))}
             </>}
+
+            {r.related.length > 0 && <>
+              <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", margin: "12px 0 4px", textTransform: "uppercase", letterSpacing: ".5px" }}>Related Applications ({r.related.length})</div>
+              {r.related.map((p, i) => (
+                <div key={i} style={{ fontSize: 12, padding: "2px 0" }}>
+                  <strong>{p.permit_id}</strong>
+                  {p.permit_type ? <Badge>{p.permit_type}</Badge> : null}
+                  {p.address ? <span style={{ color: "#6b7280" }}> {p.address}</span> : null}
+                </div>
+              ))}
+            </>}
           </div>
-          <div style={{ gridColumn: "1/-1", marginTop: 8 }}>
+          <div style={{ gridColumn: "1/-1", marginTop: 8, display: "flex", gap: 16, flexWrap: "wrap" }}>
             <a href={r.url} target="_blank" rel="noopener" style={{ fontSize: 12, color: "#2563eb" }}>
               Open source page →
             </a>
+            {r.enrichmentUrl && (
+              <a href={r.enrichmentUrl} target="_blank" rel="noopener" style={{ fontSize: 12, color: "#2563eb" }}>
+                Open Engage page (enrichment source) →
+              </a>
+            )}
           </div>
         </div>
       )}
@@ -409,7 +429,7 @@ function QADashboard({ data }) {
 // the normalized rows to the dashboard.
 // ---------------------------------------------------------------------------
 function App() {
-  const DEFAULT = window.QA_DEFAULT_JSON || "/data/processed/north_van_test.json";
+  const DEFAULT = window.QA_DEFAULT_JSON || "/data/processed/north_van.json";
   const [rows, setRows] = useState(null);
   const [source, setSource] = useState("");
   const [error, setError] = useState("");
