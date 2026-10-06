@@ -38,3 +38,7 @@ site/            # mkdocs build output
 
 # Claude Code session transcripts (stray dumps at repo root)
 /*.jsonl
+
+# Dashboard rebuild intermediates (roads.json is the committed product)
+tools/dashboard/roads_cache/
+tools/dashboard/geocode.log
