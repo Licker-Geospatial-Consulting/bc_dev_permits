@@ -241,6 +241,45 @@ CASES = [
         {'units_total': 16, 'development_class': 'residential'},
         {'townhouse': 16},
     ),
+    (
+        # Port Moody 2331-2335 St Johns (Engage prose): tenure words sit between the count and
+        # "apartments" (48 market rental apartments), FAR is phrased "floor area ratio", and the
+        # m2 gross figure carries a parenthetical ft2 conversion before "including ... commercial".
+        'Port Moody 2331-2335 St Johns',
+        'One mixed commercial and residential building 6 storeys (retail food store on the first '
+        'two floors and apartments in the upper storeys) 48 market rental apartments 55,206m2 '
+        '(56,033.5ft2) including 885m2 (9,525ft2) of commercial space A gross floor area ratio of 2.63',
+        {'units_total': 48, 'number_of_stories': 6, 'development_class': 'mixed',
+         'rental_or_strata': 'rental', 'zoning_density': 'FSR 2.63',
+         'floor_area': 55206.0, 'floor_area_unit': 'm2'},
+        None,
+    ),
+    (
+        # Port Moody 38 Shoreline Circle (Engage). m^2 flattens to "m 2"; the gross floor area
+        # must win over the indoor/outdoor amenity areas; "120 total vehicle parking spaces".
+        'Port Moody 38 Shoreline Circle',
+        'This proposal includes: one residential apartment building; six to seven storeys; 61 '
+        'residential strata units, including 15 one-bedroom units, 37 two-bedroom units, and 9 '
+        'three-bedroom units ; gross residential floor area of approximately 11,654 m 2 (125,447 '
+        'ft 2 ); approximate Floor Area Ratio (FAR) of 2.08; approximate indoor amenity space of '
+        '249 m 2 (2,685 ft 2 ) and outdoor amenity space of 124 m 2 (1,338 ft 2 ); and 120 total '
+        'vehicle parking spaces and 92 bicycle parking spaces.',
+        {'units_total': 61, 'number_of_stories': 7, 'parking_vehicle_stalls': 120,
+         'parking_bike_stalls': 92, 'floor_area': 11654.0, 'floor_area_unit': 'm2',
+         'zoning_density': 'FSR 2.08', 'development_class': 'residential'},
+        {'1-bed': 15, '2-bed': 37, '3-bed': 9},
+    ),
+    (
+        # Port Moody 2909 St George (Engage). The outdoor-amenity 100 m2 precedes the gross
+        # 3,902.83 m2 in the text; the gross must win (not the first/amenity figure).
+        'Port Moody 2909 St George',
+        'This proposal includes: 20 Strata Townhouse Units Height of 10.0m 1,076 ft 2 (100 m 2 ) '
+        'of outdoor amenity space A floor area ratio (FAR) of 1.27 Gross floor area of 42,010 ft 2 '
+        '(3,902.83 m 2 ) 44 vehicle parking spaces',
+        {'units_total': 20, 'parking_vehicle_stalls': 44, 'floor_area': 3902.83,
+         'floor_area_unit': 'm2', 'zoning_density': 'FSR 1.27', 'development_class': 'residential'},
+        None,
+    ),
 ]
 
 @pytest.mark.parametrize("label,prose,expected,mix", CASES)
@@ -287,3 +326,107 @@ def test_unit_mix_ignores_range_counts(prose, expected):
 )
 def test_parking_bike_handles_split_and_spots(prose, expected):
     assert features.parking_bike(prose) == expected
+
+
+# --------------------------------------------------------------------------- #
+# Per-use floor area: a metric figure may carry a parenthetical imperial conversion
+# before "of <use> space" (Port Moody Engage: "885m2 (9,525ft2) of commercial space").
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("prose", "use", "area", "unit"),
+    [
+        ("885m2 (9,525ft2) of commercial space", "commercial", 885.0, "m2"),
+        ("250 m2 of office space", "office", 250.0, "m2"),  # no parenthetical, still works
+    ],
+)
+def test_floor_area_by_use_skips_parenthetical(prose, use, area, unit):
+    out = features.floor_area_by_use(prose)
+    assert out.get(use) == {"floor_area": area, "floor_area_unit": unit, "detail": use}
+
+
+# --------------------------------------------------------------------------- #
+# Unit count: tenure/descriptor words between the number and the building-type noun
+# ("48 market rental apartments", "5 market strata townhomes") must not block the count.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        ("48 market rental apartments", 48),
+        ("5 market strata townhomes", 5),
+        ("39 apartment units", 39),  # existing bare form still works
+        ("A total of 865 rental homes with 5% secured at below-market rental rates", 865),
+        ("one 12-storey building 207 rental homes, including 21 below market rental", 207),
+        ("40 non-market housing units for women's transition housing", 40),
+    ],
+)
+def test_units_total_through_tenure_descriptors(prose, expected):
+    assert features.units_total(prose) == expected
+
+
+# --------------------------------------------------------------------------- #
+# floor_area: amenity / landscape areas never masquerade as the gross floor area, and the
+# superscript-flattened "m 2" is recognised; the gross is the largest non-amenity figure.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("prose", "area", "unit"),
+    [
+        ("gross floor area of 11,654 m 2 and outdoor amenity space of 124 m 2", 11654.0, "m2"),
+        ("1,076 ft 2 (100 m 2 ) of outdoor amenity space Gross floor area of 3,902.83 m 2", 3902.83, "m2"),
+        ("226 m 2 (2,433 ft 2 ) of outdoor amenity space", None, None),  # only amenity -> no gross
+        ("residential floor space 80,080 m 2 and commercial floor space 6,300 m 2", 80080.0, "m2"),
+        ("a 1.44 acre portion of the lot", 1.44, "acre"),  # acres still work
+    ],
+)
+def test_floor_area_excludes_amenity_and_reads_superscript(prose, area, unit):
+    assert features.floor_area(prose) == (area, unit)
+
+
+# --------------------------------------------------------------------------- #
+# zoning_density: a storey count is not a ratio, and an allowed "up to" maximum yields to the
+# concrete proposed ratio when both are present.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        ("a density of up to 12 storeys and Floor Area Ratio (FAR) of 2.79", "FSR 2.79"),
+        ("FAR of up to 4. The proposal has an approximate FAR of 2.79", "FSR 2.79"),
+        ("A maximum FAR of 2.8", "FSR 2.8"),
+        ("a floor area ratio (FAR) of 1.27", "FSR 1.27"),
+        ("up to eight storeys", None),  # no ratio stated
+    ],
+)
+def test_zoning_density_avoids_storeys_and_allowed_max(prose, expected):
+    assert features.zoning_density(prose) == expected
+
+
+# --------------------------------------------------------------------------- #
+# parking_vehicle: descriptor words between the count and "vehicle", plus the "vehicular"
+# and "shared" phrasings ("120 total vehicle parking spaces", "208 vehicular parking spaces").
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        ("120 total vehicle parking spaces and 92 bicycle parking spaces", 120),
+        ("208 vehicular parking spaces and 526 bicycle parking spaces", 208),
+        ("A total of 6 shared parking spaces", 6),
+        ("44 vehicle parking spaces", 44),  # existing bare form still works
+    ],
+)
+def test_parking_vehicle_phrasings(prose, expected):
+    assert features.parking_vehicle(prose) == expected
+
+
+# --------------------------------------------------------------------------- #
+# unit_type_mix: "<N> <type> buildings" counts buildings, not dwellings, and must not become a
+# unit-type count; the "unit" forms still count dwellings.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        ("4 townhouse buildings (24 market units total)", None),       # 4 buildings, not 4 townhouses
+        ("60 unit townhouse development", {"townhouse": 60}),          # "unit" -> dwellings
+        ("5 townhouse units and 39 apartment units", {"townhouse": 5, "apartment": 39}),
+    ],
+)
+def test_unit_type_mix_excludes_building_counts(prose, expected):
+    assert features.unit_type_mix(prose) == expected

@@ -131,7 +131,9 @@ _OCCUPANCY = [
 _RENTAL_QUAL = r"(market|mid-market|below-market|affordable|secured|purpose-built)"
 
 # Area units seen in prose; normalized by _norm_area_unit() to 'sqft' or 'm2'.
-_AREA_UNIT = r"(sq\.?\s?ft|sf|square\s?f(?:ee)?t|m2|m²|sq\.?\s?m|square\s?met\w*)"
+# EngagementHQ renders m^2 / ft^2 as <sup>2</sup>, which flattens to "m 2" / "ft 2", so a
+# single space is tolerated before the superscript digit.
+_AREA_UNIT = r"(sq\.?\s?ft|sf|square\s?f(?:ee)?t|ft\s?[²2]|m\s?[²2]|sq\.?\s?m|square\s?met\w*)"
 
 
 _STOREY = r"stor(?:e?y|ies|eys)"
@@ -173,18 +175,30 @@ _COMPONENTS = (
     ("apartment", r"apartment"),
     ("detached", r"detached\s+(?:home|house)"),
 )
+# Tenure / descriptor words that may sit between the count and the building-type noun,
+# e.g. "48 market rental apartments" or "39 market strata townhomes". Whitelisted (not a
+# wildcard) so a distant number never gets pulled onto an unrelated type.
+_UNIT_DESCRIPTOR = (
+    r"(?:market|rental|strata|purpose[\s-]?built|affordable|below[\s-]?market|mid[\s-]?market"
+    r"|secured|new|proposed|residential|additional|family|multi[\s-]?family)"
+)
 
 
 def _component_counts(text: str) -> dict[str, int]:
     out: dict[str, int] = {}
     for label, kw in _COMPONENTS:
         total, found = 0, False
-        # "N [unit] <type>" first; only if that finds nothing, try "N <type> unit(s)".
+        # "N [descriptors] [unit] <type>" first; only if that finds nothing, try "N <type> unit(s)".
         for pat in (
-            rf"({_NUM}){_PAREN}[\s-]+(?:unit\s+)?(?:{kw})",
+            rf"({_NUM}){_PAREN}[\s-]+(?:{_UNIT_DESCRIPTOR}\s+){{0,3}}(?:unit\s+)?(?:{kw})",
             rf"({_NUM}){_PAREN}[\s-]+(?:{kw})\s+units?",
         ):
             for m in re.finditer(pat, text, re.IGNORECASE):
+                # "one apartment building" / "three townhouse blocks" describe the structure,
+                # not a dwelling count, so a following structure noun disqualifies the match.
+                if re.match(r"\s+(?:building|block|tower|complex|development|structure)",
+                            text[m.end():], re.IGNORECASE):
+                    continue
                 c = _count(m)
                 if c:
                     total += c
@@ -247,11 +261,15 @@ def _units_component_sum(text: str) -> int | None:
 
 
 def _units_generic(text: str) -> int | None:
-    """Match a generic "<N> residential/rental/strata/dwelling units" or bare "<N> unit(s)"."""
+    """Match "<N> residential/rental/housing units", "<N> rental homes", or bare "<N> unit(s)"."""
     return _search_count(
         text,
-        rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,3}}?(?:residential|rental|strata|dwelling)"
+        rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,3}}?(?:residential|rental|strata|dwelling|housing)"
         rf"(?:\s+[\w-]+){{0,1}}?\s+units?\b",
+        # "<N> ... rental homes" / "207 rental homes"; a tenure/market word guards against a bare
+        # "homes" (a subdivision's "single-family homes" is handled earlier by _units_subdivision).
+        rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,2}}?"
+        rf"(?:rental|market|non[\s-]?market|below[\s-]?market|affordable|residential|strata)\s+homes?\b",
         rf"({_NUM}){_PAREN}[\s-]+units?\b",
     )
 
@@ -326,6 +344,14 @@ def unit_mix(text: str) -> dict | None:
         if _UNIT_MIX_RANGE.match(text, m.end()):
             continue  # count spans a range of bedroom types, not this single type
         mix[_WORD_TO_BED[m.group(2).lower()]] = int(m.group(1))
+    # The reverse phrasing: a spelled-out count with a DIGIT bedroom type, e.g.
+    # "Four 1-bedroom units, Ten 2-bedroom units, Seven 3-bedroom units".
+    for m in re.finditer(rf"({_NUM})\s+([1-5])[\s-]?bed(?:room)?s?\b", text, re.IGNORECASE):
+        if _UNIT_MIX_RANGE.match(text, m.end()):
+            continue
+        count = _to_int(m.group(1))
+        if count is not None:
+            mix.setdefault(f"{m.group(2)}-bed", count)
     for n in re.findall(r"(\d+)\s+(?:are\s+)?suites?\b", text, re.IGNORECASE):
         mix["suite"] = int(n)
     for n in re.findall(r"(\d+)\s+studios?\b", text, re.IGNORECASE):
@@ -353,11 +379,15 @@ def unit_type_mix(text: str) -> dict | None:
     schema notes for unit_mix; complements unit_mix() which captures the bedroom split.
     """
     out: dict[str, int] = {}
+    # A bare "<N> <type> buildings" counts BUILDINGS, not dwellings ("4 townhouse buildings" is
+    # 4 buildings), so the bare form is guarded against a trailing structure noun. The "unit"
+    # forms ("60 unit townhouse development", "5 townhouse units") count dwellings and are not.
+    not_structure = r"(?!\s+(?:building|block|tower|structure)s?\b)"
     for label, kw in _UNIT_TYPES:
-        m = re.search(
-            rf"({_NUM}){_PAREN}[\s-]+(?:unit\s+)?(?:{kw})", text, re.IGNORECASE
-        ) or re.search(
-            rf"({_NUM}){_PAREN}[\s-]+(?:{kw})[\s-]+(?:unit|suite)s?", text, re.IGNORECASE
+        m = (
+            re.search(rf"({_NUM}){_PAREN}[\s-]+unit\s+(?:{kw})", text, re.IGNORECASE)
+            or re.search(rf"({_NUM}){_PAREN}[\s-]+(?:{kw})[\s-]+(?:unit|suite)s?", text, re.IGNORECASE)
+            or re.search(rf"({_NUM}){_PAREN}[\s-]+(?:{kw}){not_structure}", text, re.IGNORECASE)
         )
         c = _count(m)
         if c:
@@ -373,10 +403,11 @@ def parking_vehicle(text: str) -> int | None:
     parking stalls", "additional eleven off-street parking stalls" and
     "parking for 11 vehicles". Bicycle counts are excluded (see parking_bike()).
     """
-    fillers = r"(?:secure\s+|underground\s+|off[\s-]?street\s+|on[\s-]?site\s+|surface\s+|new\s+)*"
+    fillers = (r"(?:secure\s+|underground\s+|off[\s-]?street\s+|on[\s-]?site\s+|surface\s+|new\s+"
+               r"|total\s+|proposed\s+|required\s+|resident\s+|residential\s+|visitor\s+|shared\s+)*")
     return _search_count(
         text,
-        rf"(?:additional\s+)?({_NUM}){_PAREN}\s+{fillers}(?:vehicle|car)\s+parking\s+(?:spaces?|stalls?)",
+        rf"(?:additional\s+)?({_NUM}){_PAREN}\s+{fillers}(?:vehicle|vehicular|car)\s+parking\s+(?:spaces?|stalls?)",
         rf"(?:additional\s+)?({_NUM}){_PAREN}\s+{fillers}parking\s+(?:spaces?|stalls?)",
         rf"parking\s+for\s+({_NUM}){_PAREN}\s+(?:vehicles?|cars?)",
     )
@@ -426,25 +457,61 @@ def parking_notes(text: str) -> str | None:
 
 
 def zoning_density(text: str) -> str | None:
-    """Return the density as "FSR <n>" when an FSR/FAR figure is stated."""
-    m = re.search(r"(?:FSR|FAR|floor space ratio|density)[^\d]{0,12}([\d.]+)", text, re.IGNORECASE)
+    r"""Return the density as "FSR <n>" when an FSR/FAR figure is stated.
+
+    Two traps are avoided: a storey count ("density of up to 12 storeys" is a height, not a
+    ratio) via a `\b` + no-trailing-"storey" anchor, and an allowed maximum ("FAR of up to 4")
+    is skipped in favour of the concrete proposed ratio ("FAR of 2.79") when both are present.
+    """
+    keyword = r"(?:FSR|FAR|floor space ratio|floor area ratio|density)"
+    tail = r"(\d+(?:\.\d+)?)\b(?!\s*stor)"
+    # First pass forbids "up to" between the keyword and the number (an allowed-maximum phrase).
+    m = re.search(rf"{keyword}(?:(?!up\s+to)[^\d]){{0,12}}{tail}", text, re.IGNORECASE) \
+        or re.search(rf"{keyword}[^\d]{{0,12}}{tail}", text, re.IGNORECASE)
     return f"FSR {m.group(1)}" if m else None
 
 
-def floor_area(text: str) -> tuple[float | None, str | None]:
-    """Return (area, unit) for a single stated gross floor/site area — metric or acres.
+# Context around an area figure that marks it as NOT the gross floor area (an amenity, patio
+# or landscape area), so such a figure never masquerades as the building's floor area.
+_NON_GROSS_AREA = re.compile(
+    r"amenity|outdoor|indoor|patio|balcon|landscap|open\s+space|rooftop|roof\s+deck"
+    r"|common\s+area|private\s+open|garden",
+    re.IGNORECASE,
+)
+# "11,654 m2", "3,902.83 m²", and the superscript-split "11,654 m 2".
+_METRIC_AREA = re.compile(
+    r"([\d,]+(?:\.\d+)?)\s*(?:m\s?[²2]|sq\.?\s?m|square\s?met\w*)(?![A-Za-z])", re.IGNORECASE)
+_ACRE_AREA = re.compile(r"([\d,]+(?:\.\d+)?)\s*(?:acres?|\bac\b)", re.IGNORECASE)
 
-    Per-use imperial areas ("22,200 sq ft of commercial space") are routed to
-    floor_area_by_use() / dev_permit_occupancy instead, so they don't masquerade as a
-    single top-level gross area here.
+
+def floor_area(text: str) -> tuple[float | None, str | None]:
+    """Return (area, unit) for the gross floor/site area - metric or acres.
+
+    A description can state several areas (gross floor area plus indoor/outdoor amenity);
+    amenity and landscape figures are excluded so they never masquerade as the floor area, and
+    the largest of the remaining metric figures is taken as the gross (per-use breakdowns such
+    as a commercial sub-area are the smaller figures, and ride along via floor_area_by_use()).
+    Per-use imperial areas ("22,200 sq ft of commercial space") are routed there too.
     """
-    for pat, unit in (
-        (r"([\d,]+(?:\.\d+)?)\s*(?:m2|m²|sq\.?\s?m|square\s?met\w*)", "m2"),
-        (r"([\d,]+(?:\.\d+)?)\s*(?:acres?|\bac\b)", "acre"),
-    ):
-        m = re.search(pat, text, re.IGNORECASE)
-        if m:
-            return float(m.group(1).replace(",", "")), unit
+    matches = list(_METRIC_AREA.finditer(text))
+    areas: list[float] = []
+    for i, m in enumerate(matches):
+        # The amenity qualifier is adjacent to its own figure, so the context is bounded to
+        # the figure's immediate neighbourhood (and never crosses into an adjacent figure):
+        #   before: "outdoor amenity space of 124 m2"   (qualifier precedes the number)
+        #   after:  "100 m2 of outdoor amenity space"    (qualifier follows the number)
+        prev_end = matches[i - 1].end() if i else 0
+        before = text[max(prev_end, m.start() - 28):m.start()]
+        after = re.sub(r"^[\s)]*\([^)]*\)", "", text[m.end():m.end() + 55]).lstrip(" )")
+        amenity_after = bool(re.match(r"of\b", after)) and bool(_NON_GROSS_AREA.search(after[:40]))
+        if _NON_GROSS_AREA.search(before) or amenity_after:
+            continue
+        areas.append(float(m.group(1).replace(",", "")))
+    if areas:
+        return max(areas), "m2"
+    m = _ACRE_AREA.search(text)
+    if m:
+        return float(m.group(1).replace(",", "")), "acre"
     return None, None
 
 
@@ -508,7 +575,8 @@ def floor_area_by_use(text: str) -> dict:
     """
     out: dict[str, dict] = {}
     for m in re.finditer(
-        rf"([\d,]+(?:\.\d+)?)\s*{_AREA_UNIT}\.?\s+of\s+"
+        # An optional "(9,525ft2)" imperial conversion may sit between the metric figure and "of".
+        rf"([\d,]+(?:\.\d+)?)\s*{_AREA_UNIT}\.?(?:\s*\([^)]*\))?\s+of\s+"
         rf"((?:[a-z][a-z/&-]*\s+){{0,3}}?)"
         rf"(space|floor\s?area|gfa|units?|building|retail|commercial|residential|office)\b",
         text,
