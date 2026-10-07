@@ -38,6 +38,67 @@ CLAUDE_READ = {
         {"title": "Architectural Drawings",
          "url": "https://westvancouver.ca/sites/default/files/media/documents/ARCH%20Dwg-250503-1507%20Bellevue%20-%20REissued%20for%20Rezoning%20%28ARCH%29%20sealed.pdf"},
     ),
+    # --- remaining flagged applications (priority PDF read in-session) ---
+    # 221 Maple Lane: Proposed Plans - minor addition to the primary dwelling (powder room), a
+    # 33.13 sq ft floor-area variance; single-family.
+    "221-maple-lane-edp-variance": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 1},
+        {"title": "Proposed Plans", "url": "https://westvancouver.ca/sites/default/files/media/documents/221%20Maple%20Lane%20-%20Proposed%20Plans.pdf"},
+    ),
+    # 2213 Lawson Avenue: subdivision survey - Lot 16 (RS5) split into two ~529 m2 lots.
+    "2213-lawson-avenue-minor-development-variance-permit": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 2,
+         "lot_area": 1057.6, "lot_area_unit": "m2", "zoning_density": "RS5"},
+        {"title": "Plans", "url": "https://westvancouver.ca/sites/default/files/media/documents/2213-lawson-ave-survey-topo-wv6123-signed.pdf"},
+    ),
+    # 2340 Palmerston Avenue: Difficult-Terrain survey - RS5 site ~1,085.3 m2 subdivided into two
+    # ~540 m2 lots; existing 1-storey house, two-storey building envelope.
+    "2340-palmerston-avenue-difficult-terrains-development": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 2,
+         "number_of_stories": 2, "lot_area": 1085.3, "lot_area_unit": "m2", "zoning_density": "RS5"},
+        {"title": "Plans", "url": "https://westvancouver.ca/sites/default/files/media/documents/2340-palmerston-ave-plans-updated.pdf"},
+    ),
+    # 2512 Haywood Avenue: full Project Data & Zoning Summary - RS-4 single-family, lot 735.5 m2,
+    # gross floor area 310.77 m2 (FAR 259.28 m2 / ~0.35, relaxation), height 7.39 m, 2 storeys +
+    # basement, 1 dwelling / 1 parking space.
+    "2512-haywood-avenue-edp-variance": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 1,
+         "number_of_stories": 2, "height_m": 7.39, "floor_area": 310.77, "floor_area_unit": "m2",
+         "lot_area": 735.5, "lot_area_unit": "m2", "zoning_density": "FAR 0.35",
+         "parking_vehicle_stalls": 1},
+        {"title": "Proposed architecture plans", "url": "https://westvancouver.ca/sites/default/files/media/documents/2512-haywood-avenue_architectural-plans-july-27-2026_for-neighbourhood-notification.pdf"},
+    ),
+    # 3963 Uplands Way: landscape plan for the Hawksley strata amenity area (DP amendment); no new
+    # building program, so only the residential (strata) class is added.
+    "3963-uplands-way": (
+        {"development_class": "residential", "occupancy_types": ["residential"]},
+        {"title": "Proposed plans", "url": "https://westvancouver.ca/sites/default/files/media/documents/3963-uplands-way-proposed-plans.pdf"},
+    ),
+    # 6707 Nelson Avenue: a 2-car private garage within the Sewell's Landing residential parkade.
+    "6707-nelson-avenue-minor-development-variance-permit": (
+        {"development_class": "residential", "occupancy_types": ["residential"],
+         "parking_vehicle_stalls": 2},
+        {"title": "Plans", "url": "https://westvancouver.ca/sites/default/files/media/documents/260408-sewells-p4-private-garage-1.pdf"},
+    ),
+    # 8645 Lawrence Way: RS2 single-family, site 2,847.63 m2, total floor area 5,897.76 sq ft
+    # (~547.9 m2), three levels (lower/main/upper), FAR 0.35 max.
+    "8645-lawrence-way": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 1,
+         "number_of_stories": 3, "floor_area": 547.9, "floor_area_unit": "m2",
+         "lot_area": 2847.63, "lot_area_unit": "m2", "zoning_density": "FAR 0.35"},
+        {"title": "Proposed Plans", "url": "https://westvancouver.ca/sites/default/files/media/documents/23-127%20-%208645%20Lawrence%20Way%20-%20Proposed%20Plans.pdf"},
+    ),
+    # DP16-055 Rodgers Creek Lane: "Executive Homes at Rodgers Creek Lane", Area 3 East, Lots 21-41
+    # - a 21-home single-family development (this amendment redesigns Lots 22-28).
+    "DP16-055": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 21,
+         "unit_mix": {"detached": 21}},
+        {"title": "Architectural Drawings - Part 1 (original proposal)",
+         "url": "https://westvancouver.ca/sites/default/files/media/documents/Architectural%20Drawings_Part1.pdf"},
+    ),
+    # 2810/2814/2818 Bellevue Avenue is a foreshore rezoning of an existing waterfront residence;
+    # its only PDFs are a landscape plan, a notice flyer and a rezoning map - no building program -
+    # so it is intentionally left HTML-only.
 }
 
 
