@@ -171,6 +171,13 @@ CLAUDE_READ = {
         {"title": "Proposed Plans",
          "url": "https://westvancouver.ca/sites/default/files/media/documents/6330%20Argyle%20250416-COM.pdf"},
     ),
+    # 3190 Travers Avenue (Roy Residence): RS4 single-family dwelling, site 1,578.42 m2; the Minor
+    # DVP is for waterfront accessory structures (terraces/trellis) - the existing house is unchanged.
+    "3190-travers-avenue": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 1,
+         "lot_area": 1578.42, "lot_area_unit": "m2", "zoning_density": "RS4"},
+        {"title": "Plans", "url": "https://westvancouver.ca/media/12117"},
+    ),
 }
 
 # Per-building detail appended to raw_text for the multi-building applications.
