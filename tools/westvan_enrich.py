@@ -96,9 +96,102 @@ CLAUDE_READ = {
         {"title": "Architectural Drawings - Part 1 (original proposal)",
          "url": "https://westvancouver.ca/sites/default/files/media/documents/Architectural%20Drawings_Part1.pdf"},
     ),
-    # 2810/2814/2818 Bellevue Avenue is a foreshore rezoning of an existing waterfront residence;
-    # its only PDFs are a landscape plan, a notice flyer and a rezoning map - no building program -
-    # so it is intentionally left HTML-only.
+    # --- corrections from the user's review (project data read from report / data sheets) ---
+    # 2810/2814/2818 Bellevue: foreshore rezoning of three waterfront residences; the meeting
+    # notice lists each house's floor area (228.2 / 283.7 / 399.8 m2 -> 911.7 m2 total).
+    "2810-2814-2818-bellevue-avenue": (
+        {"units_total": 3, "floor_area": 911.7, "floor_area_unit": "m2"},
+        {"title": "Meeting notice and information flyer",
+         "url": "https://westvancouver.ca/sites/default/files/media/documents/2810-2814-and-2818-bellevue-avenue-notice-and-information-package.pdf"},
+    ),
+    # 3181/3389 Chippendale & 3861/3875 Uplands Way (Beedie): a four-building strata rezoning - 20
+    # storey 63 units, 25 storey 93 units, 16 storey 81 units, 20 storey 87 units (324 units,
+    # ~505,000 sq ft -> ~46,900 m2). The per-building list is in the page's prose.
+    "3181-3389-chippendale-rd-3861-3875-uplands-way-beedie": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 324,
+         "number_of_stories": 25, "floor_area": 46914.0, "floor_area_unit": "m2",
+         "rental_or_strata": "strata"},
+        None,
+    ),
+    # 376 Moyne Drive: RS3, lot 1,887.5 m2, 2 dwelling units (primary + the proposed detached
+    # secondary suite / coach house of 290.91 m2), FAR 0.26, 2 parking.
+    "376-moyne-drive-coach-house-dp": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 2,
+         "unit_mix": {"principal": 1, "secondary-suite": 1}, "floor_area": 290.91,
+         "floor_area_unit": "m2", "lot_area": 1887.5, "lot_area_unit": "m2",
+         "zoning_density": "FAR 0.26", "parking_vehicle_stalls": 2, "height_m": 4.56},
+        {"title": "Proposed Architectural Plans",
+         "url": "https://westvancouver.ca/sites/default/files/media/documents/376%20Moyne%20Dr%20-%20Proposed%20Architectural%20Drawings.pdf"},
+    ),
+    # 875-885 Jefferson Avenue: rezoning + subdivision of two lots into four single-family
+    # dwellings (HTML). The Report to Council has per-lot floor areas but is a Cloudflare-locked
+    # /media/ link that resists automated download; captured as a document for a manual read.
+    "875-885-jefferson-avenue": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 4},
+        {"title": "Report to Council: June 26, 2023", "url": "https://westvancouver.ca/media/2477"},
+    ),
+    # 1248 Keith Road: a new duplex (2 units), lot 592.8 m2.
+    "1248-keith-road-duplex-dp": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 2,
+         "lot_area": 592.8, "lot_area_unit": "m2"},
+        {"title": "Proposed architectural plans",
+         "url": "https://westvancouver.ca/sites/default/files/media/documents/1248-keith-road_dp-revision-092526-architectural-plans.pdf"},
+    ),
+    # 2833 Chippendale Road: a 12-unit townhouse development (HTML), total floor area ~1,755 m2
+    # (FAR 0.6); all but two units are 3-bedroom.
+    "2833-chippendale-road-rodgers-creek-area": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 12,
+         "unit_mix": {"3-bed": 10}, "floor_area": 1755.0, "floor_area_unit": "m2",
+         "zoning_density": "FAR 0.6"},
+        {"title": "Report to Council: June 5, 2023", "url": "https://westvancouver.ca/media/2330"},
+    ),
+    # 4020 Marine Drive: a Minor DVP adding one coach house.
+    "4020-marine-drive-minor-development-variance-permit": (
+        {"development_class": "residential", "occupancy_types": ["residential"],
+         "unit_mix": {"coach-house": 1}},
+        {"title": "Plans", "url": "https://westvancouver.ca/sites/default/files/media/documents/4020-marine-drive-plans-updated-sep-2026.pdf"},
+    ),
+    # 4310 Marine Drive (Ferndale Townhomes): RS4 -> CD multi-family, 9 units (8x 3-bed, 1x 2-bed),
+    # 1,863.8 m2 GFA, FAR 0.86, 3 levels, lot 2,177.4 m2, 18 vehicle + 18 bike stalls.
+    "4310-marine-drive": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 9,
+         "unit_mix": {"3-bed": 8, "2-bed": 1}, "number_of_stories": 3, "floor_area": 1863.8,
+         "floor_area_unit": "m2", "lot_area": 2177.4, "lot_area_unit": "m2",
+         "zoning_density": "FAR 0.86", "parking_vehicle_stalls": 18, "parking_bike_stalls": 18},
+        {"title": "Architectural plans",
+         "url": "https://westvancouver.ca/sites/default/files/media/documents/Architectural%20Drawings%20-%204310%20Marine%20Dr.pdf"},
+    ),
+    # 6330 & 6332 Argyle Avenue: six new ground-oriented residential units in three blocks;
+    # ~9,321.55 sq ft (866 m2), FSR 0.714.
+    "6330-6332-argyle-avenue-minor-development-permit": (
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 6,
+         "number_of_stories": 3, "floor_area": 866.0, "floor_area_unit": "m2",
+         "zoning_density": "FSR 0.714"},
+        {"title": "Proposed Plans",
+         "url": "https://westvancouver.ca/sites/default/files/media/documents/6330%20Argyle%20250416-COM.pdf"},
+    ),
+}
+
+# Per-building detail appended to raw_text for the multi-building applications.
+BREAKDOWNS = {
+    "2810-2814-2818-bellevue-avenue": (
+        "Floor area by address: 2810 Bellevue 228.2 m2 (2,456 sq ft); 2814 Bellevue 283.7 m2 "
+        "(3,054 sq ft); 2818 Bellevue 399.8 m2 (4,304 sq ft)."
+    ),
+    "3181-3389-chippendale-rd-3861-3875-uplands-way-beedie": (
+        "Proposed buildings: Lot 1 / 3181 Chippendale Rd - 20 storeys, ~108,000 sq ft, 63 strata "
+        "units; Lot 9 / 3389 Chippendale Rd - 25 storeys, ~150,000 sq ft, 93 strata units; Lot 12 "
+        "/ 3875 Uplands Way - 16 storeys, ~111,000 sq ft, 81 strata units (converted from rental); "
+        "Lot 13 / 3861 Uplands Way - 20 storeys, ~136,000 sq ft, 87 strata units over a shared parkade."
+    ),
+}
+
+
+# HTML fields to clear before enrichment because the regex misfired on a zoning LIMIT rather than
+# the proposal (so the Claude-read proposal value fills cleanly instead of losing to a bad parse).
+OVERRIDE_HTML = {
+    "3181-3389-chippendale-rd-3861-3875-uplands-way-beedie": ["number_of_stories"],  # "16-storey limit" -> 25
+    "6330-6332-argyle-avenue-minor-development-permit": ["number_of_stories"],
 }
 
 
@@ -112,7 +205,13 @@ def main() -> None:
         if not row:
             print(f"  (row not found: {permit_id})")
             continue
+        for field in OVERRIDE_HTML.get(permit_id, []):
+            row.pop(field, None)
+            (row.get("field_methods") or {}).pop(field, None)
         filled = wv.apply_claude_pdf(row, fields, document)
+        note = BREAKDOWNS.get(permit_id)
+        if note:
+            row["raw_text"] = "\n\n".join(p for p in (row.get("raw_text"), note) if p)
         print(f"{permit_id}: filled {filled} field(s) | method={row['extraction_method']} "
               f"| conflicts={len(row.get('conflicts') or [])} | needs_review={row['needs_review']}")
     path.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")

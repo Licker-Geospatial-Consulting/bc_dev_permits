@@ -124,10 +124,11 @@ def parse_detail(html: str, url: str) -> dict:
 # --------------------------------------------------------------------------- #
 # 3. PDF document selection (priority order for the Claude read)
 # --------------------------------------------------------------------------- #
-# Lower rank = read first. The Staff Report carries the planning summary + stats; architectural
-# drawings / plans carry the project-data sheet; preliminary drawings and anything else are last.
+# Lower rank = read first. A Staff Report / Report to Council carries the planning summary +
+# project stats; architectural drawings / plans carry the project-data sheet; preliminary drawings
+# and anything else are last.
 _DOC_PRIORITY = (
-    ("staff report", 0),
+    ("staff report", 0), ("report to council", 0), ("council report", 0),
     ("architectural", 1), ("architecture", 1), ("plan set", 1), ("plans", 1),
     ("preliminary", 2), ("drawing", 2),
     ("report", 3), ("rationale", 3), ("letter", 3),
@@ -356,10 +357,15 @@ def _milestones(main) -> list[dict]:
 
 
 def _documents(main, base_url) -> list[dict]:
+    """PDF documents on the page: direct `.pdf` links and `/media/<id>` downloads.
+
+    Reports to Council are linked as `/media/<id>` redirects (no `.pdf` extension), so those are
+    captured too - they carry the project data (floor area, FAR, units) for several applications.
+    """
     docs, seen = [], set()
     for a in main.find_all("a", href=True):
         href = urljoin(base_url, a["href"])
-        if not re.search(r"\.pdf(\?|$)", href, re.IGNORECASE) or href in seen:
+        if not re.search(r"\.pdf(\?|$)|/media/\d+", href, re.IGNORECASE) or href in seen:
             continue
         seen.add(href)
         title = a.get_text(" ", strip=True) or None
@@ -369,7 +375,7 @@ def _documents(main, base_url) -> list[dict]:
 
 def _doc_role(title: str | None) -> str:
     t = (title or "").lower()
-    if "staff report" in t:
+    if "staff report" in t or "report to council" in t or "council report" in t:
         return "staff_report"
     if "architect" in t or "drawing" in t or "plan" in t:
         return "drawings"
