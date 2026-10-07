@@ -141,13 +141,35 @@ the exact instructions you gave per site.
   with the Engage URL + description kept in `raw_text` for re-extraction).
 - Shared ArcGIS transport lives in `harvesters/arcgis_common.py`.
 
-## west_van — District of West Vancouver  (html)
+## west_van — District of West Vancouver  (html + Claude-read PDF)
 
 - **List:** https://westvancouver.ca/business-development/development-applications/active-development-applications
-- **Detail pages** (examples: `.../11-3085-deer-ridge-close`, `.../1337-ottawa-avenue-rezoning`):
-  : parse prose paragraphs/`<div>`s → parse deterministically (`bc_dev_permits/features.py`).
-- **Fallback:** pages with no relevant information for the field required → store PDF links, `needs_pdf_extraction=true`.
-- the main-content selector is div with class id `view-content`.
+  (~21 active applications). Detail pages under `.../development-applications/<slug>`.
+- **Cloudflare.** The whole site is behind Cloudflare bot protection, so a plain HTTP GET is
+  refused ("Just a moment..."). `harvesters/west_van.py` fetches through headless Chromium
+  (Playwright, the `[browser]` extra) with a **fresh context per page and a cool-down between
+  pages** (Cloudflare rate-limits bursts), and caches each rendered page to disk. PDFs, by
+  contrast, are plain static assets and download over normal HTTP.
+- **Field mapping** (deterministic HTML, `parse_detail`): `<h1>` with the trailing descriptor
+  stripped ("1337 Ottawa Avenue (Rezoning)" → `address` "1337 Ottawa Avenue"); prose paragraphs →
+  `features.extract_all` (height now parses too: "from 18.2 metres to 19.6 metres" → `height_m`
+  19.6); any process table → milestones; all `.pdf` anchors → `documents`; slug → `permit_id`
+  fallback. A low-signal row is flagged `needs_pdf_extraction`.
+- **PDF enrichment is Claude-read, not Ollama** (see the pdf-parsing memory). `select_pdf_sources`
+  orders the documents **Staff Report → Architectural Drawings / Plans → Preliminary Drawings →
+  other**; Claude reads them in priority order in-session (the first that yields project data
+  wins) and the fields are applied with `apply_claude_pdf`, which reuses the shared
+  `pdf_enrich` merge: deterministic HTML is never overwritten, a genuine HTML-vs-PDF disagreement
+  is logged to `row['conflicts']`, each PDF field is stamped `pdf_claude`, and the row is
+  `needs_review=True`. `extraction_method` is `"html"` or `"html+claude_read"`.
+  - Worked examples: **11-3085 Deer Ridge Close** - HTML gives the height variance (19.6 m); the
+    Plans PDF adds a 7-storey residential building (rooftop sauna amendment). **1337 Ottawa Avenue**
+    - thin HTML; the Staff Report gives a 1,414.9 m2 RS3 site subdivided into two ~706 m2 lots, a
+    single-family dwelling + secondary suite each (residential, 2). **1507 Bellevue Avenue** - HTML
+    gives a 3,000 sq ft office addition; the Architectural Drawings add a 3-storey commercial
+    building, 899.8 m2 footprint.
+- Claude-read fields for a batch are applied with a small helper (`tools/westvan_enrich.py`); a
+  full automated run is not wired into `dataset.py` ENRICHERS because the reads happen in-session.
 
 ## new_west — City of New Westminster  (arcgis + html)
 

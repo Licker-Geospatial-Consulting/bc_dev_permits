@@ -72,6 +72,13 @@ NORTH_VAN_LIST_URL = (
     "https://www.cnv.org/Business-Development/Building/Land-Use-Approvals/Active-Applications"
 )
 
+# West Vancouver publishes per-application HTML detail pages (see references/html_detail_pages.md),
+# but the whole site sits behind Cloudflare bot protection, so the harvester fetches through a real
+# browser (Playwright, the [browser] extra) with paced requests rather than plain HTTP.
+WEST_VAN_LIST_URL = (
+    "https://westvancouver.ca/business-development/development-applications/active-development-applications"
+)
+
 # Victoria publishes through the Prospero "OurCity" permit tracker (see
 # references/prospero_tracker.md). The search page defaults to the ACTIVE set; detail
 # pages are plain GETs keyed by folder number.
