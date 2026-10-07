@@ -456,6 +456,22 @@ def parking_notes(text: str) -> str | None:
     return m.group(1).strip() if m else None
 
 
+def height_m(text: str) -> float | None:
+    """Return a stated building height in metres, or None.
+
+    Handles "height from 18.2 metres to 19.6 metres" (the PROPOSED height is the 'to' value),
+    "height of 19.6 m", "maximum height of 19.6 metres", and "19.6 m building height". Only
+    metric heights are returned; a bare "6 storeys" is a storey count, not a height.
+    """
+    unit = r"(?:m\b|metres?|meters?)"
+    m = re.search(rf"height[^.]{{0,40}}?from\s+[\d.]+\s*{unit}\s+to\s+(\d+(?:\.\d+)?)\s*{unit}", text, re.IGNORECASE)
+    if m:
+        return float(m.group(1))
+    m = (re.search(rf"height[^.]{{0,25}}?(\d+(?:\.\d+)?)\s*{unit}", text, re.IGNORECASE)
+         or re.search(rf"(\d+(?:\.\d+)?)\s*{unit}\s+(?:in\s+)?(?:building\s+)?height", text, re.IGNORECASE))
+    return float(m.group(1)) if m else None
+
+
 def zoning_density(text: str) -> str | None:
     r"""Return the density as "FSR <n>" when an FSR/FAR figure is stated.
 
@@ -639,7 +655,7 @@ def development_class(occ: list[str]) -> str:
 _CONFIDENCE_KEYS = (
     "permit_type",
     "development_class",
-    ("number_of_stories", "units_total"),
+    ("number_of_stories", "units_total", "height_m"),
     "address",
     "floor_area",
     # "parking_vehicle_stalls", # removed as it was not AS IMPORTANT
@@ -676,8 +692,9 @@ METHOD_PDF_REGEX = "pdf_text_regex"  # deterministic: features parse over the PD
 METHOD_PDF_GEOMETRY = "pdf_geometry"  # deterministic: stat-card label/value bbox pairing
 METHOD_PDF_MODEL_TEXT = "pdf_model_text"  # non-deterministic: local text LLM
 METHOD_PDF_MODEL_VISION = "pdf_model_vision"  # non-deterministic: local vision LLM
+METHOD_PDF_CLAUDE = "pdf_claude"  # non-deterministic: Claude read the PDF in-session
 DETERMINISTIC_METHODS = frozenset({METHOD_HTML, METHOD_PDF_REGEX, METHOD_PDF_GEOMETRY})
-NONDETERMINISTIC_METHODS = frozenset({METHOD_PDF_MODEL_TEXT, METHOD_PDF_MODEL_VISION})
+NONDETERMINISTIC_METHODS = frozenset({METHOD_PDF_MODEL_TEXT, METHOD_PDF_MODEL_VISION, METHOD_PDF_CLAUDE})
 
 # The permit-content fields we track provenance for (everything a reviewer reads). Excludes
 # bookkeeping columns (permit_id, source_url, status, milestones, documents, ...).
@@ -752,6 +769,7 @@ def extract_all(text: str) -> dict:
         "zoning_density": zoning_density(text),
         "floor_area": fa,
         "floor_area_unit": fa_unit,
+        "height_m": height_m(text),
     }
     # Provisional prose-only score; harvesters finalize it over the full row (with the
     # harvester-provided address) via score_confidence(row).
