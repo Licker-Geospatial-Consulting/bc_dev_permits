@@ -123,11 +123,12 @@ CLAUDE_READ = {
         {"title": "Proposed Architectural Plans",
          "url": "https://westvancouver.ca/sites/default/files/media/documents/376%20Moyne%20Dr%20-%20Proposed%20Architectural%20Drawings.pdf"},
     ),
-    # 875-885 Jefferson Avenue: rezoning + subdivision of two lots into four single-family
-    # dwellings (HTML). The Report to Council has per-lot floor areas but is a Cloudflare-locked
-    # /media/ link that resists automated download; captured as a document for a manual read.
+    # 875-885 Jefferson Avenue: Report to Council - rezoning RS3 -> RS5 and subdivision of the two
+    # lots (2,240.3 m2 total) into four single-family lots, ~200-204 m2 allowable floor area each.
     "875-885-jefferson-avenue": (
-        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 4},
+        {"development_class": "residential", "occupancy_types": ["residential"], "units_total": 4,
+         "unit_mix": {"detached": 4}, "lot_area": 2240.3, "lot_area_unit": "m2",
+         "floor_area": 810.2, "floor_area_unit": "m2", "zoning_density": "RS3 -> RS5"},
         {"title": "Report to Council: June 26, 2023", "url": "https://westvancouver.ca/media/2477"},
     ),
     # 1248 Keith Road: a new duplex (2 units), lot 592.8 m2.
@@ -174,6 +175,11 @@ CLAUDE_READ = {
 
 # Per-building detail appended to raw_text for the multi-building applications.
 BREAKDOWNS = {
+    "875-885-jefferson-avenue": (
+        "Proposed four single-family lots: 875-A 565.3 m2, 875-B 575.7 m2, 885-A 544.5 m2, "
+        "885-B 554.8 m2 (RS3 minimum is 975 m2). Allowable floor area ~204.4 m2 per 875 lot and "
+        "~200.7 m2 per 885 lot."
+    ),
     "2810-2814-2818-bellevue-avenue": (
         "Floor area by address: 2810 Bellevue 228.2 m2 (2,456 sq ft); 2814 Bellevue 283.7 m2 "
         "(3,054 sq ft); 2818 Bellevue 399.8 m2 (4,304 sq ft)."
