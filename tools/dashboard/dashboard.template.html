@@ -174,7 +174,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 const CLASSES = ["residential","mixed","commercial","industrial","institutional","unknown"];
 const CLABEL = {residential:"Residential",mixed:"Mixed-use",commercial:"Commercial",
   industrial:"Industrial",institutional:"Institutional",unknown:"Unclassified"};
-const MUNIS = ["Coquitlam","Maple Ridge","North Vancouver","Port Moody","Victoria"];
+const MUNIS = ["Coquitlam","Maple Ridge","North Vancouver","Port Moody","Victoria","West Vancouver"];
 const cssvar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const classColor = c => cssvar("--c-"+(CLASSES.includes(c)?c:"unknown"));
 

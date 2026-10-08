@@ -13,7 +13,34 @@ import requests
 CITY = {
     "north_van": ("North Vancouver", (49.3200, -123.0724)),
     "victoria": ("Victoria", (48.4284, -123.3656)),
+    "west_van": ("West Vancouver", (49.3286, -123.1608)),
 }
+
+# Street-type suffixes used to pick the street phrase out of a West Van address.
+_WV_TYPES = (r"(?:Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Way|Close|Street|St|Crescent|Cres|"
+             r"Place|Pl|Court|Crt|Terrace|Gate|Boulevard|Blvd)")
+
+
+def wv_query(addr):
+    """Build 'civic street' from a West Van address, picking the first civic number.
+
+    Handles the site's irregular forms: a unit-civic pair like "11-3085 Deer Ridge Close"
+    (the 4-digit civic is the second number), a civic range "875-885 Jefferson Avenue" and a
+    multi-lot list "2810, 2814 and 2818 Bellevue Avenue" (take the first civic), and a bare
+    area name like "Rodgers Creek Lane" with no civic number (returns None -> city centroid).
+    """
+    addr = (addr or "").strip()
+    nums = re.findall(r"\d+", addr)
+    if not nums:
+        return None
+    civic = nums[0]
+    # A "<unit>-<civic>" pair (first number has fewer digits than the second) is a unit prefix,
+    # so the real civic number is the second one; a same-width pair is a civic range (keep first).
+    dash = re.match(r"(\d+)\s*[-–]\s*(\d+)\b", addr)
+    if dash and len(dash.group(1)) < len(dash.group(2)):
+        civic = dash.group(2)
+    street = re.search(rf"[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*\s+{_WV_TYPES}\b", addr)
+    return f"{civic} {street.group(0)}" if street else None
 UA = "bc-dev-permits-dashboard/0.1 (+contact: himalya@lgeo.co)"
 CACHE = Path("tools/dashboard/geocache.json")
 cache = json.loads(CACHE.read_text(encoding="utf-8")) if CACHE.exists() else {}
@@ -24,6 +51,8 @@ session.headers["User-Agent"] = UA
 def query_for(row, slug):
     """Build a geocodable 'number street' string from the address or the URL slug."""
     addr = (row.get("address") or "").strip()
+    if slug == "west_van":
+        return wv_query(addr)
     # A usable street address starts with a house number; take the first of any range.
     if re.match(r"^\d", addr):
         m = re.match(r"(\d+)\s*[-–]\s*\d+\s+(.*)", addr)   # "216-232 East 3rd Street"

@@ -9,6 +9,7 @@ FILES = {
     "north_van": "North Vancouver",
     "port_moody": "Port Moody",
     "victoria": "Victoria",
+    "west_van": "West Vancouver",
 }
 PROC = Path("data/processed")
 
