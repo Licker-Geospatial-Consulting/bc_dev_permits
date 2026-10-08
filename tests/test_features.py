@@ -73,6 +73,28 @@ def test_units_total_before_a_tenure_breakdown():
     assert features.units_total(text) == 1050
 
 
+def test_unit_type_mix_ignores_commercial_parking():
+    # "110 commercial and hotel parking spaces" is parking, not 110 commercial units.
+    text = ("468 residential units and a 145 room hotel. A total of 110 commercial and hotel "
+            "parking spaces are also proposed.")
+    assert features.unit_type_mix(text) is None
+    # An explicit "<N> commercial units" is still counted.
+    assert features.unit_type_mix("6 commercial units at grade") == {"commercial": 6}
+
+
+def test_tenure_mix_splits_ownership_and_rental():
+    # The residential total itemized by tenure: condo (ownership) + rental + affordable.
+    text = ("1,050 residential units, including 850 market condo units, 110 units of market "
+            "rental and 125 units of affordable housing")
+    assert features.tenure_mix(text) == {
+        "market-condo": 850, "market-rental": 110, "affordable": 125,
+    }
+    # extract_all surfaces it as unit_mix when there is no bedroom or building-type split.
+    assert features.extract_all(text)["unit_mix"] == {
+        "market-condo": 850, "market-rental": 110, "affordable": 125,
+    }
+
+
 def test_parking_notes_keeps_full_breakdown():
     # Every parking/bicycle sentence is kept, so a multi-category breakdown is not lost to one
     # headline number.

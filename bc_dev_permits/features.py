@@ -418,11 +418,46 @@ def unit_type_mix(text: str) -> dict | None:
     # forms ("60 unit townhouse development", "5 townhouse units") count dwellings and are not.
     not_structure = r"(?!\s+(?:building|block|tower|structure)s?\b)"
     for label, kw in _UNIT_TYPES:
-        m = (
-            re.search(rf"({_NUM}){_PAREN}[\s-]+unit\s+(?:{kw})", text, re.IGNORECASE)
-            or re.search(rf"({_NUM}){_PAREN}[\s-]+(?:{kw})[\s-]+(?:unit|suite)s?", text, re.IGNORECASE)
-            or re.search(rf"({_NUM}){_PAREN}[\s-]+(?:{kw}){not_structure}", text, re.IGNORECASE)
-        )
+        patterns = [
+            rf"({_NUM}){_PAREN}[\s-]+unit\s+(?:{kw})",
+            rf"({_NUM}){_PAREN}[\s-]+(?:{kw})[\s-]+(?:unit|suite)s?",
+        ]
+        # "commercial" names floor area or parking as often as it names dwellings ("110 commercial
+        # and hotel parking spaces", "6,040 sq m commercial"), so it only counts with an explicit
+        # unit/suite word; the bare form is reserved for the dwelling types.
+        if label != "commercial":
+            patterns.append(rf"({_NUM}){_PAREN}[\s-]+(?:{kw}){not_structure}")
+        m = next((mm for p in patterns if (mm := re.search(p, text, re.IGNORECASE))), None)
+        c = _count(m)
+        if c:
+            out[label] = c
+    return out or None
+
+
+# Tenure categories a residential total is split across, ownership AND rental. Order matters:
+# "below-market" is tried before "market", and "market condo" before a bare "condo".
+_TENURE_MIX = (
+    ("below-market-rental", r"below[\s-]?market(?:\s+rental)?"),
+    ("market-condo", r"market\s+cond(?:o|ominium)|cond(?:o|ominium)"),
+    ("market-rental", r"market\s+rental"),
+    ("secured-rental", r"(?:secured|purpose[\s-]?built)(?:\s+market)?\s+rental"),
+    ("affordable", r"affordable(?:\s+housing)?"),
+    ("non-market", r"non[\s-]?market|social\s+housing"),
+)
+
+
+def tenure_mix(text: str) -> dict | None:
+    """Count of units by TENURE, e.g. {"market-condo": 850, "market-rental": 110, "affordable": 125}.
+
+    A residential total is often itemized by tenure/ownership rather than by bedroom or building
+    type ("1,050 residential units, including 850 market condo units, 110 units of market rental
+    and 125 units of affordable housing"). This captures that split, in either phrasing
+    ("<N> <tenure> units" or "<N> units of <tenure>").
+    """
+    out: dict[str, int] = {}
+    for label, kw in _TENURE_MIX:
+        m = re.search(rf"({_NUM}){_PAREN}\s+(?:{kw})\s+(?:units?|homes?|dwellings?)", text, re.IGNORECASE) \
+            or re.search(rf"({_NUM}){_PAREN}\s+(?:units?|homes?|dwellings?)\s+of\s+(?:{kw})", text, re.IGNORECASE)
         c = _count(m)
         if c:
             out[label] = c
@@ -797,8 +832,9 @@ def extract_all(text: str) -> dict:
         "occupancies": occupancies,
         "number_of_stories": number_of_stories(text),
         "units_total": units_total(text),
-        # Bedroom split when stated; otherwise the building/unit-type split.
-        "unit_mix": unit_mix(text) or unit_type_mix(text),
+        # Bedroom split when stated; otherwise the building/unit-type split; otherwise the
+        # tenure split (market condo / rental / affordable).
+        "unit_mix": unit_mix(text) or unit_type_mix(text) or tenure_mix(text),
         "rental_or_strata": tenure,
         "rental_subtype": subtype,
         "rental_mix": rental_mix(text),
