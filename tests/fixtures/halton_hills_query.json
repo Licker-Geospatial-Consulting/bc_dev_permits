@@ -1,0 +1,168 @@
+{
+ "features": [
+  {
+   "attributes": {
+    "OBJECTID": 14,
+    "MAP_ID": 2,
+    "LOCATION": "13423 Highway 7",
+    "TWN_AREA": "Henderson's Corners",
+    "FILE_NO": "D12/24T-86022/H",
+    "FILE_TYP": "Subdivision",
+    "LAND_USE": "Residential",
+    "APP_DESC": "8 single detached lot subdivision",
+    "REC_DATE": 520603200000,
+    "CUR_STAT": "Approved (Clearing Conditions)",
+    "P_NX_STP": "Registration of Plan"
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       -79.9590604961954,
+       43.66087613639841
+      ],
+      [
+       -79.96024599209629,
+       43.65977177051714
+      ],
+      [
+       -79.96124418016576,
+       43.6589145951204
+      ],
+      [
+       -79.96171329727188,
+       43.65858382115181
+      ],
+      [
+       -79.961714057657,
+       43.658584388106476
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 7,
+    "MAP_ID": 21,
+    "LOCATION": "125 McDonald Blvd.",
+    "TWN_AREA": "Acton",
+    "FILE_NO": "D12SUB12.001",
+    "FILE_TYP": "Subdivision",
+    "LAND_USE": "Residential",
+    "APP_DESC": "108 townhouse unit subdivision",
+    "REC_DATE": 1344427200000,
+    "CUR_STAT": "Approved (Clearing Conditions)",
+    "P_NX_STP": "Registration of Plan"
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       -80.03981293215841,
+       43.63686818268425
+      ],
+      [
+       -80.04072697179674,
+       43.63603416083086
+      ],
+      [
+       -80.04063516629634,
+       43.63597807503257
+      ],
+      [
+       -80.04057826199596,
+       43.63594331280409
+      ],
+      [
+       -80.04075318480895,
+       43.635798643729814
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 46551,
+    "MAP_ID": 261,
+    "LOCATION": "16768 22 Side Road ",
+    "TWN_AREA": "Esquesing",
+    "FILE_NO": "D09OPA26.001",
+    "FILE_TYP": "OPA",
+    "LAND_USE": "Other",
+    "APP_DESC": "Proposed Official Plan Amendment to permit the future severance of the 160 hectare (400 acre) parcel (known as Sheridan Nurseries) into two 80 hectare (200 acre) lots. The severed lot would continue to be used as a nursery.",
+    "REC_DATE": 1780617600000,
+    "CUR_STAT": "Under Review",
+    "P_NX_STP": "Contact Planning Department"
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       -79.90497904990016,
+       43.686694860520575
+      ],
+      [
+       -79.90498091358651,
+       43.68669315232269
+      ],
+      [
+       -79.90562075027991,
+       43.686107006586745
+      ],
+      [
+       -79.90576337024855,
+       43.68597635196187
+      ],
+      [
+       -79.90576519224891,
+       43.68597468206873
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 44133,
+    "MAP_ID": 231,
+    "LOCATION": "159 Confederation Street ",
+    "TWN_AREA": "Glen Williams",
+    "FILE_NO": "D09OPA24.001, D14ZBA24.008 & D12SUB24.001",
+    "FILE_TYP": "OPA, ZBA",
+    "LAND_USE": "Residential",
+    "APP_DESC": "81 Townhouses & 1 Single Detached",
+    "REC_DATE": 1733702400000,
+    "CUR_STAT": "Under Review",
+    "P_NX_STP": null
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       -79.93196418033682,
+       43.67652088158949
+      ],
+      [
+       -79.93172033385002,
+       43.676294926668355
+      ],
+      [
+       -79.9316392657073,
+       43.67621043582137
+      ],
+      [
+       -79.93119413980263,
+       43.67589243355701
+      ],
+      [
+       -79.93090727216197,
+       43.67570580000474
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

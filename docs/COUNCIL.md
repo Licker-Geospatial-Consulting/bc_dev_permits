@@ -12,6 +12,7 @@ the exact instructions you gave per site.
 | maple_ridge | City of Maple Ridge        | vertigis    | vertigis_webmaps.md       |
 | port_moody  | City of Port Moody         | arcgis      | arcgis_webmaps.md         |
 | west_van    | District of West Vancouver | html        | html_detail_pages.md      |
+| halton_hills| Town of Halton Hills (ON)  | arcgis+html | arcgis_webmaps.md (+html) |
 | new_west    | City of New Westminster    | arcgis+html | arcgis_webmaps.md (+html) |
 | ubc         | UBC (Campus + Community Pl)| html        | html_detail_pages.md      |
 | victoria    | City of Victoria           | prospero    | prospero_tracker.md       |
@@ -170,6 +171,40 @@ the exact instructions you gave per site.
     building, 899.8 m2 footprint.
 - Claude-read fields for a batch are applied with a small helper (`tools/westvan_enrich.py`); a
   full automated run is not wired into `dataset.py` ENRICHERS because the reads happen in-session.
+
+## halton_hills — Town of Halton Hills, Ontario  (arcgis + html)
+
+- **List (HTML):** https://www.haltonhills.ca/work/planning-development/active-development-applications
+- **Map:** https://map.haltonhills.ca/HT5/Index.html?viewer=p.HT5 — a VertiGIS/Geocortex HTML5
+  viewer over an ArcGIS MapServer. Service discovered via the Geocortex Essentials REST site
+  config (`connectionString`), handled by `harvesters/halton_hills.py`.
+- **MapServer (query this directly):**
+  `https://map.haltonhills.ca/awse/rest/services/eP/MapServer`
+  - layer **24 P_DevelopmentApplications** (polygons) — one application each, the comprehensive
+    source (~118 features). Harvested with `?where=1=1&outFields=...&returnGeometry=true&outSR=4326&f=json`.
+- **Field mapping** (layer 24), handled by `harvesters/halton_hills.py`:
+  - `FILE_NO` → `permit_id` (e.g. "D12SUB12.001"; combined files keep the full string, e.g.
+    "D09OPA24.001, D14ZBA24.008 & D12SUB24.001")
+  - `LOCATION` → `address`; `FILE_TYP` → `permit_type` (Subdivision / OPA / ZBA / Site Plan / ...)
+  - `LAND_USE` → `development_class` hint (Residential/Commercial/Industrial/Institutional/Mixed →
+    class directly; "Other" falls back to whatever the prose classifies as, often `unknown`)
+  - `APP_DESC` → `raw_text`, parsed into fields by `bc_dev_permits/features.py` (a subdivision's
+    stated lot count becomes `units_total`; "108 townhouse unit" → `unit_mix`)
+  - `CUR_STAT` → `status`; `REC_DATE` (epoch ms) → "Application Received" milestone
+  - `TWN_AREA` (area of town) + `P_NX_STP` (next step) → appended to `raw_text`
+  - polygon geometry → `latitude`/`longitude` (ring centroid)
+  - `P_CONTAC` (planning contact name + phone) → **excluded** (staff name, PII, no schema column)
+- **HTML cross-reference** (richer prose for the ~10 "major" applications): the list page links to
+  per-application subpages whose Froala `.fr-view` prose is far richer than the map's terse
+  `APP_DESC` (e.g. map: "apartment buildings with 6 residential towers"; subpage: "6 towers,
+  17-22 storeys, 1,481 units, 1,481 parking"). `enrich_from_html` matches a subpage to a row by
+  **(civic number, distinctive street token)** and overlays its fields; a value the richer prose
+  parses wins, a field it leaves empty keeps the map's. `extraction_method` becomes `"arcgis+html"`.
+  - A subpage splits into Description / Process / Status sections that **restate** the same totals,
+    so each section is parsed on its own and count fields combine by **MAX, not sum** — otherwise
+    "82 total units" plus "81 townhouses + 1 detached" double-counts to 164.
+- `extraction_method = "arcgis"` (map only) or `"arcgis+html"` (enriched). Shared ArcGIS transport
+  lives in `harvesters/arcgis_common.py`. Only Ontario source so far; still one normalized schema.
 
 ## new_west — City of New Westminster  (arcgis + html)
 

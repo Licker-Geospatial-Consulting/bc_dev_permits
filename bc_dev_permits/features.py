@@ -173,14 +173,16 @@ def number_of_stories(text: str) -> int | None:
 _COMPONENTS = (
     ("townhouse", r"townhouse|townhome"),
     ("apartment", r"apartment"),
-    ("detached", r"detached\s+(?:home|house)"),
+    ("detached", r"(?:single[\s-])?detached\s+(?:home|house|dwelling)"),
 )
 # Tenure / descriptor words that may sit between the count and the building-type noun,
 # e.g. "48 market rental apartments" or "39 market strata townhomes". Whitelisted (not a
 # wildcard) so a distant number never gets pulled onto an unrelated type.
 _UNIT_DESCRIPTOR = (
     r"(?:market|rental|strata|purpose[\s-]?built|affordable|below[\s-]?market|mid[\s-]?market"
-    r"|secured|new|proposed|residential|additional|family|multi[\s-]?family)"
+    r"|secured|new|proposed|residential|additional|family|multi[\s-]?family"
+    # built-form descriptors that commonly sit before "townhouse"/"apartment"
+    r"|(?:one|two|three|four|five|\d+)[\s-]?stor(?:e?y|ies)|stacked|back[\s-]?to[\s-]?back|street[\s-]?fronting)"
 )
 
 
@@ -240,15 +242,19 @@ def _units_headline(text: str) -> int | None:
 def _units_subdivision(text: str) -> int | None:
     """Return a subdivision's resulting lots / single-family homes.
 
-    Handles "from one to two lots", "into two new single-family lots" and
-    "two single-family units".
+    Handles "from one to two lots", "into two new single-family lots", "two single-family
+    units", and (Ontario phrasing) "8 single detached lot subdivision".
     """
     if not re.search(r"subdivi|\blots?\b", text, re.IGNORECASE):
         return None
+    # "single family" or "single detached" (Ontario) are the same single-dwelling lot count.
+    # Match the resulting LOTS/homes, not a bare "dwelling": "1 single detached dwelling" inside a
+    # townhouse description is one component of the total, left to _units_component_sum.
+    single = r"single[\s-](?:family|detached)"
     return _search_count(
         text,
-        rf"(?:into|to)\s+({_NUM}){_PAREN}\s+(?:new\s+)?(?:single[\s-]family\s+)?lots?\b",
-        rf"({_NUM}){_PAREN}\s+(?:new\s+)?single[\s-]family\s+(?:homes?|houses?|units?|lots?)\b",
+        rf"(?:into|to)\s+({_NUM}){_PAREN}\s+(?:new\s+)?(?:{single}\s+)?lots?\b",
+        rf"({_NUM}){_PAREN}\s+(?:new\s+)?{single}\s+(?:homes?|houses?|units?|lots?)\b",
     )
 
 
@@ -368,7 +374,7 @@ _UNIT_TYPES = (
     ("lock-off", r"lock[\s-]?off"),
     ("secondary-suite", r"accessory\s+dwelling|secondary\s+suite"),
     ("commercial", r"commercial"),
-    ("detached", r"detached\s+(?:home|house)"),
+    ("detached", r"(?:single[\s-])?detached\s+(?:home|house|dwelling)"),
 )
 
 
@@ -479,7 +485,7 @@ def zoning_density(text: str) -> str | None:
     ratio) via a `\b` + no-trailing-"storey" anchor, and an allowed maximum ("FAR of up to 4")
     is skipped in favour of the concrete proposed ratio ("FAR of 2.79") when both are present.
     """
-    keyword = r"(?:FSR|FAR|floor space ratio|floor area ratio|density)"
+    keyword = r"(?:FSR|FAR|FSI|floor space ratio|floor space index|floor area ratio|density)"
     tail = r"(\d+(?:\.\d+)?)\b(?!\s*stor)"
     # First pass forbids "up to" between the keyword and the number (an allowed-maximum phrase).
     m = re.search(rf"{keyword}(?:(?!up\s+to)[^\d]){{0,12}}{tail}", text, re.IGNORECASE) \

@@ -121,3 +121,12 @@ PORT_MOODY_SERVICE_URL = (
 )
 PORT_MOODY_ENGAGE_BASE = "https://engage.portmoody.ca"
 PORT_MOODY_ENGAGE_PROJECTS_URL = "https://engage.portmoody.ca/projects"
+
+# Town of Halton Hills (Ontario). The map viewer (map.haltonhills.ca/HT5, a VertiGIS/Geocortex
+# HTML5 viewer) is a UI over an ArcGIS MapServer; layer 24 (P_DevelopmentApplications) carries
+# every application's structured attributes + description. The public HTML page lists the ~10
+# "major" applications as subpages with richer prose, which the harvester cross-references.
+HALTON_HILLS_SERVICE_URL = "https://map.haltonhills.ca/awse/rest/services/eP/MapServer"
+HALTON_HILLS_LIST_URL = (
+    "https://www.haltonhills.ca/work/planning-development/active-development-applications"
+)
