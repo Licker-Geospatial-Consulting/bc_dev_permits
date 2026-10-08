@@ -130,3 +130,14 @@ HALTON_HILLS_SERVICE_URL = "https://map.haltonhills.ca/awse/rest/services/eP/Map
 HALTON_HILLS_LIST_URL = (
     "https://www.haltonhills.ca/work/planning-development/active-development-applications"
 )
+
+# City of New Westminster publishes "Projects on the Go" through an ArcGIS Experience Builder app
+# (see references/arcgis_webmaps.md). The app embeds Dashboards over one hosted FeatureServer layer,
+# so the harvester queries the service directly. Some projects carry a "Be Heard New West"
+# engagement link (the POG `Hyperlink` field) whose page has richer prose (FSR, parking, bike
+# stalls); the harvester renders and parses it when present and the project page actually exists.
+# NEW_WEST_APP_URL is the human-facing app recorded as each row's source_url.
+NEW_WEST_APP_URL = "https://experience.arcgis.com/experience/c30fde314b964efaa1623e099be8da40"
+NEW_WEST_SERVICE_URL = (
+    "https://services3.arcgis.com/A7O8YnTNtzRPIn7T/arcgis/rest/services/POG/FeatureServer/0"
+)

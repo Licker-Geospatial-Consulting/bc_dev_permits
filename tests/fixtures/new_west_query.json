@@ -1,0 +1,118 @@
+{
+ "features": [
+  {
+   "attributes": {
+    "Item": 65,
+    "Files": "RZ000147\nRZ000223\nDPU00065",
+    "Project_Address": "616-640 Sixth St & 612 Seventh Ave",
+    "Project_Type": "Mixed Use",
+    "Project_Description": "To allow development of a 29 storey, mixed-use development which includes 338 market rental units (including 10 below-market rental units) and retail units",
+    "Status_Edit": "F Final Inspection Within Last Year",
+    "Last_Updated": 1784224627000,
+    "Hyperlink": "https://www.beheardnewwest.ca/616-640-sixth-st "
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       -122.922029253648,
+       49.2143550712582
+      ],
+      [
+       -122.9213264548,
+       49.2137963114744
+      ],
+      [
+       -122.921753482957,
+       49.2135665858444
+      ],
+      [
+       -122.922104482571,
+       49.2138457938098
+      ],
+      [
+       -122.922455224703,
+       49.2141253513376
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "attributes": {
+    "Item": 24,
+    "Files": "PAR01366\nRZ000204\nDP000860",
+    "Project_Address": "102-128 E Eighth Ave & 721 Cumberland St",
+    "Project_Type": "Residential - above 6 units",
+    "Project_Description": "To allow development of a 55 unit infill townhouse development across eight buildings",
+    "Status_Edit": "D1 Rezoning/HRA and/or OCP Amendment Approved",
+    "Last_Updated": 1784224627000,
+    "Hyperlink": "https://www.beheardnewwest.ca/cumberland-st"
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       -122.907155929244,
+       49.2248945892065
+      ],
+      [
+       -122.906993587454,
+       49.224978978134
+      ],
+      [
+       -122.906831272563,
+       49.2250633758491
+      ],
+      [
+       -122.906668943401,
+       49.2251477643283
+      ],
+      [
+       -122.90630254739,
+       49.2248508398125
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "attributes": {
+    "Item": 29,
+    "Files": "HER00752\nHER00753",
+    "Project_Address": "404 Second St",
+    "Project_Type": "Commercial",
+    "Project_Description": "Heritage Revitalization Agreement and to regularize and expand the non-conforming commercial use of the building",
+    "Status_Edit": "D1 Rezoning/HRA and/or OCP Amendment Approved",
+    "Last_Updated": 1784224627000,
+    "Hyperlink": null
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       -122.911010685575,
+       49.2136289181672
+      ],
+      [
+       -122.910849000487,
+       49.2137159038174
+      ],
+      [
+       -122.910673649327,
+       49.2135761435478
+      ],
+      [
+       -122.910835320536,
+       49.2134891581302
+      ],
+      [
+       -122.911010685575,
+       49.2136289181672
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

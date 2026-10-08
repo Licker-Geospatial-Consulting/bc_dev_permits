@@ -22,6 +22,7 @@ from bc_dev_permits.harvesters import (
     coquitlam,
     halton_hills,
     maple_ridge,
+    new_west,
     north_van,
     port_moody,
     victoria,
@@ -37,6 +38,7 @@ HARVESTERS = {
     "port_moody": port_moody.harvest,
     "west_van": west_van.harvest,
     "halton_hills": halton_hills.harvest,
+    "new_west": new_west.harvest,
 }
 
 # slug -> optional batch PDF-enricher(rows, use_cache=True) -> count (needs Ollama)

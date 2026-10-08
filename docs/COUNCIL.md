@@ -13,7 +13,7 @@ the exact instructions you gave per site.
 | port_moody  | City of Port Moody         | arcgis      | arcgis_webmaps.md         |
 | west_van    | District of West Vancouver | html        | html_detail_pages.md      |
 | halton_hills| Town of Halton Hills (ON)  | arcgis+html | arcgis_webmaps.md (+html) |
-| new_west    | City of New Westminster    | arcgis+html | arcgis_webmaps.md (+html) |
+| new_west    | City of New Westminster    | arcgis      | arcgis_webmaps.md (+beheard) |
 | ubc         | UBC (Campus + Community Pl)| html        | html_detail_pages.md      |
 | victoria    | City of Victoria           | prospero    | prospero_tracker.md       |
 
@@ -224,15 +224,43 @@ the exact instructions you gave per site.
   still one normalized schema. Terse map-only Site Plans (telecom towers, quarry extensions,
   warehouses) legitimately carry no unit/floor program — the source publishes none.
 
-## new_west — City of New Westminster  (arcgis + html)
+## new_west — City of New Westminster  (arcgis + Be Heard engagement)
 
-- **App (Projects List):** https://experience.arcgis.com/experience/c30fde314b964efaa1623e099be8da40
-- The **"Projects List"** widget is backed by a layer/table → query it to get project
-  rows and their **detail-page URLs** from Project Address hyperlink.
-- Then treat each linked project page with **html_detail_pages.md**: parse prose
-  paragraphs/`<div>` sections; PDF-fallback when empty.
-- capture the Projects-List layer/table `/query` URL and the field holding the
-  project page link.
+- **App ("Projects on the Go"):** https://experience.arcgis.com/experience/c30fde314b964efaa1623e099be8da40
+- An ArcGIS Experience Builder app that embeds **Dashboards** over one hosted FeatureServer. Chain
+  to find the service: experience item `/data` → embedded dashboard itemIds → each dashboard's
+  Web Map (`893d4ba0…`, "POG by Type") → its single operational layer. Handled by
+  `harvesters/new_west.py`.
+- **FeatureServer (query this directly):**
+  `https://services3.arcgis.com/A7O8YnTNtzRPIn7T/arcgis/rest/services/POG/FeatureServer/0`
+  — layer 0 "POG", polygon, ~70 features. One row per project (its application files consolidated).
+- **Field mapping** (attribute → `dev_permit`), handled by `harvesters/new_west.py`:
+  - `Files` → `permit_id` (the application numbers, newline-separated, e.g. "PAR01366\nRZ000204\n
+    DP000860" → "PAR01366, RZ000204, DP000860"); their prefixes → `permit_type`
+    (RZ→Rezoning, DP/DPU/DPS/DPQ→Development Permit, DVP→Development Variance Permit, OCP→OCP
+    Amendment, HER→Heritage, PAR→Pre-Application Review, TUP→Temporary Use Permit, SDP→Special
+    Development Permit)
+  - `Project_Address` → `address`; `Project_Type` → `development_class` (Residential → residential,
+    "Mixed Use" → mixed, Commercial/Institutional/Industrial → their class)
+  - `Project_Description` → `raw_text`, parsed into fields by `bc_dev_permits/features.py`
+    ("55 unit infill townhouse development" → units; "29 storey ... 338 market rental units" →
+    storeys + units + rental)
+  - `Status_Edit` → `status` (the readable status, e.g. "E Building Permit Issued")
+  - `Last_Updated` (epoch ms) → "Last Updated" milestone; polygon geometry → centroid lat/lon
+  - `Project_Planner` → **excluded** (staff name, PII, no schema column)
+- **Be Heard New West cross-reference** (richer prose, ~18/70 rows): the `Hyperlink` field holds a
+  `beheardnewwest.ca` engagement link. That site is a JavaScript single-page app, so the page is
+  rendered with headless Playwright (the `[browser]` extra) and cached. The engagement prose adds
+  floor space ratio, parking and bicycle-stall counts the terse `Project_Description` omits
+  (Cumberland St: "FSR of 1.0 ... 88 off-street parking ... 55 long-term bicycle ... four
+  short-term"). A parsed value overlays the map row; an empty one keeps the map's.
+  `extraction_method` becomes `"arcgis+beheard"` and `enrichment_url` records the page.
+  - **The rule:** enrich only when a project **has a link** and that link resolves to a **real
+    project page** (its title starts with "Project:"). A row with **no link**, or a link that
+    resolves to a **"page not found"** (the generic platform title, e.g. the retired
+    616-640-sixth-st page), is left as a plain `arcgis` row — no further parsing.
+- De-duplication: `harvest()` ends with `consolidate.consolidate_by_address` (the general rule),
+  though the FeatureServer already emits one row per project so duplicates are rare.
 
 ## ubc — UBC  (html)
 
