@@ -102,3 +102,18 @@ common commands (run `make help` for the list).
   It auto-loads `data/processed/north_van_test.json` and has a "Load JSON" button for any
   `data/processed/<municipality>.json`. No `make`? Run its one-line command directly from
   the repo root: `python -m http.server 8000`, then open `http://localhost:8000/tools/qa/`.
+- **Standalone QA file (share internally):** bundle the viewer + one municipality's data
+  into a single self-contained HTML that opens by double-click (`file://`) — no server, no
+  build — so it can be emailed or dropped on any static host:
+
+  ```bash
+  python tools/qa/build_standalone.py \
+      data/processed/<municipality>.json \
+      tools/qa/<municipality>-qa-standalone.html \
+      "<Title> Development Permit QA"
+  # e.g. data/processed/halton_hills.json -> tools/qa/halton_hills-qa-standalone.html
+  ```
+
+  The dataset is embedded in the file; React and Babel still load from a CDN, so the
+  viewer needs internet access when opened. The file is a point-in-time snapshot — re-run
+  the command to refresh it after a new harvest.
