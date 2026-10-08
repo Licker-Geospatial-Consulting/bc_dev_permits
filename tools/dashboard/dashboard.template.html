@@ -1,4 +1,4 @@
-<title>BC Permit Atlas</title>
+<title>Permit Atlas</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&display=swap">
 <style>
 /*__LEAFLET_CSS__*/
@@ -60,6 +60,16 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .chip .n{font-variant-numeric:tabular-nums;font-size:11px;opacity:.8}
 .chip[aria-pressed="true"] .n{opacity:.95}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sel{font-family:var(--display);font-weight:600;font-size:12.5px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink);
+  padding:7px 30px 7px 12px;border-radius:999px;white-space:nowrap;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a8b82' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center}
+#province{background-color:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+#province{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.5'/%3E%3C/svg%3E")}
+.sel:hover{border-color:var(--ring)}
+.sel option{color:var(--ink);background:var(--surface)}
 #search{flex:1;min-width:150px;max-width:280px;margin-left:auto}
 #search input{width:100%;box-sizing:border-box;font:inherit;font-size:13px;
   padding:8px 12px;border-radius:9px;border:1px solid var(--line);
@@ -147,8 +157,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 <div id="map"></div>
 
 <div id="bar">
-  <div class="brand"><b>BC Permit Atlas</b><span id="sub">development applications</span></div>
-  <div class="chips" id="chips"></div>
+  <div class="brand"><b>Permit Atlas</b><span id="sub">development applications</span></div>
+  <div class="filters">
+    <select id="province" class="sel" aria-label="Province"></select>
+    <select id="muni" class="sel" aria-label="Municipality"></select>
+  </div>
   <div id="search"><input id="q" type="search" placeholder="Search address or permit #" autocomplete="off"></div>
   <button class="icon-btn" id="export" title="Export current view to Excel" aria-label="Export to Excel">&#10515;</button>
   <button class="icon-btn" id="theme" title="Toggle theme" aria-label="Toggle theme">&#9680;</button>
@@ -175,12 +188,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 const CLASSES = ["residential","mixed","commercial","industrial","institutional","unknown"];
 const CLABEL = {residential:"Residential",mixed:"Mixed-use",commercial:"Commercial",
   industrial:"Industrial",institutional:"Institutional",unknown:"Unclassified"};
-const MUNIS = ["Coquitlam","Halton Hills","Maple Ridge","North Vancouver","Port Moody","Victoria","West Vancouver"];
+// Municipalities grouped by province; the province dropdown filters to one province at a time.
+const PROVINCES = {
+  "British Columbia": ["Coquitlam","Maple Ridge","New Westminster","North Vancouver","Port Moody","Victoria","West Vancouver"],
+  "Ontario": ["Halton Hills"],
+};
+const MUNI_PROVINCE = {};
+for (const [prov, ms] of Object.entries(PROVINCES)) ms.forEach(m => MUNI_PROVINCE[m] = prov);
 const cssvar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const classColor = c => cssvar("--c-"+(CLASSES.includes(c)?c:"unknown"));
 
 // ---- state ----
-const state = { muni:"All", classesOff:new Set(), q:"", selected:null };
+const state = { province:"British Columbia", muni:"All", classesOff:new Set(), q:"", selected:null };
 
 function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function fmt(n){return typeof n==="number"?n.toLocaleString():n;}
@@ -306,6 +325,7 @@ document.getElementById("map").addEventListener("click",e=>{ /* map bg click kee
 
 // ---- filtering ----
 function visible(p){
+  if(MUNI_PROVINCE[p.muni]!==state.province) return false;
   if(state.muni!=="All" && p.muni!==state.muni) return false;
   if(state.classesOff.has(p.class||"unknown")) return false;
   if(state.q){ const q=state.q.toLowerCase();
@@ -318,24 +338,29 @@ function applyFilters(){
     else if(!v && map.hasLayer(m)) layer.removeLayer(m);
   });
 }
-function fitMuni(name){
-  const pts = name==="All" ? Object.values(muniBounds).flat() : (muniBounds[name]||[]);
+function fitCurrent(){
+  // Fit the selected municipality, or the whole selected province when "All" is chosen.
+  const pts = state.muni!=="All"
+    ? (muniBounds[state.muni]||[])
+    : PROVINCES[state.province].flatMap(m=>muniBounds[m]||[]);
   if(pts.length) map.flyToBounds(L.latLngBounds(pts).pad(.08),{duration:.7,maxZoom:15});
 }
 
-// ---- chips ----
+// ---- province / municipality dropdowns ----
 const counts = {}; geo.forEach(p=>counts[p.muni]=(counts[p.muni]||0)+1);
-const chips=document.getElementById("chips");
-function chip(name,label){
-  const b=document.createElement("button"); b.className="chip"; b.setAttribute("aria-pressed",name==="All");
-  const n = name==="All"?geo.length:(counts[name]||0);
-  b.innerHTML=`${label}<span class="n">${n.toLocaleString()}</span>`;
-  b.onclick=()=>{ state.muni=name; [...chips.children].forEach(c=>c.setAttribute("aria-pressed","false"));
-    b.setAttribute("aria-pressed","true"); applyFilters(); fitMuni(name); };
-  chips.appendChild(b);
+const provCount = prov => PROVINCES[prov].reduce((s,m)=>s+(counts[m]||0),0);
+const provSel=document.getElementById("province"), muniSel=document.getElementById("muni");
+function opt(value,label){ const o=document.createElement("option"); o.value=value; o.textContent=label; return o; }
+Object.keys(PROVINCES).forEach(prov=>provSel.appendChild(opt(prov,`${prov} (${provCount(prov).toLocaleString()})`)));
+function populateMuni(){
+  muniSel.innerHTML="";
+  muniSel.appendChild(opt("All",`All municipalities (${provCount(state.province).toLocaleString()})`));
+  PROVINCES[state.province].forEach(m=>muniSel.appendChild(opt(m,`${m} (${(counts[m]||0).toLocaleString()})`)));
+  muniSel.value=state.muni;
 }
-chip("All","All");
-MUNIS.forEach(mn=>chip(mn,mn));
+provSel.value=state.province; populateMuni();
+provSel.onchange=()=>{ state.province=provSel.value; state.muni="All"; populateMuni(); applyFilters(); fitCurrent(); };
+muniSel.onchange=()=>{ state.muni=muniSel.value; applyFilters(); fitCurrent(); };
 
 // ---- legend (toggles) ----
 const legItems=document.getElementById("legitems");
@@ -402,7 +427,8 @@ const EXPORT_COLS = [
 ];
 function exportRows(){ return PERMITS.filter(visible); }   // honor the active muni/class/search filter
 function exportName(ext){
-  const tag = state.muni==="All" ? "all" : state.muni.replace(/\s+/g,"");
+  // Name the file after the current view: a specific municipality, else the selected province.
+  const tag = (state.muni!=="All" ? state.muni : state.province).replace(/\s+/g,"");
   return `permit_atlas_${tag}.${ext}`;
 }
 // Hand a generated file to the viewer. Inside the claude.ai artifact the viewer blocks plain
@@ -451,8 +477,8 @@ async function exportExcel(){
 }
 document.getElementById("export").onclick=exportExcel;
 
-// start: fit everything
-fitMuni("All");
+// start: fit the default province (BC)
+fitCurrent();
 document.getElementById("sub").textContent =
   `${PERMITS.length.toLocaleString()} applications · ${geo.length.toLocaleString()} mapped`;
 restyle();
