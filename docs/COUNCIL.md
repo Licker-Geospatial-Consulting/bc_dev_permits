@@ -197,14 +197,32 @@ the exact instructions you gave per site.
 - **HTML cross-reference** (richer prose for the ~10 "major" applications): the list page links to
   per-application subpages whose Froala `.fr-view` prose is far richer than the map's terse
   `APP_DESC` (e.g. map: "apartment buildings with 6 residential towers"; subpage: "6 towers,
-  17-22 storeys, 1,481 units, 1,481 parking"). `enrich_from_html` matches a subpage to a row by
-  **(civic number, distinctive street token)** and overlays its fields; a value the richer prose
-  parses wins, a field it leaves empty keeps the map's. `extraction_method` becomes `"arcgis+html"`.
-  - A subpage splits into Description / Process / Status sections that **restate** the same totals,
-    so each section is parsed on its own and count fields combine by **MAX, not sum** — otherwise
-    "82 total units" plus "81 townhouses + 1 detached" double-counts to 164.
-- `extraction_method = "arcgis"` (map only) or `"arcgis+html"` (enriched). Shared ArcGIS transport
-  lives in `harvesters/arcgis_common.py`. Only Ontario source so far; still one normalized schema.
+  17-22 storeys, 1,481 units, 1,481 parking"). `enrich_from_html` matches a subpage to a map row by
+  **(civic number, distinctive street token)** first, then by a **shared file number** (some sites
+  carry a legal-description address like "Part of Lot 21, Concession 9" that no civic match reaches,
+  e.g. the Eden Oak subdivision). The richer prose wins per field; an empty field keeps the map's.
+  `extraction_method` becomes `"arcgis+html"`, and `enrichment_url` records the subpage.
+  - A subpage splits into Description / Process / Status / Submissions sections. The Submissions
+    sections are **document lists** ("Contact X to request a copy of ...") and are dropped; the
+    remaining prose is kept whole in `raw_text` so parking/amenity notes survive. The count fields
+    **combine by MAX across sections, not sum** (each section restates the totals) — otherwise
+    "82 total units" plus "81 townhouses + 1 detached" double-counts to 164. A stated grand total
+    ("744 total dwelling units") and the "each containing N units" per-block breakdown are handled
+    in `features.py` so a nested "<subtotal>, as follows: <sub-components>" list is not summed twice.
+  - A major subpage that matches **no** map row (e.g. a just-filed application like 530 Guelph St)
+    is added as its own `extraction_method = "html"` row (permit id from the file numbers, address
+    from the title, null geometry, `needs_review`), so a new major application is never lost.
+  - `_MAJOR_OVERRIDES` carries the few curated corrections prose cannot parse deterministically: a
+    revision that *reduces* the program (16 & 18 Mill: two 4-storey buildings / 34 units, revised
+    down from a 6-storey / 52-unit building) and a per-unit parking note (159 Confederation).
+- **De-duplication** (the general rule, see below): `harvest()` ends by calling
+  `consolidate.consolidate_by_address`, which collapses an OPA + ZBA + Subdivision filed for one
+  site into a single record. Example: the Subdivision and Site Plan at "125 McDonald Blvd." / "125
+  McDonald Blvd" become one record with the other kept in `related_permits`.
+- `extraction_method = "arcgis"` (map only), `"arcgis+html"` (enriched) or `"html"` (standalone
+  major). Shared ArcGIS transport lives in `harvesters/arcgis_common.py`. First Ontario source;
+  still one normalized schema. Terse map-only Site Plans (telecom towers, quarry extensions,
+  warehouses) legitimately carry no unit/floor program — the source publishes none.
 
 ## new_west — City of New Westminster  (arcgis + html)
 

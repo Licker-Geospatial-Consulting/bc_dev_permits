@@ -120,7 +120,7 @@ _OCCUPANCY = [
         r"|duplex|triplex|fourplex|fiveplex|sixplex|quadruplex|quadplex|houseplex",
         "residential",
     ),
-    (r"retail|shops?|commercial", "commercial"),
+    (r"retail|shops?|commercial|restaurant|conference centre|conference center", "commercial"),
     (r"office", "office"),
     (r"industrial|warehouse|light industrial", "industrial"),
     (r"institutional|school|church|civic|community centre|daycare|child care", "institutional"),
@@ -201,6 +201,12 @@ def _component_counts(text: str) -> dict[str, int]:
                 if re.match(r"\s+(?:building|block|tower|complex|development|structure)",
                             text[m.end():], re.IGNORECASE):
                     continue
+                # "three blocks, each containing four townhouse units" is a per-group breakdown of
+                # a larger total, not another increment, so a count introduced by "each containing/
+                # with/of" is skipped (the stated total is counted on its own elsewhere).
+                if re.search(r"each\s+(?:containing|with|of|having|comprising)\s*$",
+                             text[:m.start()][-40:], re.IGNORECASE):
+                    continue
                 c = _count(m)
                 if c:
                     total += c
@@ -213,18 +219,21 @@ def _component_counts(text: str) -> dict[str, int]:
 
 
 def _units_stated_total(text: str) -> int | None:
-    """Return the largest explicitly stated "total of <N> units".
+    """Return the largest explicitly stated grand total of units.
 
-    When several are given ("167 market rental units ... for a total of 186 units"),
-    the grand (largest) total is the answer.
+    Two phrasings: "a total of <N> units" and "<N> total ... units" (the Ontario subpages
+    write "744 total dwelling units", "82 total dwelling units"). A stated grand total is
+    authoritative, so it is tried before any component sum, which otherwise double-counts a
+    "<subtotal> ..., as follows: <sub-component> ..." breakdown. When several totals are given
+    ("167 market rental units ... for a total of 186 units"), the largest is the answer.
     """
     totals = [
         c
-        for m in re.finditer(
+        for pattern in (
             rf"(?:for\s+a\s+)?total\s+of\s+({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,2}}units?\b",
-            text,
-            re.IGNORECASE,
+            rf"({_NUM}){_PAREN}\s+total\s+(?:[\w-]+\s+){{0,2}}units?\b",
         )
+        for m in re.finditer(pattern, text, re.IGNORECASE)
         if (c := _count(m)) is not None
     ]
     return max(totals) if totals else None

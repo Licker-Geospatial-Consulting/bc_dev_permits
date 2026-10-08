@@ -99,7 +99,21 @@ def test_civic_key_matching():
     assert halton_hills._civic_key("159 Confederation Street ") == (159, "confederation")
     assert halton_hills._civic_key("16768 22 Side Road ") == (16768, "side")
     assert halton_hills._civic_key(None) == (None, None)
+    # A multi-address title must key on the street, not the connector: "16 and 18 Mill Street" maps
+    # to the same key as the subpage's "16 & 18 Mill Street" so the two match.
+    assert halton_hills._civic_key("16 and 18 Mill Street") == (16, "mill")
+    assert halton_hills._civic_key("16 & 18 Mill Street, Georgetown") == (16, "mill")
     print("\n_civic_key PASSED ✓")
+
+
+def test_file_numbers_and_permit_type():
+    """File numbers are parsed in order, and their prefixes name the permit type."""
+    text = "applications (File Nos. D09OPA25.001 & D14ZBA25.002) and again D09OPA25.001 for 37 King"
+    files = halton_hills._file_numbers(text)
+    assert files == ["D09OPA25.001", "D14ZBA25.002"]          # order preserved, de-duplicated
+    assert halton_hills._permit_type_from_files(files) == "OPA, ZBA"
+    assert halton_hills._permit_type_from_files(["D12SUB24.001"]) == "Subdivision"
+    print("\n_file_numbers PASSED ✓")
 
 
 def test_extract_sections_max_combines_counts():
@@ -108,6 +122,8 @@ def test_extract_sections_max_combines_counts():
         "The proposal is for a total of 82 dwelling units.",
         "The 82 units comprise 81 townhouses and 1 single detached dwelling, "
         "with 326 resident parking spaces.",
+        "1st Submission (January 2025) Contact the planner to request a copy of any of "
+        "the documents below. Cover Letter Planning Justification Report Landscape Plan",
     ]
     combined = halton_hills._extract_sections(sections)
     print("\n=== _extract_sections ===")
@@ -117,7 +133,10 @@ def test_extract_sections_max_combines_counts():
     assert combined["unit_mix"] == {"townhouse": 81, "detached": 1}
     assert combined["parking_vehicle_stalls"] == 326
     assert combined["development_class"] == "residential"
-    assert combined["description"] == sections[0]       # first section is the kept description
+    # The two substantive sections are kept whole as the description; the document-list section
+    # ("request a copy of ... documents") is dropped so it never pads raw_text.
+    assert combined["description"] == sections[0] + "\n\n" + sections[1]
+    assert "Cover Letter" not in combined["description"]
     print("PASSED ✓")
 
 
@@ -127,5 +146,6 @@ if __name__ == "__main__":
     test_opa_other_use_is_unknown_and_flagged()
     test_combined_file_numbers_and_split_counts()
     test_civic_key_matching()
+    test_file_numbers_and_permit_type()
     test_extract_sections_max_combines_counts()
     print("\nAll Halton Hills harvester tests passed.")

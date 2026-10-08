@@ -42,10 +42,23 @@ expensive local-LLM PDF pass for pages that genuinely need it.
    (`bc_dev_permits/features.py` — regex/selectors, no model call). Reserve Ollama (`bc_dev_permits/modeling/predict.py`,
    contract in `references/extraction_prompt.md`) for the PDF-fallback path only — reading fields out of
    PDF documents when a page had no usable text. See `references/ollama_pdf_extraction.md`.
-6. **Upsert** into `dev_permit` keyed on `(municipality, permit_id)`; attach any
+6. **De-duplicate by address (general rule — every municipality).** End `harvest()` by calling
+   `bc_dev_permits.consolidate.consolidate_by_address(rows)`. One physical site often appears as
+   several rows — an Official Plan Amendment, a Zoning By-law Amendment and a Subdivision filed
+   together, or the same address published twice with different punctuation ("125 McDonald Blvd."
+   vs "125 McDonald Blvd"). The rule groups rows by normalized civic address and folds:
+   - **thin records** (no `units_total` / `number_of_stories` / `floor_area` program) into the
+     strongest record at that address, and
+   - **strong records that share a program signature** (the same project under several permit
+     types — a Subdivision and a ZBA both stating 1205 units) into one.
+
+   Folded records survive as the keeper's `related_permits` (id / type / status) with milestones
+   merged. Strong records with *different* programs are left separate, so an address with genuinely
+   distinct developments keeps them ("scores low → combine; scores high and distinct → separate").
+7. **Upsert** into `dev_permit` keyed on `(municipality, permit_id)`; attach any
    documents to `dev_document`. Record `extraction_method`, `extraction_confidence`,
    and `source_url` on every row for provenance.
-7. **QA the output.** Save to `data/processed/<municipality>.json`, then run `make qa`
+8. **QA the output.** Save to `data/processed/<municipality>.json`, then run `make qa`
    and open the viewer at http://localhost:8000/tools/qa/ (or use its "Load JSON" button).
    Review the `needs_pdf_extraction`, `needs_review`, and low-confidence rows, and confirm
    each row's `raw_text` actually matches the parsed fields.
