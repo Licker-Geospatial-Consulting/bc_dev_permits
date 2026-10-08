@@ -10,10 +10,14 @@ from pathlib import Path
 
 import requests
 
+# slug -> (city, (centroid lat, lon), province). Most rows already carry map coordinates and are
+# skipped; only the coordless rows (HTML-source municipalities, and Halton Hills' standalone major
+# applications like 530 Guelph St) are geocoded here.
 CITY = {
-    "north_van": ("North Vancouver", (49.3200, -123.0724)),
-    "victoria": ("Victoria", (48.4284, -123.3656)),
-    "west_van": ("West Vancouver", (49.3286, -123.1608)),
+    "north_van": ("North Vancouver", (49.3200, -123.0724), "BC"),
+    "victoria": ("Victoria", (48.4284, -123.3656), "BC"),
+    "west_van": ("West Vancouver", (49.3286, -123.1608), "BC"),
+    "halton_hills": ("Halton Hills", (43.6450, -79.9200), "ON"),
 }
 
 # Street-type suffixes used to pick the street phrase out of a West Van address.
@@ -65,11 +69,12 @@ def query_for(row, slug):
     return None  # project name, not an address
 
 
-def geocode(q, city):
-    key = f"{q}, {city}"
+def geocode(q, city, province="BC"):
+    key = f"{q}, {city}"  # city is unique per slug, so the key needs no province
     if key in cache:
         return cache[key]
-    params = {"q": f"{q}, {city}, BC, Canada", "format": "json", "limit": 1, "countrycodes": "ca"}
+    params = {"q": f"{q}, {city}, {province}, Canada", "format": "json", "limit": 1,
+              "countrycodes": "ca"}
     try:
         r = session.get("https://nominatim.openstreetmap.org/search", params=params, timeout=30)
         data = r.json()
@@ -83,7 +88,7 @@ def geocode(q, city):
 
 
 out = {}
-for slug, (city, centroid) in CITY.items():
+for slug, (city, centroid, province) in CITY.items():
     rows = json.loads(Path(f"data/processed/{slug}.json").read_text(encoding="utf-8"))
     out[slug] = {}
     hit = approx = 0
@@ -91,8 +96,10 @@ for slug, (city, centroid) in CITY.items():
         pid = row.get("permit_id")
         if not pid:
             continue
+        if row.get("latitude") is not None:
+            continue  # already has map coordinates; only fill gaps
         q = query_for(row, slug)
-        res = geocode(q, city) if q else None
+        res = geocode(q, city, province) if q else None
         if res:
             out[slug][pid] = [res[0], res[1], False]
             hit += 1

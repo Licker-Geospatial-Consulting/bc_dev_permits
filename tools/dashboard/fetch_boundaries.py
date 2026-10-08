@@ -13,6 +13,7 @@ QUERIES = {
     "Port Moody": "Port Moody, British Columbia, Canada",
     "Victoria": "Victoria, British Columbia, Canada",
     "West Vancouver": "West Vancouver, British Columbia, Canada",
+    "Halton Hills": "Halton Hills, Ontario, Canada",
 }
 UA = "bc-dev-permits-dashboard/0.1 (+contact: himalya@lgeo.co)"
 s = requests.Session()

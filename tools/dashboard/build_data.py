@@ -5,6 +5,7 @@ from pathlib import Path
 
 FILES = {
     "coquitlam": "Coquitlam",
+    "halton_hills": "Halton Hills",
     "maple_ridge": "Maple Ridge",
     "north_van": "North Vancouver",
     "port_moody": "Port Moody",
@@ -13,15 +14,18 @@ FILES = {
 }
 PROC = Path("data/processed")
 
-# Fields we surface in the detail panel (compact; skip giant raw_text).
+# Every attribute carried onto each record: shown in the detail panel and written to the Excel
+# export (the export flattens the object/array fields). raw_text is included so the export is a
+# complete record of each application.
 DETAIL_FIELDS = [
-    "permit_type", "development_class", "status", "number_of_stories", "units_total",
-    "unit_mix", "height_m", "lot_area", "lot_area_unit", "floor_area", "floor_area_unit",
-    "footprint_area", "parking_vehicle_stalls", "parking_bike_stalls", "parking_notes",
-    "rental_or_strata", "rental_subtype", "zoning_density", "energy_info",
-    "building_materials", "mechanical_system_info", "retrofit_info",
-    "permit_type", "development_name", "extraction_method", "extraction_confidence", "needs_review",
-    "enrichment_url", "related_permits",
+    "permit_type", "development_class", "development_name", "status",
+    "number_of_stories", "units_total", "unit_mix",
+    "height_m", "lot_area", "lot_area_unit", "floor_area", "floor_area_unit", "footprint_area",
+    "parking_vehicle_stalls", "parking_bike_stalls", "parking_notes",
+    "rental_or_strata", "rental_subtype", "rental_mix", "zoning_density", "occupancy_types",
+    "energy_info", "building_materials", "mechanical_system_info", "retrofit_info",
+    "extraction_method", "extraction_confidence", "needs_review", "needs_pdf_extraction",
+    "source_url", "enrichment_url", "related_permits", "raw_text",
 ]
 
 # Geocoded coords for the HTML-source municipalities (North Van, Victoria).
@@ -51,7 +55,7 @@ for slug, name in FILES.items():
             "class": r.get("development_class") or "unknown",
             "lat": round(lat, 6) if lat is not None else None,
             "lon": round(lon, 6) if lon is not None else None,
-            "ms": [m for m in (r.get("milestones") or []) if m.get("milestone_date")][:1],
+            "ms": [m for m in (r.get("milestones") or []) if m.get("milestone_date")],
             "docs": len(r.get("documents") or []),
         }
         if approx:

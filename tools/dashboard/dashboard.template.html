@@ -150,6 +150,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
   <div class="brand"><b>BC Permit Atlas</b><span id="sub">development applications</span></div>
   <div class="chips" id="chips"></div>
   <div id="search"><input id="q" type="search" placeholder="Search address or permit #" autocomplete="off"></div>
+  <button class="icon-btn" id="export" title="Export current view to Excel" aria-label="Export to Excel">&#10515;</button>
   <button class="icon-btn" id="theme" title="Toggle theme" aria-label="Toggle theme">&#9680;</button>
 </div>
 
@@ -174,7 +175,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 const CLASSES = ["residential","mixed","commercial","industrial","institutional","unknown"];
 const CLABEL = {residential:"Residential",mixed:"Mixed-use",commercial:"Commercial",
   industrial:"Industrial",institutional:"Institutional",unknown:"Unclassified"};
-const MUNIS = ["Coquitlam","Maple Ridge","North Vancouver","Port Moody","Victoria","West Vancouver"];
+const MUNIS = ["Coquitlam","Halton Hills","Maple Ridge","North Vancouver","Port Moody","Victoria","West Vancouver"];
 const cssvar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const classColor = c => cssvar("--c-"+(CLASSES.includes(c)?c:"unknown"));
 
@@ -371,6 +372,84 @@ document.getElementById("theme").onclick=()=>{
 };
 try{const t=localStorage.getItem("bcpa-theme"); if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePanel(); });
+
+// ---- export to Excel ----
+// Flatten the object/array fields so every attribute lands in one cell.
+const mixStr = m => (m && typeof m==="object") ? Object.entries(m).map(([k,v])=>`${k}: ${v}`).join("; ") : "";
+const arrStr = a => Array.isArray(a) ? a.join("; ") : (a||"");
+const msStr  = a => Array.isArray(a) ? a.map(m=>`${m.milestone||m.m||"Milestone"}: ${m.milestone_date||m.d||""}`).join("; ") : "";
+const relStr = a => Array.isArray(a) ? a.map(r=>{
+  const meta=[r.permit_type,r.status].filter(Boolean).join(" | ");
+  return `${r.permit_id||""}${meta?` (${meta})`:""}`; }).join("; ") : "";
+// [header, accessor] for every available attribute, in a sensible reading order.
+const EXPORT_COLS = [
+  ["Municipality",p=>p.muni],["Permit ID",p=>p.id],["Address",p=>p.addr],
+  ["Development name",p=>p.development_name],["Class",p=>CLABEL[p.class]||p.class],
+  ["Permit type",p=>p.permit_type],["Status",p=>p.status],
+  ["Units",p=>p.units_total],["Unit mix",p=>mixStr(p.unit_mix)],
+  ["Storeys",p=>p.number_of_stories],["Height (m)",p=>p.height_m],
+  ["Floor area",p=>p.floor_area],["Floor area unit",p=>p.floor_area_unit],
+  ["Lot area",p=>p.lot_area],["Lot area unit",p=>p.lot_area_unit],["Footprint (m²)",p=>p.footprint_area],
+  ["Vehicle parking",p=>p.parking_vehicle_stalls],["Bicycle parking",p=>p.parking_bike_stalls],
+  ["Parking notes",p=>p.parking_notes],["Tenure",p=>p.rental_or_strata],["Rental subtype",p=>p.rental_subtype],
+  ["Rental mix",p=>mixStr(p.rental_mix)],["Zoning / density",p=>p.zoning_density],
+  ["Occupancy types",p=>arrStr(p.occupancy_types)],["Latitude",p=>p.lat],["Longitude",p=>p.lon],
+  ["Milestones",p=>msStr(p.ms)],["Related permits",p=>relStr(p.related_permits)],["Documents",p=>p.docs],
+  ["Extraction method",p=>p.extraction_method],
+  ["Confidence",p=>typeof p.extraction_confidence==="number"?p.extraction_confidence:""],
+  ["Needs review",p=>p.needs_review?"yes":""],["Source URL",p=>p.source_url],
+  ["Enrichment URL",p=>p.enrichment_url],["Raw text",p=>p.raw_text],
+];
+function exportRows(){ return PERMITS.filter(visible); }   // honor the active muni/class/search filter
+function exportName(ext){
+  const tag = state.muni==="All" ? "all" : state.muni.replace(/\s+/g,"");
+  return `permit_atlas_${tag}.${ext}`;
+}
+// Hand a generated file to the viewer. Inside the claude.ai artifact the viewer blocks plain
+// downloads, so the file is offered through the `downloads` capability (viewer confirms); when the
+// page is opened as a local file (no runtime) it falls back to an ordinary browser download.
+async function saveFile(filename, data, mime){
+  let dl=null;
+  try{ if(typeof window.claude!=="undefined" && window.claude.use) dl=await window.claude.use("downloads"); }
+  catch(e){ dl=null; }
+  if(dl){
+    try{ await dl.save({filename, data}); }
+    catch(e){ if(!e || e.code!=="declined") console.warn("export save failed", e&&e.code); }
+    return;
+  }
+  const blob = data instanceof Blob ? data : new Blob([data], {type:mime});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function csvText(rows){
+  const cell=v=>{ v=v==null?"":String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
+  const lines=[EXPORT_COLS.map(c=>cell(c[0])).join(",")];
+  rows.forEach(p=>lines.push(EXPORT_COLS.map(c=>cell(c[1](p))).join(",")));
+  return "﻿"+lines.join("\r\n");
+}
+function loadScript(src){ return new Promise((res,rej)=>{
+  const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function exportExcel(){
+  const btn=document.getElementById("export"), rows=exportRows();
+  if(!rows.length) return;
+  btn.disabled=true; const prev=btn.innerHTML; btn.innerHTML="...";
+  try{
+    if(typeof XLSX==="undefined")
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+    const aoa=[EXPORT_COLS.map(c=>c[0]), ...rows.map(p=>EXPORT_COLS.map(c=>{const v=c[1](p);return v==null?"":v;}))];
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"]=EXPORT_COLS.map(c=>({wch:Math.min(48,Math.max(10,c[0].length+2))}));
+    ws["!autofilter"]={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rows.length,c:EXPORT_COLS.length-1}})};
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Permits");
+    const buf=XLSX.write(wb,{bookType:"xlsx",type:"array"});   // Uint8Array of the .xlsx
+    await saveFile(exportName("xlsx"), buf, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  }catch(err){   // library could not load (offline / CDN blocked): a flat table saves as CSV, which Excel opens
+    await saveFile(exportName("csv"), csvText(rows), "text/csv;charset=utf-8");
+  }
+  finally{ btn.disabled=false; btn.innerHTML=prev; }
+}
+document.getElementById("export").onclick=exportExcel;
 
 // start: fit everything
 fitMuni("All");
