@@ -88,6 +88,17 @@ def _development_class(project_type: str | None, prose_class: str) -> str:
     return _CLASS_BY_TYPE.get((project_type or "").strip().lower()) or prose_class
 
 
+def _occupancies_with_area(prose: dict) -> list[dict] | None:
+    """Return the prose's per-use occupancies only when at least one carries a floor area.
+
+    A project may state floor area by use ("66,000 sq m residential ... 6,040 sq m commercial ...
+    3,065 sq m open space"); that structured breakdown is kept so dev_permit_occupancy records the
+    per-use area. A bare use list with no areas adds nothing over occupancy_types and is dropped.
+    """
+    occ = prose.get("occupancies") or []
+    return occ if any(o.get("floor_area") is not None for o in occ) else None
+
+
 def _row_from_feature(feature: dict) -> dict | None:
     """Map one POG feature to a dev_permit row, parsing its description into fields."""
     attrs = feature.get("attributes") or {}
@@ -133,6 +144,9 @@ def _row_from_feature(feature: dict) -> dict | None:
         "needs_pdf_extraction": False,
         "_beheard_url": _clean(attrs.get("Hyperlink")),
     }
+    occupancies = _occupancies_with_area(prose)
+    if occupancies:
+        row["occupancies"] = occupancies
     row["extraction_confidence"] = features.score_confidence(row)
     row["needs_review"] = row["extraction_confidence"] < 0.6 or dev_class == "unknown"
     return row
@@ -201,6 +215,9 @@ def enrich_from_beheard(rows: list[dict], use_cache: bool = True) -> int:
         for field in _BEHEARD_FIELDS:
             if features.has_value(rich.get(field)):
                 row[field] = rich[field]
+        occupancies = _occupancies_with_area(rich)
+        if occupancies:
+            row["occupancies"] = occupancies
         row["raw_text"] = "\n\n".join(p for p in (row.get("raw_text"), desc) if p)
         row["enrichment_url"] = url
         row["extraction_method"] = "arcgis+beheard"

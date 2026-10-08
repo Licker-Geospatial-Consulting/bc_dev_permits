@@ -140,32 +140,35 @@ _STOREY = r"stor(?:e?y|ies|eys)"
 
 
 def number_of_stories(text: str) -> int | None:
-    """Return the storey count, tolerating "six (6) storeys" and ranges.
+    """Return the storey count: the TALLEST element proposed.
 
-    A range ("two to six storey", "2 and 3 storeys", "2-6 storey") collapses to the
-    tallest value, since number_of_stories is a single INTEGER in the schema.
+    A project often lists several heights - towers over a lower podium, or towers of differing
+    heights ("two 38-storey towers ... two six-storey buildings", "four to six storey podiums ...
+    towers ranging from 30 to 40 storeys"). number_of_stories is a single INTEGER, so the tallest
+    governs: every storey figure (ranges collapse to their top) is collected and the maximum is
+    returned. A count describing an *existing* building to keep is skipped so the proposal's height
+    wins ("existing three storey ... proposed six storeys" -> 6).
     """
-    m = re.search(
+    def _kept(start: int) -> bool:
+        return not re.search(r"existing\W*$", text[:start], re.IGNORECASE)
+
+    heights: list[int] = []
+    # Ranges first ("30 to 40 storeys", "two to six storey") -> the top of the range.
+    for m in re.finditer(
         rf"({_NUM})\s*(?:to|and|through|&|-|–|—)\s*({_NUM})[\s-]*{_STOREY}",  # noqa: RUF001
-        text,
-        re.IGNORECASE,
-    )
-    if m:
-        vals = [v for v in (_to_int(m.group(1)), _to_int(m.group(2))) if v is not None]
-        if vals:
-            return max(vals)
-    # Single value; skip a storey count that describes an *existing* building to keep, so
-    # the proposal's height wins ("existing three story ... proposed six storeys" -> 6).
-    matches = list(
-        re.finditer(
-            rf"({_NUM}){_PAREN}[\s-]*(?:plus\s+basement\s+)?{_STOREY}", text, re.IGNORECASE
-        )
-    )
-    non_existing = [
-        m for m in matches if not re.search(r"existing\W*$", text[: m.start()], re.IGNORECASE)
-    ]
-    chosen = non_existing or matches
-    return _count(chosen[0]) if chosen else None
+        text, re.IGNORECASE,
+    ):
+        if _kept(m.start()):
+            heights += [v for v in (_to_int(m.group(1)), _to_int(m.group(2))) if v is not None]
+    # Then every single "<N> storey" (this also re-catches the top of a range, harmlessly).
+    for m in re.finditer(rf"({_NUM}){_PAREN}[\s-]*(?:plus\s+basement\s+)?{_STOREY}", text, re.IGNORECASE):
+        if _kept(m.start()) and (v := _count(m)) is not None:
+            heights.append(v)
+    # If every storey figure sat in an "existing" clause, fall back to the first one stated.
+    if not heights:
+        m = re.search(rf"({_NUM}){_PAREN}[\s-]*{_STOREY}", text, re.IGNORECASE)
+        return _count(m) if m else None
+    return max(heights)
 
 
 # Dwelling "component" building types whose counts add up to the project total
@@ -237,6 +240,21 @@ def _units_stated_total(text: str) -> int | None:
         if (c := _count(m)) is not None
     ]
     return max(totals) if totals else None
+
+
+def _units_before_breakdown(text: str) -> int | None:
+    """Return the grand total that a tenure/type breakdown is then broken out of.
+
+    "1,050 residential units, including 850 market condo units, 110 units of market rental and 125
+    units of affordable housing" states the project total (1,050) before itemizing it; without
+    this the headline/component strategies would latch onto a sub-figure (the 125 affordable units).
+    """
+    return _search_count(
+        text,
+        rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,2}}?units?,?\s+"
+        rf"(?:including|comprising|consisting|made\s+up\s+of|broken\s+down|"
+        rf"which\s+(?:include|comprise)|that\s+include)\b",
+    )
 
 
 def _units_headline(text: str) -> int | None:
@@ -311,6 +329,7 @@ def _units_plex(text: str) -> int | None:
 # so a new phrasing is added by writing one small strategy and slotting it in here.
 _UNIT_STRATEGIES = (
     _units_stated_total,
+    _units_before_breakdown,
     _units_headline,
     _units_subdivision,
     _units_component_sum,
@@ -460,15 +479,20 @@ def parking_bike(text: str) -> int | None:
 
 
 def parking_notes(text: str) -> str | None:
-    """Return the first sentence describing parking, if present.
+    """Return the full parking/bicycle context: every sentence that mentions parking or bikes.
 
-    Captures the underground-parking sentence used on larger applications, and also
-    per-unit stall notes like "Each townhouse unit will have ... one on-site parking
-    stall." — useful when parking is stated per unit rather than as a single total, so
-    the descriptive detail is preserved even when parking_vehicle() finds no digit total.
+    Larger projects break parking across several categories that no single integer can hold -
+    "144 resident parking spaces and 24 visitor parking spaces. A total of 110 commercial and
+    hotel parking spaces ... 712 long-term and 24 short-term bicycle parking spaces" - and the
+    context (per-unit stalls, below-grade parkade, loading) matters. Every sentence naming parking
+    or bicycles is kept so that breakdown survives even when parking_vehicle()/parking_bike() can
+    only record one headline number.
     """
-    m = re.search(r"([^.]*\b(?:underground parking|parking stall)[^.]*\.)", text, re.IGNORECASE)
-    return m.group(1).strip() if m else None
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    kept = [s.strip() for s in sentences
+            if re.search(r"\bparking\b|\bbicycle\b|\bbike\b", s, re.IGNORECASE)]
+    note = " ".join(kept).strip()
+    return note or None
 
 
 def height_m(text: str) -> float | None:

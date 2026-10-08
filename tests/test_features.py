@@ -52,6 +52,40 @@ def test_parking_notes_underground_still_works():
     assert "underground parking" in (features.parking_notes(text) or "")
 
 
+def test_number_of_stories_tallest_element_wins():
+    # A podium stated before the towers must not hide the towers' height: the project's storey
+    # count is its TALLEST element, so the max across all storey figures governs.
+    podium_then_towers = ("mixed use four to six storey podiums supported by an expected eight "
+                          "residential towers ranging in height from 30 to 40 storeys")
+    assert features.number_of_stories(podium_then_towers) == 40
+    towers_over_low = ("two 38-storey residential towers over a commercial podium and two "
+                       "six-storey rental buildings")
+    assert features.number_of_stories(towers_over_low) == 38
+    # An "existing" building's height is still skipped in favour of the proposal's.
+    assert features.number_of_stories("existing three storey building; proposed six storeys") == 6
+
+
+def test_units_total_before_a_tenure_breakdown():
+    # The grand total stated before "including ..." wins over the itemized sub-figures.
+    text = ("66,000 square metres of residential floor area to provide 1,050 residential units, "
+            "including 850 market condo units, 110 units of market rental and 125 units of "
+            "affordable housing")
+    assert features.units_total(text) == 1050
+
+
+def test_parking_notes_keeps_full_breakdown():
+    # Every parking/bicycle sentence is kept, so a multi-category breakdown is not lost to one
+    # headline number.
+    text = ("The application includes 144 resident parking spaces and 24 visitor parking spaces. "
+            "A total of 110 commercial and hotel parking spaces are also proposed. All off-street "
+            "vehicle parking would be below-grade. A total of 712 long-term and 24 short-term "
+            "bicycle parking spaces would be provided.")
+    notes = features.parking_notes(text)
+    assert "144 resident parking" in notes
+    assert "110 commercial and hotel parking" in notes
+    assert "712 long-term and 24 short-term bicycle" in notes
+
+
 def test_extract_all_on_keith():
     out = features.extract_all(KEITH)
     assert out["permit_type"] == "Rezoning"

@@ -75,6 +75,20 @@ schema in `references/extraction_prompt.md`. Rules:
   (e.g. `["commercial", "residential"]`). See schema notes on why this is a child
   table, not sparse columns.
 - Overall `confidence < 0.6` → set `needs_review = true`.
+- **Read the whole context; don't let a scalar misrepresent a complex project (general rule).**
+  A big project often states several figures, and the deterministic extractors in `features.py`
+  read them in context:
+  - **Storeys = the tallest element.** Towers over a lower podium ("four to six storey podiums ...
+    towers from 30 to 40 storeys") → 40, not the podium's 6.
+  - **Units = the stated grand total**, taken before a breakdown is itemized ("1,050 residential
+    units, including 850 condo, 110 rental and 125 affordable") → 1,050, not a sub-figure.
+  - **Parking keeps its full context.** `parking_notes` captures every parking/bicycle sentence
+    (resident + visitor + commercial + long/short-term bike), since one integer can't hold the
+    breakdown.
+  - **Floor area by use** is kept as structured `occupancies` rows (residential / commercial /
+    open space), not flattened to one number.
+  - Always keep the source narrative in `raw_text`, so anything the scalars don't capture survives
+    for re-extraction.
 
 ## Scope / hygiene
 
