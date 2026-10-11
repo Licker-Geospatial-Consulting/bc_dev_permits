@@ -141,3 +141,10 @@ NEW_WEST_APP_URL = "https://experience.arcgis.com/experience/c30fde314b964efaa16
 NEW_WEST_SERVICE_URL = (
     "https://services3.arcgis.com/A7O8YnTNtzRPIn7T/arcgis/rest/services/POG/FeatureServer/0"
 )
+
+# UBC Campus + Community Planning publishes per-project HTML detail pages (see
+# references/html_detail_pages.md). The list page carries one card per development project (each
+# tagged with a "DP#####" permit number); each detail page has the project prose plus a set of PDF
+# application documents (Development Permit Board report, architectural / civil / parking drawings)
+# that the harvester reads with Claude for fields the HTML omits. Plain HTTP works (no Cloudflare).
+UBC_LIST_URL = "https://planning.ubc.ca/planning-development/development-projects"

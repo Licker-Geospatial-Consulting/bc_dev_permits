@@ -151,35 +151,8 @@ def select_pdf_sources(detail_html: str, url: str) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # 4. Claude-read PDF enrichment (fields are read by Claude in-session)
 # --------------------------------------------------------------------------- #
-def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None) -> int:
-    """Merge Claude-read PDF fields into a row; record provenance + conflicts. Return count filled.
-
-    `fields` is the schema-shaped dict Claude extracted from the PDF (only stated values). Each is
-    stamped method ``pdf_claude`` (non-deterministic), deterministic HTML values are never
-    overwritten, and a genuine HTML-vs-PDF disagreement is logged to ``row['conflicts']`` - all via
-    the shared pdf_enrich code, the same way Ollama results are handled.
-    """
-    # A low-signal HTML row carries a placeholder development_class="unknown" / empty occupancy;
-    # clear those so the PDF's concrete class fills the gap instead of logging a false conflict.
-    if row.get("development_class") in (None, "unknown"):
-        row["development_class"] = None
-    if not row.get("occupancy_types"):
-        row.pop("occupancy_types", None)
-
-    payload = {k: v for k, v in (fields or {}).items()
-               if k not in pdf_enrich.PDF_META and features.has_value(v)}
-    payload["field_methods"] = dict.fromkeys(payload, features.METHOD_PDF_CLAUDE)
-    payload["extraction_method"] = "claude_read"
-    if document:
-        payload["pdf_document"] = document
-    if "occupancies" in (fields or {}):
-        payload["occupancies"] = fields["occupancies"]
-    filled = pdf_enrich.merge_pdf_fields(row, payload)
-    if filled or row.get("conflicts"):
-        pdf_enrich.record_pdf_provenance(row, payload)
-        if payload.get("occupancies"):
-            row["occupancies"] = payload["occupancies"]
-    return filled
+# Claude-read PDF enrichment is shared with the other Claude-read harvesters (see pdf_enrich).
+apply_claude_pdf = pdf_enrich.apply_claude_pdf
 
 
 # --------------------------------------------------------------------------- #

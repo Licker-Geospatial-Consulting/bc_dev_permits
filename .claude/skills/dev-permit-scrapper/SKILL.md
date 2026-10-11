@@ -42,6 +42,22 @@ expensive local-LLM PDF pass for pages that genuinely need it.
    (`bc_dev_permits/features.py` — regex/selectors, no model call). Reserve Ollama (`bc_dev_permits/modeling/predict.py`,
    contract in `references/extraction_prompt.md`) for the PDF-fallback path only — reading fields out of
    PDF documents when a page had no usable text. See `references/ollama_pdf_extraction.md`.
+
+   **PDF enrichment — Claude-read, in priority order (West Van, UBC).** For sources where the richer
+   detail (parking, unit mix, floor area) lives in the application PDFs, read them with **Claude
+   in-session, not Ollama** (see the pdf-parsing memory). Rules:
+   - Fetch everything the HTML gives first; a document-bearing row is a PDF candidate when it is
+     low-signal **or** missing a valuable field (parking / unit mix / floor area).
+   - `select_pdf_sources` orders the documents best-first (e.g. Development Permit Board / Staff
+     Report → architectural / parking drawings → civil → narrative reports). Read them **in order;
+     if the first PDF has no usable info, move to the next**, and so on.
+   - Apply the Claude-read fields with `pdf_enrich.apply_claude_pdf` (shared): deterministic HTML is
+     never overwritten, each PDF field is stamped `pdf_claude`, and a genuine **HTML-vs-PDF
+     disagreement is logged to `row['conflicts']`** (the Victoria conflict mechanism), not dropped.
+   - A tabular project-data sheet needs **visual** reading: render the page with pymupdf
+     (`get_pixmap(dpi=N).save(png)`) and read the PNG, rather than relying on fragmented text.
+   - Keep the per-project Claude-read fields in a `tools/<muni>_enrich.py` so the enrichment is
+     auditable and reproducible (see `tools/westvan_enrich.py`, `tools/ubc_enrich.py`).
 6. **De-duplicate by address (general rule — every municipality).** End `harvest()` by calling
    `bc_dev_permits.consolidate.consolidate_by_address(rows)`. One physical site often appears as
    several rows — an Official Plan Amendment, a Zoning By-law Amendment and a Subdivision filed

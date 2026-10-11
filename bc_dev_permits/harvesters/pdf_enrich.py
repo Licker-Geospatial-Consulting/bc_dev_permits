@@ -122,6 +122,38 @@ def record_pdf_provenance(row: dict, fields: dict) -> None:
                          "doc_role": "ollama_source", "extracted": True})
 
 
+def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None) -> int:
+    """Merge Claude-read PDF fields into a row; record provenance + conflicts. Return count filled.
+
+    Shared by the Claude-read harvesters (West Vancouver, UBC): ``fields`` is the schema-shaped dict
+    Claude extracted from the PDF (only stated values). Each is stamped method ``pdf_claude``
+    (non-deterministic), deterministic HTML values are never overwritten, and a genuine HTML-vs-PDF
+    disagreement is logged to ``row['conflicts']`` - all via the shared merge code, the same way
+    Ollama results are handled.
+    """
+    # A low-signal HTML row carries a placeholder development_class="unknown" / empty occupancy;
+    # clear those so the PDF's concrete class fills the gap instead of logging a false conflict.
+    if row.get("development_class") in (None, "unknown"):
+        row["development_class"] = None
+    if not row.get("occupancy_types"):
+        row.pop("occupancy_types", None)
+
+    payload = {k: v for k, v in (fields or {}).items()
+               if k not in PDF_META and features.has_value(v)}
+    payload["field_methods"] = dict.fromkeys(payload, features.METHOD_PDF_CLAUDE)
+    payload["extraction_method"] = "claude_read"
+    if document:
+        payload["pdf_document"] = document
+    if "occupancies" in (fields or {}):
+        payload["occupancies"] = fields["occupancies"]
+    filled = merge_pdf_fields(row, payload)
+    if filled or row.get("conflicts"):
+        record_pdf_provenance(row, payload)
+        if payload.get("occupancies"):
+            row["occupancies"] = payload["occupancies"]
+    return filled
+
+
 def enrich(rows: list[dict], *, fetch_html: Callable[[str, bool], str],  # noqa: PLR0913
            extract: Callable[[str, str, object], dict | None], session=None,
            use_cache: bool = True, limit: int | None = None, label: str = "pdf") -> int:

@@ -14,7 +14,7 @@ the exact instructions you gave per site.
 | west_van    | District of West Vancouver | html        | html_detail_pages.md      |
 | halton_hills| Town of Halton Hills (ON)  | arcgis+html | arcgis_webmaps.md (+html) |
 | new_west    | City of New Westminster    | arcgis      | arcgis_webmaps.md (+beheard) |
-| ubc         | UBC (Campus + Community Pl)| html        | html_detail_pages.md      |
+| ubc         | UBC (Campus + Community Pl)| html        | html_detail_pages.md (+claude-pdf) |
 | victoria    | City of Victoria           | prospero    | prospero_tracker.md       |
 
 ---
@@ -262,17 +262,39 @@ the exact instructions you gave per site.
 - De-duplication: `harvest()` ends with `consolidate.consolidate_by_address` (the general rule),
   though the FeatureServer already emits one row per project so duplicates are rare.
 
-## ubc — UBC  (html)
+## ubc — UBC (Campus + Community Planning)  (html + Claude-read PDF)
 
-- **List:** https://planning.ubc.ca/planning-development/development-projects
-- Iterate **all pages** (pagination) and take **every development-permit entry**
-  (examples: "ANSO Renewal - DP24027 Amendment 2 - MAC Expansion", "Wesbrook Place South
-  Lot 8 & 9 - DP26024").
-- Parse prose paragraphs/`<div>` sections on each project page → parse deterministically (`bc_dev_permits/features.py`).
-- **permit_id regex:** `DP\d{5}` (+ amendment suffix).
-- Note: UBC is federally/provincially planned (not a BC municipality proper) but fits the
-  same html flow. development_class from prose (academic/institutional vs residential).
-- pagination mechanism through card selector, can be fetched under class `view-content`
+- **List:** https://planning.ubc.ca/planning-development/development-projects — a Drupal view
+  (`.view-project-view-page`) of project cards. Plain HTTP works (no Cloudflare). Handled by
+  `harvesters/ubc.py`.
+- **Project cards** are the links whose text carries a **"DP#####"** permit number (navigation
+  links do not); the status badge ("Application" / "Permit Approved" / "Under Construction") is read
+  from the same card text. `get_project_cards` returns `{url, permit_id, status}` per project.
+- **Field mapping** (detail page), handled by `harvesters/ubc.py`:
+  - `<h1>` "`<Name> - DP#####`" → `development_name` + `permit_id`; `permit_type` = "Development Permit"
+  - the **Location** field → `address`; project prose → `bc_dev_permits/features.py`
+    ("303 units", "14-storey market rental tower ... 6-storey", "total building area: 21,784.1 sq. m")
+  - status from the list card; a milestone table (if present) → milestones
+  - **Boilerplate is dropped:** the "the UBC Vancouver campus consists of 994 acres" about-UBC blurb
+    (whose acreage would otherwise masquerade as a project area) and the staff contact block (a
+    person's name + phone + email, which is PII) are filtered out of the prose and the Location.
+- **Claude-read PDF enrichment** (not Ollama; see the pdf-parsing memory). A project with documents
+  is a PDF-read candidate whenever it is low-signal **or** missing parking / unit mix / floor area -
+  the richer fields the drawings carry. `select_pdf_sources` orders the PDFs **Development Permit
+  Board report → architectural / parking drawings → civil / landscape → narrative reports**; Claude
+  reads them in priority order in-session (the first that yields project data wins) and applies the
+  fields with `apply_claude_pdf` (shared with West Van, in `pdf_enrich`): deterministic HTML is never
+  overwritten, each PDF field is stamped `pdf_claude`, and a genuine HTML-vs-PDF disagreement is
+  logged to `row['conflicts']` (the Victoria conflict mechanism). `extraction_method` becomes
+  `"html+claude_read"`.
+  - Worked examples (`tools/ubc_enrich.py`): **DP24018 Lot BCR 7** - the DP Board report adds 303
+    vehicle + 745 bicycle stalls and the 189 tower / 114 faculty-staff unit split. **DP26024 Lots 8
+    & 9** - the architectural project-data sheet adds 201 vehicle parking, 31,749 m2 floor area (by
+    use), FSR 10.13. **DP25042 Kenny** - the architectural cover sheet shows a targeted seismic
+    renovation: institutional, 0 new units, 0 new parking.
+- De-duplication: `harvest()` ends with `consolidate.consolidate_by_address` (the general rule).
+- Note: UBC is planned by UBC Campus + Community Planning (not a BC municipality proper) but fits
+  the same HTML flow. `extraction_method` is `"html"` or `"html+claude_read"`.
   and the next page is accessed by nav class `pager`
 
 ## victoria — City of Victoria  (prospero)
