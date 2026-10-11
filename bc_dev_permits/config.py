@@ -148,3 +148,10 @@ NEW_WEST_SERVICE_URL = (
 # application documents (Development Permit Board report, architectural / civil / parking drawings)
 # that the harvester reads with Claude for fields the HTML omits. Plain HTTP works (no Cloudflare).
 UBC_LIST_URL = "https://planning.ubc.ca/planning-development/development-projects"
+
+# City of Surrey publishes council planning reports as PDFs (one per application) listed on the
+# planning-reports page (a Drupal view, paginated). There are no HTML detail pages, so the
+# application attributes are read from each report PDF: the page-1 PROPOSAL summary parses
+# deterministically (units / storeys / floor area), and the deeper data-sheet pages are read with
+# Claude for parking / unit mix. Each report PDF lives at /sites/default/files/planning-reports/.
+SURREY_LIST_URL = "https://www.surrey.ca/city-government/council-meetings/planning-reports"

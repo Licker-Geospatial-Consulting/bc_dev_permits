@@ -107,7 +107,10 @@ def record_pdf_provenance(row: dict, fields: dict) -> None:
     a non-deterministic (model) field or an unresolved HTML-vs-PDF conflict. A row filled purely
     by deterministic parses (regex / geometry) is left unflagged.
     """
-    row["extraction_method"] = f"html+{fields.get('extraction_method', 'ollama')}"
+    # Keep the row's own base method (html for the HTML harvesters, pdf_text for Surrey) and append
+    # the PDF read's method, so provenance reads e.g. "html+claude_read" or "pdf_text+claude_read".
+    base = (row.get("extraction_method") or "html").split("+")[0]
+    row["extraction_method"] = f"{base}+{fields.get('extraction_method', 'ollama')}"
     used = set((row.get("field_methods") or {}).values())
     row["needs_review"] = bool(used & features.NONDETERMINISTIC_METHODS) or bool(row.get("conflicts"))
     row["extraction_confidence"] = features.score_confidence(row)

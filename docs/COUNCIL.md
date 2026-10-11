@@ -15,6 +15,7 @@ the exact instructions you gave per site.
 | halton_hills| Town of Halton Hills (ON)  | arcgis+html | arcgis_webmaps.md (+html) |
 | new_west    | City of New Westminster    | arcgis      | arcgis_webmaps.md (+beheard) |
 | ubc         | UBC (Campus + Community Pl)| html        | html_detail_pages.md (+claude-pdf) |
+| surrey      | City of Surrey             | pdf         | (planning report PDFs, claude-read) |
 | victoria    | City of Victoria           | prospero    | prospero_tracker.md       |
 
 ---
@@ -296,6 +297,33 @@ the exact instructions you gave per site.
 - Note: UBC is planned by UBC Campus + Community Planning (not a BC municipality proper) but fits
   the same HTML flow. `extraction_method` is `"html"` or `"html+claude_read"`.
   and the next page is accessed by nav class `pager`
+
+## surrey — City of Surrey  (PDF-first, Claude-read)
+
+- **List:** https://www.surrey.ca/city-government/council-meetings/planning-reports — a paginated
+  Drupal view (`.views-row` inside `.view-search-planning-reports`, `?page=N`). Plain HTTP works.
+  Handled by `harvesters/surrey.py`. **There are no HTML detail pages: each application is a council
+  planning report PDF.** The list is a large archive (hundreds of reports), so harvest with a
+  `--limit`; `--limit 0` fetches the whole archive (one PDF download per report, cached).
+- **List row** → `{permit_id, address, status, meeting_date, report_date, pdf_url}`: the `<h4>` holds
+  "Planning Report `<app no>`" (e.g. 7925-0315-00, also the PDF file name's stem), the address is the
+  bare text node after it, the `<time>` is the council meeting date, and `<span class="tag">` the
+  status (Active / Inactive). The PDF is at `/sites/default/files/planning-reports/PLR_<appno>.pdf`.
+- **PDF page-1 PROPOSAL (deterministic, from the report's own text).** Every report opens with
+  "Application No.", "PROPOSAL:" (a prose summary + bullet application types), "LOCATION:".
+  `pdf_proposal` (pymupdf text) splits that into the description + the bullet permit types, and the
+  description parses through `bc_dev_permits/features.py` ("a 24-storey residential building with 230
+  rental units" → 24 storeys / 230 units / residential / rental; "a 3,922 square metre industrial
+  building" → 3,922 m2 / industrial). A rezoning bullet's "from `<current>` to `<proposed>`" →
+  `zoning_density`. `extraction_method = "pdf_text"`.
+- **Claude-read data sheet** (not Ollama). The deeper pages (the "Development Considerations" parking
+  table, unit mix) are read by Claude in-session - and rendered to an image when the text layer
+  fragments the table - and applied with `apply_claude_pdf` (shared `pdf_enrich`): deterministic
+  values are never overwritten, fields are stamped `pdf_claude`, and a disagreement is logged to
+  `row['conflicts']` (the Victoria conflict mechanism). `extraction_method` becomes
+  `"pdf_text+claude_read"`. Worked example in `tools/surrey_enrich.py`: **7925-0315-00** - the
+  report's parking table adds 120 vehicle + 245 bicycle stalls to the 230-unit / 24-storey summary.
+- De-duplication: `harvest()` ends with `consolidate.consolidate_by_address` (the general rule).
 
 ## victoria — City of Victoria  (prospero)
 
