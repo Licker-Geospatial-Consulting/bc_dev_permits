@@ -135,46 +135,55 @@ def _xc(word) -> float:
     return (word[0] + word[2]) / 2
 
 
-def _proposed_x(words) -> float | None:
-    """The x-centre of the table's "Proposed" column header (paired with "Required" on its row)."""
-    for req in (w for w in words if w[4].lower() == "required"):
-        for prop in (w for w in words if w[4].lower() == "proposed"):
-            if abs(req[1] - prop[1]) < 4 and _xc(prop) > _xc(req):
-                return _xc(prop)
-    return None
-
-
 def _proposed_value(words, anchor, xprop: float) -> int | None:
-    """The number on ``anchor``'s row that sits under the Proposed column."""
+    """Read the number on ``anchor``'s row that sits under the Proposed column."""
     cells = [(_xc(w), int(w[4].replace(",", "").replace("*", "")))
              for w in words if abs(w[1] - anchor[1]) < 5 and re.fullmatch(r"\d[\d,]*\*?", w[4])]
     return min(cells, key=lambda c: abs(c[0] - xprop))[1] if cells else None
 
 
+def _parking_from_words(words) -> tuple[int | None, int | None]:
+    """Read (vehicle, secure bicycle) from a page's words, scoped to the "Number of Stalls" table.
+
+    A staff-report page often holds several Required/Proposed tables (density, setbacks, parking), so
+    the read is anchored to the "Number of Stalls" row: the Proposed header just above it fixes the
+    column, the single "Total" row between there and the "Bicycle" sub-header is the vehicle total,
+    and the "Secure" row below is the long-term bicycle count. Ambiguity returns None, not a guess.
+    """
+    nos = next((w for w in words if w[4].lower() == "stalls"
+                and any(o[4].lower() == "number" and abs(o[1] - w[1]) < 5 and o[0] < w[0]
+                        for o in words)), None)
+    if nos is None:
+        return None, None
+    ny = nos[1]
+    xprop = next((_xc(p) for p in words if p[4].lower() == "proposed" and ny - 45 < p[1] < ny
+                  and any(r[4].lower() == "required" and abs(r[1] - p[1]) < 4 and _xc(r) < _xc(p)
+                          for r in words)), None)
+    if xprop is None:
+        return None, None
+    bike_y = min((w[1] for w in words if w[4].lower() == "bicycle" and w[1] > ny), default=1e9)
+    totals = [w for w in words if w[4].lower().rstrip(":") == "total" and ny < w[1] < bike_y]
+    vehicle = _proposed_value(words, totals[0], xprop) if len(totals) == 1 else None
+    secure = next((w for w in words if w[4].lower() == "secure" and w[1] > ny), None)
+    return vehicle, (_proposed_value(words, secure, xprop) if secure else None)
+
+
 def pdf_parking(pdf_bytes: bytes) -> tuple[int | None, int | None]:
     """Return (vehicle total, secure bicycle) from a report's "Number of Stalls" table.
 
-    A high-PRECISION positional read of the Proposed column: the table's "Required"/"Proposed"
-    header fixes the Proposed column's x, the "Total:" row's value under it is the vehicle total, and
-    the "Residential Secure Parking" row's value under it is the long-term bicycle count. When the
-    layout is ambiguous (no clean header pair, more than one "Total" row, nothing under the Proposed
-    column) None is returned rather than a guessed number.
+    A high-PRECISION positional read of the Proposed column (see _parking_from_words): a value is set
+    only when the parking table is unambiguous, otherwise None is returned rather than a guess.
     """
     import pymupdf  # optional dep, see pyproject [pdf]
 
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-    for i in range(min(doc.page_count, 25)):  # the parking table sits in the report body, never deep
+    for i in range(min(doc.page_count, 40)):  # the parking table is in the report body, not deep
         page = doc[i]
         if "number of stalls" not in page.get_text().lower():
             continue
-        words = page.get_text("words")  # (x0, y0, x1, y1, word, ...)
-        xprop = _proposed_x(words)
-        if xprop is None:
-            continue
-        totals = [w for w in words if w[4].lower().rstrip(":") == "total"]
-        vehicle = _proposed_value(words, totals[0], xprop) if len(totals) == 1 else None
-        secure = next((w for w in words if w[4].lower() == "secure"), None)
-        return vehicle, (_proposed_value(words, secure, xprop) if secure else None)
+        vehicle, bike = _parking_from_words(page.get_text("words"))
+        if vehicle is not None or bike is not None:
+            return vehicle, bike
     return None, None
 
 
@@ -218,6 +227,28 @@ def parse_report(meta: dict, proposal: dict) -> dict:
     return row
 
 
+def _apply_pdf_parking(row: dict, pdf_bytes: bytes) -> None:
+    """Fill the parking stalls from a development report's "Number of Stalls" table, in place.
+
+    Only development rows (those with a unit count or a residential/mixed class) are read, and the
+    read is high-precision: a value is set only when the table is unambiguous, otherwise the row
+    stays a parking Claude-read / review candidate.
+    """
+    if not (features.has_value(row.get("units_total"))
+            or row.get("development_class") in _PARKING_CLASSES):
+        return
+    try:
+        vehicle, bike = pdf_parking(pdf_bytes)
+    except (OSError, ValueError, RuntimeError):
+        vehicle = bike = None
+    if vehicle is not None:
+        row["parking_vehicle_stalls"] = vehicle
+    if bike is not None:
+        row["parking_bike_stalls"] = bike
+    row["needs_pdf_extraction"] = pdf_enrich.needs_pdf(row) or not features.has_value(
+        row.get("parking_vehicle_stalls"))
+
+
 def select_pdf_sources(row: dict) -> list[dict]:
     """Return the report PDF as the one document to Claude-read for the deeper data sheet."""
     return list(row.get("documents") or [])
@@ -252,21 +283,8 @@ def harvest(session=None, limit: int | None = None, use_cache: bool = True) -> l
         except (OSError, ValueError, RuntimeError):
             proposal = {"description": "", "permit_types": [], "zoning": None, "text": ""}
         row = parse_report(meta, proposal)
-        # For a development report, read the parking table deterministically from the PDF (the
-        # "Number of Stalls" Proposed column). It is high-precision: a value is set only when the
-        # table is unambiguous, otherwise the row stays a parking Claude-read / review candidate.
-        if pdf_bytes and (features.has_value(row.get("units_total"))
-                          or row.get("development_class") in _PARKING_CLASSES):
-            try:
-                vehicle, bike = pdf_parking(pdf_bytes)
-            except (OSError, ValueError, RuntimeError):
-                vehicle = bike = None
-            if vehicle is not None:
-                row["parking_vehicle_stalls"] = vehicle
-            if bike is not None:
-                row["parking_bike_stalls"] = bike
-            row["needs_pdf_extraction"] = pdf_enrich.needs_pdf(row) or not features.has_value(
-                row.get("parking_vehicle_stalls"))
+        if pdf_bytes:
+            _apply_pdf_parking(row, pdf_bytes)
         out.append(row)
     consolidate.consolidate_by_address(out)
     return out
