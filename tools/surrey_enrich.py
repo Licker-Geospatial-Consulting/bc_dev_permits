@@ -36,6 +36,19 @@ PARKING = {
     "7919-0369-00": (212, None),  # 96 units: 192 + 20 visitor
     "7925-0259-00": (55, None),   # 25 units: 50 + 5 visitor
     "7915-0187-00": (24, None),   # 11 units townhouse: 22 (garages) + 2 visitor
+    # The reports whose parking is stated outside the standard table (prose / a different layout):
+    "7925-0383-00": (392, 213),   # 452 units mixed: 32 commercial + 25 childcare + 288 + 47 visitor
+    "7926-0081-00": (44, None),   # 20 units townhouse (prose): 40 garage + 4 visitor
+    "7926-0104-00": (61, None),   # 201-unit campus student housing: building requires 61 (pooled)
+    # 7916-0221-00 (166-unit back-to-back townhouse, 2016) tabulates no parking count - in-unit
+    # garages, no stalls table - so no figure is wired rather than fabricate one.
+}
+
+# Longer context a scalar can't hold, appended to raw_text.
+NOTES = {
+    "7926-0104-00": "Parking (Parking Study, prose): the student-housing building requires 61 "
+                    "spaces; total on-site campus supply after the addition is 878 spaces "
+                    "(a 25% reduction from Zoning Bylaw rates, pooled across uses).",
 }
 
 CLAUDE_READ = {
@@ -58,6 +71,9 @@ def main() -> None:
         if not row:
             continue
         filled = surrey.apply_claude_pdf(row, fields, document)
+        note = NOTES.get(permit_id)
+        if note:
+            row["raw_text"] = "\n\n".join(p for p in (row.get("raw_text"), note) if p)
         applied += 1
         print(f"{permit_id}: parking {fields['parking_vehicle_stalls']} veh"
               f"{'/' + str(fields['parking_bike_stalls']) + ' bike' if 'parking_bike_stalls' in fields else ''}"
