@@ -165,6 +165,20 @@ def _component_sum(words, ny: float, ty: float, xprop: float) -> int | None:
     return sum(parts) if parts else None
 
 
+def _proposed_columns(words, y0: float, y1: float) -> list[float]:
+    """Return the x-centres of the distinct "Proposed" column headers between y0 and y1.
+
+    A per-lot parking table repeats "Proposed" once per lot, so more than one centre means the
+    single-lot figures are ambiguous and the caller should decline the read.
+    """
+    xs = sorted(_xc(p) for p in words if p[4].lower() == "proposed" and y0 < p[1] < y1)
+    cols: list[float] = []
+    for x in xs:
+        if not cols or x - cols[-1] > 40:
+            cols.append(x)
+    return cols
+
+
 def _parking_from_words(words) -> tuple[int | None, int | None]:
     """Read (vehicle, secure bicycle) from a page's words, scoped to the "Number of Stalls" table.
 
@@ -179,11 +193,14 @@ def _parking_from_words(words) -> tuple[int | None, int | None]:
     if nos is None:
         return None, None
     ny = nos[1]
-    xprop = next((_xc(p) for p in words if p[4].lower() == "proposed" and ny - 45 < p[1] < ny
-                  and any(r[4].lower() == "required" and abs(r[1] - p[1]) < 4 and _xc(r) < _xc(p)
-                          for r in words)), None)
-    if xprop is None:
+    # The Required/Proposed header sits just above "Number of Stalls"; a per-lot table repeats the
+    # Proposed column, so require exactly one and that it be paired with a Required column.
+    cols = _proposed_columns(words, ny - 45, ny)
+    paired = [x for x in cols if any(r[4].lower() == "required" and _xc(r) < x for r in words
+                                     if ny - 45 < r[1] < ny)]
+    if len(paired) != 1:
         return None, None
+    xprop = paired[0]
     bike_y = min((w[1] for w in words if w[4].lower() == "bicycle" and w[1] > ny), default=1e9)
     totals = [w for w in words if w[4].lower().rstrip(":") == "total" and ny < w[1] < bike_y]
     vehicle = None
@@ -194,20 +211,65 @@ def _parking_from_words(words) -> tuple[int | None, int | None]:
     return vehicle, (_proposed_value(words, secure, xprop) if secure else None)
 
 
-def pdf_parking(pdf_bytes: bytes) -> tuple[int | None, int | None]:
-    """Return (vehicle total, secure bicycle) from a report's "Number of Stalls" table.
+def _part5_header_y(words) -> float | None:
+    """Return the y of a "Parking (Part 5)" header row, or None."""
+    for w in words:
+        if w[4].lower() != "parking":
+            continue
+        row = [o for o in words if abs(o[1] - w[1]) < 5 and o[0] >= w[0]]
+        joined = " ".join(o[4].lower() for o in row)
+        if "part" in joined and "5)" in joined.replace(" ", ""):
+            return w[1]
+    return None
 
-    A high-PRECISION positional read of the Proposed column (see _parking_from_words): a value is set
-    only when the parking table is unambiguous, otherwise None is returned rather than a guess.
+
+def _parking_part5(words) -> tuple[int | None, int | None]:
+    """Read (vehicle, secure bicycle) from a "Parking (Part 5)" table that has no Number-of-Stalls row.
+
+    This is the other Surrey layout: the parking rows hang directly off a "Parking (Part 5)" header
+    inside the zoning-comparison table, with the Proposed figure in the right-hand column. The single
+    "Total" row is the vehicle count and a "Secure"/"Bicycle" row the long-term bicycle count. As with
+    the Number-of-Stalls read, anything ambiguous returns None rather than a guess.
+    """
+    ny = _part5_header_y(words)
+    if ny is None:
+        return None, None
+    # The Proposed column header sits on, or just below, the Parking (Part 5) row (not the zoning
+    # table's "Proposed CD Zone" far above it). A per-lot table has two Proposed columns, so its
+    # single-lot Total is ambiguous: require exactly one Proposed column, else decline.
+    cols = _proposed_columns(words, ny - 6, ny + 30)
+    if len(cols) != 1:
+        return None, None
+    xprop = cols[0]
+    bike_y = min((w[1] for w in words if w[4].lower() in ("bicycle", "bike") and w[1] > ny), default=1e9)
+    totals = [w for w in words if w[4].lower().rstrip(":") == "total" and ny < w[1] < bike_y]
+    vehicle = _proposed_value(words, totals[0], xprop, band=90) if len(totals) == 1 else None
+    # Bicycle: a "Secure" row (two-column variant) or a single "Bicycle:" row carrying the count.
+    bike_row = next((w for w in words if w[4].lower() == "secure" and w[1] > ny), None) \
+        or next((w for w in words if w[4].lower().rstrip(":") == "bicycle" and w[1] >= bike_y), None)
+    bike = _proposed_value(words, bike_row, xprop, band=90) if bike_row else None
+    return vehicle, bike
+
+
+def pdf_parking(pdf_bytes: bytes) -> tuple[int | None, int | None]:
+    """Return (vehicle total, secure bicycle) from a report's parking table.
+
+    A high-PRECISION positional read of the Proposed column: the "Number of Stalls" table first
+    (see _parking_from_words), then the "Parking (Part 5)" zoning-table layout (_parking_part5). A
+    value is set only when the table is unambiguous, otherwise None is returned rather than a guess.
     """
     import pymupdf  # optional dep, see pyproject [pdf]
 
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
     for i in range(min(doc.page_count, 40)):  # the parking table is in the report body, not deep
         page = doc[i]
-        if "number of stalls" not in page.get_text().lower():
+        text = page.get_text().lower()
+        if "number of stalls" not in text and "parking (part 5)" not in text:
             continue
-        vehicle, bike = _parking_from_words(page.get_text("words"))
+        words = page.get_text("words")
+        vehicle, bike = _parking_from_words(words)
+        if vehicle is None and bike is None:
+            vehicle, bike = _parking_part5(words)
         if vehicle is not None or bike is not None:
             return vehicle, bike
     return None, None

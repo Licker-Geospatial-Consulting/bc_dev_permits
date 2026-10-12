@@ -65,6 +65,63 @@ def test_parse_report_from_proposal():
     print("\nparse_report PASSED ✓")
 
 
+def _w(text, x, y, width=42):
+    """Build a pymupdf-style word tuple (x0, y0, x1, y1, text) at a column x and row y."""
+    return (x, y, x + width, y + 12, text)
+
+
+# Column x-anchors shared by the positional-parking fixtures below: label / Required / Proposed.
+_LX, _RX, _PX = 140, 500, 800
+
+
+def test_parking_number_of_stalls_table():
+    """The Proposed column's Total row is the vehicle count, the Secure row the bicycle count."""
+    words = [_w("Required", _RX, 100), _w("Proposed", _PX, 100),
+             _w("Number", _LX, 140), _w("Stalls", _LX + 90, 140),
+             _w("Residential:", _LX, 170), _w("0", _RX, 170), _w("199", _PX, 170),
+             _w("Total:", _LX, 200), _w("22", _RX, 200), _w("223", _PX, 200),
+             _w("Bicycle", _LX, 230),
+             _w("Secure", _LX + 60, 260), _w("125", _RX, 260), _w("125", _PX, 260)]
+    assert surrey._parking_from_words(words) == (223, 125)
+    print("\nparking number-of-stalls PASSED ✓")
+
+
+def test_parking_sums_components_when_total_blank():
+    """A blank Total row falls back to the sum of the Proposed component rows above it."""
+    words = [_w("Required", _RX, 100), _w("Proposed", _PX, 100),
+             _w("Number", _LX, 140), _w("Stalls", _LX + 90, 140),
+             _w("Commercial:", _LX, 170), _w("46", _RX, 170), _w("47", _PX, 170),
+             _w("Residential:", _LX, 190), _w("0", _RX, 190), _w("116", _PX, 190),
+             _w("Total:", _LX, 210),                      # no value in either column
+             _w("Bicycle", _LX, 250)]
+    assert surrey._parking_from_words(words)[0] == 163     # 47 + 116
+    print("\nparking component-sum PASSED ✓")
+
+
+def test_parking_part5_single_column():
+    """A Parking (Part 5) table with one Proposed column reads Total + a Bicycle row."""
+    words = [_w("Parking", _LX, 300), _w("(Part", _LX + 70, 300), _w("5)", _LX + 120, 300),
+             _w("Proposed", _PX, 300),
+             _w("Residential:", _LX, 330), _w("83", _PX, 330),
+             _w("Total:", _LX, 360), _w("92", _PX, 360),
+             _w("Bicycle", _LX, 390), _w("110", _PX, 390)]
+    assert surrey._parking_part5(words) == (92, 110)
+    print("\nparking part-5 PASSED ✓")
+
+
+def test_parking_declines_multi_lot():
+    """A per-lot table (two Proposed columns) is ambiguous and reads nothing, not a lot's partial."""
+    nos = [_w("Required", _RX, 100), _w("Proposed", 700, 100), _w("Proposed", 1000, 100),
+           _w("Number", _LX, 140), _w("Stalls", _LX + 90, 140),
+           _w("Total:", _LX, 200), _w("150", 700, 200), _w("196", 1000, 200)]
+    assert surrey._parking_from_words(nos) == (None, None)
+    part5 = [_w("Parking", _LX, 300), _w("(Part", _LX + 70, 300), _w("5)", _LX + 120, 300),
+             _w("Proposed", 700, 300), _w("Proposed", 1000, 300),
+             _w("Total:", _LX, 360), _w("150", 700, 360), _w("196", 1000, 360)]
+    assert surrey._parking_part5(part5) == (None, None)
+    print("\nparking multi-lot decline PASSED ✓")
+
+
 def test_apply_claude_pdf_fills_and_conflicts():
     """Claude-read data-sheet fields fill gaps + stamp provenance; a disagreement is logged."""
     meta = {"permit_id": "7925-0315-00", "address": "13216 - 104 Avenue", "status": "Active",
@@ -93,5 +150,9 @@ if __name__ == "__main__":
     test_get_report_rows()
     test_pdf_proposal_parses_header()
     test_parse_report_from_proposal()
+    test_parking_number_of_stalls_table()
+    test_parking_sums_components_when_total_blank()
+    test_parking_part5_single_column()
+    test_parking_declines_multi_lot()
     test_apply_claude_pdf_fills_and_conflicts()
     print("\nAll Surrey harvester tests passed.")
