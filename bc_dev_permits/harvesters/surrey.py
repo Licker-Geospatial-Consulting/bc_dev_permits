@@ -105,20 +105,24 @@ def pdf_proposal(pdf_bytes: bytes) -> dict:
 
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
     page1 = doc[0].get_text() if doc.page_count else ""
-    m = re.search(r"PROPOSAL:\s*(.+?)\s*(?:LOCATION:|OWNER:|APPLICANT:)", page1, re.DOTALL | re.IGNORECASE)
+    m = re.search(r"PROPOSAL:\s*(.+?)\s*(?:LOCATION:|OWNER:|APPLICANT:|ZONING:)",
+                  page1, re.DOTALL | re.IGNORECASE)
     raw = re.sub(r"\s+", " ", m.group(1)).strip() if m else ""
-    # The description is the prose before the first bullet; the bullets are the application types.
-    parts = re.split(r"\s*[•·▪]\s*", raw)
-    description = parts[0].strip()
-    bullets = [p.strip() for p in parts[1:] if p.strip()]
-    permit_types, zoning = [], None
-    for b in bullets:
-        for label, kw in _PERMIT_TYPES:
-            if re.search(kw, b, re.IGNORECASE) and label not in permit_types:
-                permit_types.append(label)
-        z = re.search(r"from\s+(.+?)\s+to\s+([A-Z0-9()\-/ ]+?)(?:\s*$|,)", b, re.IGNORECASE)
-        if z and not zoning:
-            zoning = f"{z.group(1).strip()} -> {z.group(2).strip()}"
+    # Application types are the bullet labels; the report format varies (prose then bullet types, or
+    # a bullet type then its prose), so the types are detected anywhere in the block and the whole
+    # block - bullet markers removed - is the description that features.py then parses.
+    permit_types = [label for label, kw in _PERMIT_TYPES if re.search(kw, raw, re.IGNORECASE)]
+    # Detect a rezoning's "from <current> to <proposed>" per bullet, so the proposed zone stops
+    # at the bullet boundary rather than running into the next application type.
+    zoning = None
+    for bullet in re.split(r"[•·▪]", raw):
+        zm = re.search(r"from\s+(.+?)\s+to\s+([A-Z0-9][A-Z0-9()\-/ ]*?)\s*(?:$|[,.])",
+                       bullet.strip(), re.IGNORECASE)
+        if zm:
+            zoning = f"{zm.group(1).strip()} -> {zm.group(2).strip()}"
+            break
+    description = re.sub(r"[•·▪]", " ", raw).strip()
+    description = re.sub(r"\s{2,}", " ", description)
     return {"description": description, "permit_types": permit_types, "zoning": zoning,
             "text": page1}
 
