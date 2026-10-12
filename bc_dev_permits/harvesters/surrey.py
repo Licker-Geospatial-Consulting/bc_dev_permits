@@ -206,9 +206,11 @@ def _parking_from_words(words) -> tuple[int | None, int | None]:
     vehicle = None
     if len(totals) == 1:
         # The tabulated Total, or - when that row is left blank - the sum of the parts above it.
-        vehicle = _proposed_value(words, totals[0], xprop) or _component_sum(words, ny, totals[0][1], xprop)
+        # The band keeps a blank/offset Proposed cell from reading across to the Required column.
+        vehicle = _proposed_value(words, totals[0], xprop, band=90) \
+            or _component_sum(words, ny, totals[0][1], xprop)
     secure = next((w for w in words if w[4].lower() == "secure" and w[1] > ny), None)
-    return vehicle, (_proposed_value(words, secure, xprop) if secure else None)
+    return vehicle, (_proposed_value(words, secure, xprop, band=90) if secure else None)
 
 
 def _part5_header_y(words) -> float | None:
@@ -251,20 +253,31 @@ def _parking_part5(words) -> tuple[int | None, int | None]:
     return vehicle, bike
 
 
-def pdf_parking(pdf_bytes: bytes) -> tuple[int | None, int | None]:
+def pdf_parking(pdf_bytes: bytes, permit_id: str | None = None) -> tuple[int | None, int | None]:
     """Return (vehicle total, secure bicycle) from a report's parking table.
 
     A high-PRECISION positional read of the Proposed column: the "Number of Stalls" table first
     (see _parking_from_words), then the "Parking (Part 5)" zoning-table layout (_parking_part5). A
     value is set only when the table is unambiguous, otherwise None is returned rather than a guess.
+
+    ``permit_id`` guards against a bundled agenda package: a parking page is only read when its own
+    "Application No." header carries this application's id, so one report's table is never read off
+    another's page.
     """
     import pymupdf  # optional dep, see pyproject [pdf]
 
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-    for i in range(min(doc.page_count, 40)):  # the parking table is in the report body, not deep
+    # The parking table is in the staff-report body; a long agenda package can push it past page 40,
+    # so scan to 60. The read is anchored to the parking table, so earlier mentions are skipped.
+    for i in range(min(doc.page_count, 60)):
         page = doc[i]
         text = page.get_text().lower()
         if "number of stalls" not in text and "parking (part 5)" not in text:
+            continue
+        # A table in the report's own body (first ~40 pages) is this application's. A deeper hit can
+        # be another report bundled into the same agenda package, so only trust it when the page's
+        # own "Application No." header carries this id.
+        if permit_id and i >= 40 and permit_id.lower() not in text:
             continue
         words = page.get_text("words")
         vehicle, bike = _parking_from_words(words)
@@ -326,7 +339,7 @@ def _apply_pdf_parking(row: dict, pdf_bytes: bytes) -> None:
             or row.get("development_class") in _PARKING_CLASSES):
         return
     try:
-        vehicle, bike = pdf_parking(pdf_bytes)
+        vehicle, bike = pdf_parking(pdf_bytes, row.get("permit_id"))
     except (OSError, ValueError, RuntimeError):
         vehicle = bike = None
     if vehicle is not None:
