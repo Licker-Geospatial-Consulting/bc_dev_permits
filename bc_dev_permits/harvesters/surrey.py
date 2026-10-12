@@ -253,6 +253,22 @@ def _parking_part5(words) -> tuple[int | None, int | None]:
     return vehicle, bike
 
 
+_APP_HEADER = re.compile(r"application no\.?:?\s*(\d{4}-\d{4}-\d{2})")
+
+
+def _bundles_other_application(doc, npages: int, permit_id: str) -> bool:
+    """Report whether the PDF carries another application's report (a multi-report agenda package).
+
+    A bundled package has an "Application No." header for a different id on some page, so a parking
+    table found on a page that is not this application's must not be read off it.
+    """
+    pid = permit_id.lower()
+    for i in range(npages):
+        if any(m.group(1) != pid for m in _APP_HEADER.finditer(doc[i].get_text().lower())):
+            return True
+    return False
+
+
 def pdf_parking(pdf_bytes: bytes, permit_id: str | None = None) -> tuple[int | None, int | None]:
     """Return (vehicle total, secure bicycle) from a report's parking table.
 
@@ -260,25 +276,25 @@ def pdf_parking(pdf_bytes: bytes, permit_id: str | None = None) -> tuple[int | N
     (see _parking_from_words), then the "Parking (Part 5)" zoning-table layout (_parking_part5). A
     value is set only when the table is unambiguous, otherwise None is returned rather than a guess.
 
-    ``permit_id`` guards against a bundled agenda package: a parking page is only read when its own
-    "Application No." header carries this application's id, so one report's table is never read off
-    another's page.
+    ``permit_id`` guards against a bundled agenda package: when the PDF carries more than one report,
+    a parking page is read only if its own "Application No." header carries this id, so one report's
+    table is never read off another's page.
     """
     import pymupdf  # optional dep, see pyproject [pdf]
 
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-    # The parking table is in the staff-report body; a long agenda package can push it past page 40,
-    # so scan to 60. The read is anchored to the parking table, so earlier mentions are skipped.
-    for i in range(min(doc.page_count, 60)):
+    npages = min(doc.page_count, 60)  # a long agenda package can push the body table past page 40
+    bundled = None  # computed lazily, only when a candidate page lacks this application's id
+    for i in range(npages):
         page = doc[i]
         text = page.get_text().lower()
         if "number of stalls" not in text and "parking (part 5)" not in text:
             continue
-        # A table in the report's own body (first ~40 pages) is this application's. A deeper hit can
-        # be another report bundled into the same agenda package, so only trust it when the page's
-        # own "Application No." header carries this id.
-        if permit_id and i >= 40 and permit_id.lower() not in text:
-            continue
+        if permit_id and permit_id.lower() not in text:
+            if bundled is None:
+                bundled = _bundles_other_application(doc, npages, permit_id)
+            if bundled:
+                continue  # another application's page inside a bundled package
         words = page.get_text("words")
         vehicle, bike = _parking_from_words(words)
         if vehicle is None and bike is None:
