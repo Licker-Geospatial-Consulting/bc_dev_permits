@@ -135,11 +135,34 @@ def _xc(word) -> float:
     return (word[0] + word[2]) / 2
 
 
-def _proposed_value(words, anchor, xprop: float) -> int | None:
-    """Read the number on ``anchor``'s row that sits under the Proposed column."""
+def _proposed_value(words, anchor, xprop: float, band: float = 1e9) -> int | None:
+    """Read the number on ``anchor``'s row that sits under the Proposed column.
+
+    ``band`` caps how far the chosen cell may sit from the Proposed header x: a small band keeps a
+    blank Proposed cell from picking up the Required column's number on the same row.
+    """
     cells = [(_xc(w), int(w[4].replace(",", "").replace("*", "")))
              for w in words if abs(w[1] - anchor[1]) < 5 and re.fullmatch(r"\d[\d,]*\*?", w[4])]
-    return min(cells, key=lambda c: abs(c[0] - xprop))[1] if cells else None
+    if not cells:
+        return None
+    x, v = min(cells, key=lambda c: abs(c[0] - xprop))
+    return v if abs(x - xprop) <= band else None
+
+
+def _component_sum(words, ny: float, ty: float, xprop: float) -> int | None:
+    """Sum the Proposed component rows between the header and an untotalled "Total:" row.
+
+    Some reports leave the "Total:" row blank and list the parts (commercial / residential /
+    visitor) above it, so the vehicle total is their sum. Rows below "Total:" (tandem, accessible)
+    are subsets and excluded. The column band keeps a part's Required number out of the sum.
+    """
+    row_ys: list[float] = []
+    for y in sorted(w[1] for w in words if ny + 2 < w[1] < ty - 2):
+        if not row_ys or y - row_ys[-1] > 5:
+            row_ys.append(y)
+    parts = [_proposed_value(words, (0, y, 0, y, ""), xprop, band=90) for y in row_ys]
+    parts = [p for p in parts if p is not None]
+    return sum(parts) if parts else None
 
 
 def _parking_from_words(words) -> tuple[int | None, int | None]:
@@ -163,7 +186,10 @@ def _parking_from_words(words) -> tuple[int | None, int | None]:
         return None, None
     bike_y = min((w[1] for w in words if w[4].lower() == "bicycle" and w[1] > ny), default=1e9)
     totals = [w for w in words if w[4].lower().rstrip(":") == "total" and ny < w[1] < bike_y]
-    vehicle = _proposed_value(words, totals[0], xprop) if len(totals) == 1 else None
+    vehicle = None
+    if len(totals) == 1:
+        # The tabulated Total, or - when that row is left blank - the sum of the parts above it.
+        vehicle = _proposed_value(words, totals[0], xprop) or _component_sum(words, ny, totals[0][1], xprop)
     secure = next((w for w in words if w[4].lower() == "secure" and w[1] > ny), None)
     return vehicle, (_proposed_value(words, secure, xprop) if secure else None)
 
