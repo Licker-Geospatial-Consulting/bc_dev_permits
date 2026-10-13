@@ -70,6 +70,32 @@ def test_apply_claude_pdf_fills_and_tags():
     assert any(d.get("extracted") for d in row["documents"])
 
 
+def test_application_date_from_prose():
+    """The lead-prose 'Month DD, YYYY' date is read as the application / decision date."""
+    assert wv.application_date("At its meeting on September 21, 2026, Council approved the DVP.") \
+        == "2026-09-21"
+    assert wv.application_date("adopted by Council at their December 15, 2021 meeting.") == "2021-12-15"
+    assert wv.application_date("No date stated here at all.") is None
+
+
+def test_parse_detail_records_stage_and_date():
+    """parse_detail carries the stream stage and the application date onto the row."""
+    row = wv.parse_detail(_detail(), URL, "approved")
+    assert row["stage"] == "approved"
+    assert row["application_date"] == "2026-05-11"           # "At the May 11, 2026 Council meeting"
+    # Default stage keeps the existing (Active) behaviour.
+    assert wv.parse_detail(_detail(), URL)["stage"] == "active"
+
+
+def test_recency_cutoff_is_two_years_back():
+    """The cutoff is a YYYY-MM-DD date RECENCY_YEARS before today; old dates sort below it."""
+    from datetime import UTC, datetime
+    cutoff = wv._recency_cutoff()
+    assert cutoff == datetime.now(tz=UTC).replace(year=datetime.now(tz=UTC).year - wv.RECENCY_YEARS) \
+        .strftime("%Y-%m-%d")
+    assert "2019-03-01" < cutoff < "2099-01-01"             # an old date is stale, a future one is not
+
+
 def test_apply_claude_pdf_logs_conflict():
     """A genuine HTML-vs-PDF scalar disagreement is logged, and the HTML value is kept."""
     row = wv.parse_detail(_detail(), URL)
@@ -86,6 +112,9 @@ def test_apply_claude_pdf_logs_conflict():
 if __name__ == "__main__":
     test_parse_detail_html()
     test_document_priority_order()
+    test_application_date_from_prose()
+    test_parse_detail_records_stage_and_date()
+    test_recency_cutoff_is_two_years_back()
     test_apply_claude_pdf_fills_and_tags()
     test_apply_claude_pdf_logs_conflict()
     print("\nAll West Van harvester tests passed.")

@@ -75,9 +75,12 @@ NORTH_VAN_LIST_URL = (
 # West Vancouver publishes per-application HTML detail pages (see references/html_detail_pages.md),
 # but the whole site sits behind Cloudflare bot protection, so the harvester fetches through a real
 # browser (Playwright, the [browser] extra) with paced requests rather than plain HTTP.
-WEST_VAN_LIST_URL = (
-    "https://westvancouver.ca/business-development/development-applications/active-development-applications"
-)
+# The harvester covers three published streams: Active (in full), Preliminary projects (in full),
+# and the Approved backlog (limited to applications decided within the last two years).
+_WV_APPS = "https://westvancouver.ca/business-development/development-applications/"
+WEST_VAN_LIST_URL = _WV_APPS + "active-development-applications"
+WEST_VAN_PRELIM_URL = _WV_APPS + "preliminary-development-projects"
+WEST_VAN_APPROVED_URL = _WV_APPS + "approved-development-applications"
 
 # Victoria publishes through the Prospero "OurCity" permit tracker (see
 # references/prospero_tracker.md). The search page defaults to the ACTIVE set; detail

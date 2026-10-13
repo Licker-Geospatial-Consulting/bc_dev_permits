@@ -1,6 +1,8 @@
 """District of West Vancouver HTML harvester (+ Claude-read PDF enrichment).
 
-Flow:  Active Development Applications index  ->  per-application detail pages  ->  dev_permit rows.
+Flow:  Active + Preliminary + Approved indexes  ->  per-application detail pages  ->  dev_permit rows.
+       Active and Preliminary are taken in full; the Approved backlog is cut to applications decided
+       within the last two years, using the date West Van states at the top of each detail page.
 
 Like North Vancouver and Victoria, everything visible in the HTML is parsed DETERMINISTICALLY
 here (prose -> bc_dev_permits.features, address from the <h1>, a documents list, milestones).
@@ -28,7 +30,7 @@ Public API:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 import hashlib
 import os
 import re
@@ -45,6 +47,22 @@ MUNICIPALITY = "west_van"
 BASE = "https://westvancouver.ca"
 APP_PATH = "/business-development/development-applications/"
 MIN_PROSE_CHARS = 120  # below this we treat the page as "no usable text"
+RECENCY_YEARS = 2  # the Approved backlog is limited to applications decided within this many years
+
+# The three published streams to harvest, as (list url, stage, recency_filtered). Active and
+# Preliminary are taken in full; the long Approved backlog is cut to the last RECENCY_YEARS by the
+# application/decision date on each detail page. Order also sets dedup priority: an application that
+# appears in more than one list is harvested once, under the first (most current) stage it is in.
+_SOURCES = (
+    (config.WEST_VAN_LIST_URL, "active", False),
+    (config.WEST_VAN_PRELIM_URL, "preliminary", False),
+    (config.WEST_VAN_APPROVED_URL, "approved", True),
+)
+# A "Month DD, YYYY" date in the page's lead prose - the application / Council decision date that
+# West Van states at the top of each detail page (e.g. "At its meeting on September 21, 2026 ...").
+_PROSE_DATE = re.compile(
+    r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)"
+    r"\s+\d{1,2},\s+(?:19|20)\d{2}\b")
 CACHE_DIR = str(config.HTTP_CACHE_DIR)
 CACHE_TTL = config.HTTP_CACHE_TTL
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -79,8 +97,22 @@ def get_application_links(list_html: str, base_url: str = LIST_URL) -> list[str]
 # --------------------------------------------------------------------------- #
 # 2. Detail page parsing (deterministic HTML)
 # --------------------------------------------------------------------------- #
-def parse_detail(html: str, url: str) -> dict:
-    """Parse one detail page into a dev_permit row (with milestones/documents)."""
+def application_date(prose: str | None) -> str | None:
+    """Return the first "Month DD, YYYY" date in the lead prose as YYYY-MM-DD (the date at the top).
+
+    West Van states an application / Council-decision date near the top of each detail page; this is
+    the date the Approved-backlog recency filter is applied against.
+    """
+    m = _PROSE_DATE.search(prose or "")
+    return _parse_date(m.group(0)) if m else None
+
+
+def parse_detail(html: str, url: str, stage: str = "active") -> dict:
+    """Parse one detail page into a dev_permit row (with milestones/documents).
+
+    ``stage`` records which published stream the application came from (active / preliminary /
+    approved) and is carried on the row for provenance and the recency filter.
+    """
     soup = BeautifulSoup(html, "lxml")
     main = _main_content(soup) or soup
 
@@ -96,6 +128,8 @@ def parse_detail(html: str, url: str) -> dict:
         "source_url": url,
         "development_name": None,
         "address": address,
+        "stage": stage,
+        "application_date": application_date(prose),
         "status": milestones[-1]["milestone"] if milestones else None,
         "raw_text": prose or None,
         "extraction_method": "html",
@@ -158,14 +192,53 @@ apply_claude_pdf = pdf_enrich.apply_claude_pdf
 # --------------------------------------------------------------------------- #
 # 5. Live harvest (needs Playwright; site is behind Cloudflare)
 # --------------------------------------------------------------------------- #
+def _recency_cutoff() -> str:
+    """Return the YYYY-MM-DD cutoff; an Approved application older than this is skipped."""
+    today = datetime.now(tz=UTC)
+    try:
+        cutoff = today.replace(year=today.year - RECENCY_YEARS)
+    except ValueError:  # Feb 29 -> Feb 28 in a non-leap cutoff year
+        cutoff = today.replace(year=today.year - RECENCY_YEARS, day=28)
+    return cutoff.strftime("%Y-%m-%d")
+
+
+def _plan_links() -> list[tuple[str, str, bool]]:
+    """Gather (detail url, stage, recency_filtered) across the three streams, deduped by url."""
+    seen, plan = set(), []
+    for list_url, stage, filtered in _SOURCES:
+        list_html = _fetch(list_url, use_cache=True)
+        for link in get_application_links(list_html, list_url):
+            if link in seen:
+                continue
+            seen.add(link)
+            plan.append((link, stage, filtered))
+    return plan
+
+
 def harvest(limit: int | None = None, use_cache: bool = True) -> list[dict]:
-    """Harvest the index + detail pages into dev_permit rows (live; needs Playwright)."""
-    list_html = _fetch(LIST_URL, use_cache=use_cache)
-    links = get_application_links(list_html)
+    """Harvest the Active, Preliminary and Approved streams into dev_permit rows (needs Playwright).
+
+    Active and Preliminary applications are taken in full. An Approved application is kept only when
+    its application/decision date (see application_date) is within the last RECENCY_YEARS; an older
+    one is skipped, and one whose date cannot be read is kept (it cannot be shown to be stale).
+    """
+    plan = _plan_links()
     if limit:
-        links = links[:limit]
-    htmls = _fetch_many(links, use_cache=use_cache)
-    return [parse_detail(htmls[link], link) for link in links if htmls.get(link)]
+        plan = plan[:limit]
+    htmls = _fetch_many([link for link, _, _ in plan], use_cache=use_cache)
+    cutoff = _recency_cutoff()
+
+    rows = []
+    for url, stage, filtered in plan:
+        html = htmls.get(url)
+        if not html:
+            continue
+        row = parse_detail(html, url, stage)
+        appdate = row.get("application_date")
+        if filtered and appdate and appdate < cutoff:
+            continue  # Approved application older than RECENCY_YEARS
+        rows.append(row)
+    return rows
 
 
 # --------------------------------------------------------------------------- #
