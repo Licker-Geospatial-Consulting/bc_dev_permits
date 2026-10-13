@@ -145,8 +145,19 @@ the exact instructions you gave per site.
 
 ## west_van — District of West Vancouver  (html + Claude-read PDF)
 
-- **List:** https://westvancouver.ca/business-development/development-applications/active-development-applications
-  (~21 active applications). Detail pages under `.../development-applications/<slug>`.
+- **Lists (three streams):** the harvester covers all three published indexes, deduped by detail
+  url (an application that appears in more than one list is harvested once, under the first/most
+  current stage it is in). Detail pages under `.../development-applications/<slug>`.
+  - Active: `.../active-development-applications` (~19) — taken in full, `stage="active"`.
+  - Preliminary: `.../preliminary-development-projects` (~16) — taken in full, `stage="preliminary"`.
+  - Approved: `.../approved-development-applications` (~177) — `stage="approved"`, **limited to the
+    last two years**. The date is only on each detail page (there is no per-entry date on the list),
+    so every approved page is fetched, then one whose application/decision date is older than the
+    cutoff is dropped. The date is the first "Month DD, YYYY" in the lead prose that West Van states
+    at the top of each page (e.g. "At its meeting on September 21, 2026, Council approved ..."),
+    read by `application_date`; an application whose date cannot be read is kept. `RECENCY_YEARS`
+    and the stream list live at the top of `harvesters/west_van.py`; each row carries `stage` and
+    `application_date` for provenance and QA.
 - **Cloudflare.** The whole site is behind Cloudflare bot protection, so a plain HTTP GET is
   refused ("Just a moment..."). `harvesters/west_van.py` fetches through headless Chromium
   (Playwright, the `[browser]` extra) with a **fresh context per page and a cool-down between
