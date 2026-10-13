@@ -122,6 +122,86 @@ def test_parking_declines_multi_lot():
     print("\nparking multi-lot decline PASSED ✓")
 
 
+_PROPOSAL_TABLE = """\
+Proposal
+Density (gross)
+5.3 FAR
+Lot Coverage:
+82%
+Principal building:
+25 storeys
+Floor Area
+Residential
+17,929 sq. m.
+Commercial
+3,616 sq. m.
+Residential Units:
+1-Bedroom:
+143 (63% of total)
+2-Bedroom:
+56 (25% of total)
+3-Bedroom:
+27 (12% of total)
+Total:
+226
+"""
+
+# The text layer sometimes emits several labels then their values (column-wise).
+_INTERLEAVED_UNITS = """\
+Proposed
+Floor Area
+Residential
+23,148.4 sq. m.
+Commercial
+438 sq. m.
+Residential Units:
+Studio:
+Micro Unit:
+25 (6.98% of total)
+51 (14.25% of total)
+1-Bedroom:
+161 (44.98% of total)
+2-Bedroom:
+112 (31.29% of total)
+3-Bedroom:
+9 (2.52% of total)
+Total:
+358
+"""
+
+# The RM-zone comparison table has FAR / height rows but no floor-area or unit breakdown.
+_COMPARISON_TABLE = """\
+Zoning RM-70 Zone (Part 24) Proposed CD Zone
+Floor Area Ratio:
+2.0
+Principal Building Height:
+50 m
+"""
+
+
+def test_proposal_table_reads_data_sheet():
+    """The 'Proposal' summary table yields FAR, storeys, floor area by use, units and the mix."""
+    d = surrey.proposal_table(_PROPOSAL_TABLE)
+    assert d["far"] == 5.3 and d["storeys"] == 25 and d["lot_coverage"] == 82.0
+    assert d["floor_area_by_use"] == {"residential": 17929.0, "commercial": 3616.0}
+    assert d["units_total"] == 226
+    assert d["unit_mix"] == {"1-bed": 143, "2-bed": 56, "3-bed": 27}
+
+
+def test_proposal_table_pairs_interleaved_units():
+    """Interleaved label/value rows still pair by order, and the mix must sum to the Total."""
+    d = surrey.proposal_table(_INTERLEAVED_UNITS)
+    assert d["units_total"] == 358
+    assert d["unit_mix"] == {"studio": 25, "micro": 51, "1-bed": 161, "2-bed": 112, "3-bed": 9}
+    assert sum(d["unit_mix"].values()) == 358
+    assert d["floor_area_by_use"]["residential"] == 23148.4
+
+
+def test_comparison_table_is_not_a_data_sheet():
+    """A bare FAR/height comparison table is not treated as the summary table (no leakage)."""
+    assert surrey.proposal_table(_COMPARISON_TABLE) == {}
+
+
 def test_apply_claude_pdf_fills_and_conflicts():
     """Claude-read data-sheet fields fill gaps + stamp provenance; a disagreement is logged."""
     meta = {"permit_id": "7925-0315-00", "address": "13216 - 104 Avenue", "status": "Active",
@@ -154,5 +234,8 @@ if __name__ == "__main__":
     test_parking_sums_components_when_total_blank()
     test_parking_part5_single_column()
     test_parking_declines_multi_lot()
+    test_proposal_table_reads_data_sheet()
+    test_proposal_table_pairs_interleaved_units()
+    test_comparison_table_is_not_a_data_sheet()
     test_apply_claude_pdf_fills_and_conflicts()
     print("\nAll Surrey harvester tests passed.")

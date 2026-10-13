@@ -304,6 +304,185 @@ def pdf_parking(pdf_bytes: bytes, permit_id: str | None = None) -> tuple[int | N
     return None, None
 
 
+# --------------------------------------------------------------------------- #
+# 2b. Development data sheet (the "Proposal" summary table, parsed deterministically)
+# --------------------------------------------------------------------------- #
+# A Surrey report's richest data is a single-column "Proposal"/"Proposed" summary table (FAR,
+# height, floor area by use, unit mix, units) that can sit on any page - often deep in a report
+# whose PROPOSAL header did not parse. It is read deterministically from the text layer, label line
+# then value line, and a figure is emitted only when the table is unambiguous.
+_AREA_RE = r"(?:sq\.?\s*m\.?|m²|square\s*met(?:re|er)s?)"
+_UNIT_MIX_LABELS = {
+    "studio": "studio", "bachelor": "bachelor", "micro unit": "micro", "micro": "micro",
+    "1-bedroom": "1-bed", "2-bedroom": "2-bed", "3-bedroom": "3-bed", "4-bedroom": "4-bed",
+    "1 bedroom": "1-bed", "2 bedroom": "2-bed", "3 bedroom": "3-bed", "4 bedroom": "4-bed",
+}
+_FLOOR_USE_LABELS = {
+    "residential": "residential", "commercial": "commercial", "retail": "retail",
+    "office": "office", "industrial": "industrial", "institutional": "institutional",
+    "child care": "child_care", "childcare": "child_care", "hotel": "hotel",
+}
+
+
+def _table_num(s: str | None) -> float | None:
+    m = re.search(r"\d[\d,]*\.?\d*", s or "")
+    return float(m.group(0).replace(",", "")) if m else None
+
+
+def _table_int(s: str | None) -> int | None:
+    n = _table_num(s)
+    return int(n) if n is not None else None
+
+
+def proposal_table(text: str) -> dict:
+    """Parse one page of a 'Proposal'/'Proposed' summary table (see the section note)."""
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if not re.search(r"\b(proposal|proposed)\b", " ".join(ln.lower() for ln in lines)):
+        return {}
+    out: dict = {}
+    _scalar_rows(lines, out)
+    _floor_area_section(lines, out)
+    _unit_section(lines, out)
+    # Only a page carrying a summary-specific row (floor-area breakdown or unit rows) is the summary
+    # table; a bare FAR/height page is the RM-zone comparison table and must not qualify.
+    if not any(k in out for k in ("floor_area_by_use", "units_total", "unit_mix")):
+        return {}
+    return out
+
+
+def _scalar_rows(lines: list[str], out: dict) -> None:
+    """Read the single-value rows (FAR, height/storeys, lot coverage) into out."""
+    def nxt(pat):
+        return next((lines[i + 1] for i in range(len(lines) - 1)
+                     if re.fullmatch(pat, lines[i], re.IGNORECASE)), None)
+
+    far = nxt(r"density\s*\(gross\):?|floor area ratio(?:\s*\(far\))?:?|density\s*\(far\):?|density:?|far:?")
+    m = far and (re.search(r"(\d+\.?\d*)\s*(?:far|fsr)", far, re.IGNORECASE)
+                 or re.fullmatch(r"(\d+\.?\d*)", far.strip()))
+    if m:
+        out["far"] = float(m.group(1))
+    ht = nxt(r"principal building:?|building height:?|max(?:imum)? building height:?") or ""
+    ms = re.search(r"(\d+)\s*stor(?:e|ie)", ht, re.IGNORECASE)
+    if ms:
+        out["storeys"] = int(ms.group(1))
+    mm = re.search(r"(\d+\.?\d*)\s*m(?:etre|eter)?s?\b", ht, re.IGNORECASE)
+    if mm:
+        out["height_m"] = float(mm.group(1))
+    cov = re.search(r"(\d+\.?\d*)\s*%", nxt(r"lot coverage:?") or "")
+    if cov:
+        out["lot_coverage"] = float(cov.group(1))
+
+
+def _floor_area_section(lines: list[str], out: dict) -> None:
+    """Read the 'Floor Area' section's per-use areas into out['floor_area_by_use']."""
+    for i, ln in enumerate(lines):
+        if ln.lower().rstrip(":") != "floor area":
+            continue
+        uses: dict = {}
+        for j in range(i + 1, min(i + 12, len(lines) - 1)):
+            lab = lines[j].lower().rstrip(":")
+            if lab in ("residential units", "amenity space", "parking", "number of stalls"):
+                break
+            if lab in _FLOOR_USE_LABELS and re.search(_AREA_RE, lines[j + 1], re.IGNORECASE):
+                v = _table_num(lines[j + 1])
+                if v is not None:
+                    uses[_FLOOR_USE_LABELS[lab]] = v
+        if uses:
+            out["floor_area_by_use"] = uses
+        return
+
+
+def _unit_section(lines: list[str], out: dict) -> None:
+    """Read the 'Residential Units' section into out['units_total'] / out['unit_mix'].
+
+    The text layer sometimes emits several labels then their values, so labels and values are
+    collected in order and paired by position. The mix is trusted only when it sums to the Total.
+    """
+    start = next((i for i, ln in enumerate(lines)
+                  if re.fullmatch(r"residential units:?|unit (?:mix|breakdown):?", ln, re.IGNORECASE)), None)
+    if start is None:
+        return
+    labels, values = _unit_rows(lines[start + 1:start + 24])
+    if "total" not in labels or len(labels) != len(values):
+        return
+    pairs = dict(zip(labels, values, strict=True))
+    total = pairs.pop("total", None)
+    mix = {_UNIT_MIX_LABELS[k]: v for k, v in pairs.items() if k in _UNIT_MIX_LABELS}
+    if total is not None:
+        out["units_total"] = total
+    if mix and sum(mix.values()) == total:
+        out["unit_mix"] = mix
+
+
+def _unit_rows(lines: list[str]) -> tuple[list[str], list[int | None]]:
+    """Collect the unit-section labels and values in order, up to and including the Total row."""
+    labels, values = [], []
+    for row in lines:
+        lab = row.lower().rstrip(":")
+        if lab == "total" or lab in _UNIT_MIX_LABELS:
+            labels.append(lab)
+        elif re.match(r"\d", row):
+            values.append(_table_int(row))
+        elif labels and values:
+            break
+        if "total" in labels and len(values) >= len(labels):
+            break
+    return labels, values
+
+
+def _data_table_richness(d: dict) -> int:
+    return sum(bool(d.get(k)) for k in ("floor_area_by_use", "unit_mix", "units_total", "far"))
+
+
+def pdf_data_fields(pdf_bytes: bytes, permit_id: str | None = None) -> dict:
+    """Return the development data sheet from a report PDF's "Proposal" summary table.
+
+    The richest CONTIGUOUS run of summary-table pages is parsed as one table (a table can span two
+    pages); distant tables are kept apart so their figures never leak in. ``permit_id`` applies the
+    same bundled-agenda-package guard as pdf_parking.
+    """
+    import pymupdf  # optional dep, see pyproject [pdf]
+
+    doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+    npages = min(doc.page_count, 60)
+    texts = [doc[i].get_text() for i in range(npages)]
+    if permit_id and _bundles_other_application(doc, npages, permit_id):
+        texts = [t if permit_id.lower() in t.lower() else "" for t in texts]
+    groups = _contiguous_groups(proposal_table(t) for t in texts)
+    if not groups:
+        return {}
+    best = max(groups, key=lambda g: sum(_data_table_richness(r) for r in g))
+    return _merge_group(best)
+
+
+def _contiguous_groups(parses) -> list[list[dict]]:
+    """Group a page-ordered stream of parses into runs of consecutive non-empty results."""
+    groups, run = [], []
+    for res in parses:
+        if res:
+            run.append(res)
+        elif run:
+            groups.append(run)
+            run = []
+    if run:
+        groups.append(run)
+    return groups
+
+
+def _merge_group(group: list[dict]) -> dict:
+    """Merge the pages of one table: first non-empty value per field, union of floor-area uses."""
+    merged: dict = {}
+    for res in group:
+        for k, v in res.items():
+            if k == "floor_area_by_use":
+                merged.setdefault(k, {})
+                for uk, uv in v.items():
+                    merged[k].setdefault(uk, uv)
+            elif k not in merged:
+                merged[k] = v
+    return merged
+
+
 def parse_report(meta: dict, proposal: dict) -> dict:
     """Build a dev_permit row from a report's list metadata + its parsed PROPOSAL."""
     desc = proposal.get("description") or ""
@@ -366,6 +545,58 @@ def _apply_pdf_parking(row: dict, pdf_bytes: bytes) -> None:
         row.get("parking_vehicle_stalls"))
 
 
+def _apply_pdf_data_table(row: dict, pdf_bytes: bytes) -> None:
+    """Fill FAR / height / floor area / unit mix / units from the report's summary table, in place.
+
+    The data sheet is authoritative for these fields, so a table value overrides a weaker PROPOSAL
+    prose value and the disagreement is logged to row['conflicts']. A report whose PROPOSAL did not
+    parse but whose data sheet did becomes a parsed row.
+    """
+    try:
+        data = pdf_data_fields(pdf_bytes, row.get("permit_id"))
+    except (OSError, ValueError, RuntimeError):
+        return
+    if not data:
+        return
+    for key, src in (("number_of_stories", "storeys"), ("units_total", "units_total"),
+                     ("height_m", "height_m")):
+        v = data.get(src)
+        if v is None:
+            continue
+        old = row.get(key)
+        if features.has_value(old) and old != v:
+            row.setdefault("conflicts", []).append(
+                {"field": key, "prose": {"value": old}, "table": {"value": v}, "kept": "table"})
+        row[key] = v
+    if data.get("unit_mix"):
+        row["unit_mix"] = data["unit_mix"]
+    if data.get("far") is not None:
+        row["floor_area_ratio"] = data["far"]
+    if data.get("lot_coverage") is not None:
+        row["lot_coverage"] = data["lot_coverage"]
+    _apply_floor_area_uses(row, data)
+    row["is_parsed"] = True
+    row["extraction_confidence"] = features.score_confidence(row)
+    row["needs_review"] = row["extraction_confidence"] < 0.6
+    row["needs_pdf_extraction"] = pdf_enrich.needs_pdf(row)
+
+
+def _apply_floor_area_uses(row: dict, data: dict) -> None:
+    """Set floor area, occupancies and the development class from the table's per-use areas."""
+    fab = data.get("floor_area_by_use")
+    if fab:
+        row["floor_area"] = round(sum(fab.values()), 1)
+        row["floor_area_unit"] = "m2"
+        row["occupancies"] = [{"occupancy": u, "floor_area": a, "floor_area_unit": "m2"}
+                              for u, a in fab.items()]
+        row["occupancy_types"] = sorted(set((row.get("occupancy_types") or []) + list(fab)))
+    elif data.get("units_total") and row.get("development_class") in (None, "unknown"):
+        row["occupancy_types"] = sorted(set((row.get("occupancy_types") or []) + ["residential"]))
+    else:
+        return
+    row["development_class"] = features.development_class(row["occupancy_types"])
+
+
 def select_pdf_sources(row: dict) -> list[dict]:
     """Return the report PDF as the one document to Claude-read for the deeper data sheet."""
     return list(row.get("documents") or [])
@@ -401,6 +632,7 @@ def harvest(session=None, limit: int | None = None, use_cache: bool = True) -> l
             proposal = {"description": "", "permit_types": [], "zoning": None, "text": ""}
         row = parse_report(meta, proposal)
         if pdf_bytes:
+            _apply_pdf_data_table(row, pdf_bytes)  # the summary-table data sheet (may resurrect a memo)
             _apply_pdf_parking(row, pdf_bytes)
         out.append(row)
     consolidate.consolidate_by_address(out)
