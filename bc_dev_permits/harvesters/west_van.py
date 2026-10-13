@@ -284,11 +284,16 @@ def _fetch_many(urls: list[str], use_cache: bool = True) -> dict[str, str]:
     return out
 
 
+_MAX_CONSECUTIVE_FAILS = 5  # once this many pages in a row fail, Cloudflare is rate-limiting: stop
+
+
 def _browser_fetch(urls: list[str]) -> dict[str, str]:
     """Render each URL through headless Chromium, pacing requests so Cloudflare does not block.
 
-    Cloudflare rate-limits bursts, so each page gets a fresh context and there is a cool-down
-    between pages; a blocked response is retried after a longer wait.
+    Cloudflare rate-limits sustained crawling, so each page gets a fresh context and there is a
+    cool-down between pages. When a page fails (a persistent challenge) the next one waits longer,
+    and once several in a row fail the run stops rather than grinding: the disk cache persists, so a
+    later run resumes from where this one left off (see _fetch_many's caching of results).
     """
     from playwright.sync_api import sync_playwright  # optional dep, see pyproject [browser]
 
@@ -296,12 +301,19 @@ def _browser_fetch(urls: list[str]) -> dict[str, str]:
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         try:
+            fails = 0
             for i, url in enumerate(urls):
                 if i:
                     _cooldown(browser, 18_000)  # space requests out between pages
                 html = _render(browser, url)
                 if html:
                     out[url] = html
+                    fails = 0
+                    continue
+                fails += 1
+                if fails >= _MAX_CONSECUTIVE_FAILS:
+                    break  # rate-limited; leave the rest for a later run (cache persists)
+                _cooldown(browser, 60_000)  # back off longer before the next page
         finally:
             browser.close()
     return out
