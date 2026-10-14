@@ -357,10 +357,13 @@ def _scalar_rows(lines: list[str], out: dict) -> None:
                      if re.fullmatch(pat, lines[i], re.IGNORECASE)), None)
 
     far = nxt(r"density\s*\(gross\):?|floor area ratio(?:\s*\(far\))?:?|density\s*\(far\):?|density:?|far:?")
-    m = far and (re.search(r"(\d+\.?\d*)\s*(?:far|fsr)", far, re.IGNORECASE)
-                 or re.fullmatch(r"(\d+\.?\d*)", far.strip()))
+    # A FAR is a small ratio, so a comma is a decimal separator ("0,46") not a thousands grouping.
+    m = far and (re.search(r"(\d+[.,]?\d*)\s*(?:far|fsr)", far, re.IGNORECASE)
+                 or re.fullmatch(r"(\d+[.,]?\d*)", far.strip()))
     if m:
-        out["far"] = float(m.group(1))
+        value = float(m.group(1).replace(",", "."))
+        if 0 < value < 25:  # guard against a mis-read; Surrey FARs top out well below this
+            out["far"] = value
     ht = nxt(r"principal building:?|building height:?|max(?:imum)? building height:?") or ""
     ms = re.search(r"(\d+)\s*stor(?:e|ie)", ht, re.IGNORECASE)
     if ms:
