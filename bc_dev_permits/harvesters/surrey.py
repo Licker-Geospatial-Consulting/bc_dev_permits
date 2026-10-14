@@ -325,13 +325,24 @@ _FLOOR_USE_LABELS = {
 
 
 def _table_num(s: str | None) -> float | None:
-    m = re.search(r"\d[\d,]*\.?\d*", s or "")
-    return float(m.group(0).replace(",", "")) if m else None
+    # Tolerate a space after a thousands comma ("12, 061 square metres" is 12061, not 12).
+    m = re.search(r"\d[\d,\s]*\.?\d*", s or "")
+    return float(re.sub(r"[,\s]", "", m.group(0))) if m else None
 
 
 def _table_int(s: str | None) -> int | None:
     n = _table_num(s)
     return int(n) if n is not None else None
+
+
+def _area_value(line: str) -> float | None:
+    """The single floor-area figure stated just before an area unit, or None if none/ambiguous.
+
+    Anchoring to the unit avoids grabbing an unrelated number ("Site 1: 9,744 ..." is 9,744, not 1),
+    and a value stating two areas (a multi-site cell) is ambiguous, so it is declined.
+    """
+    nums = re.findall(r"(\d[\d,\s]*\.?\d*)\s*" + _AREA_RE, line, re.IGNORECASE)
+    return float(re.sub(r"[,\s]", "", nums[0])) if len(nums) == 1 else None
 
 
 def proposal_table(text: str) -> dict:
@@ -381,16 +392,18 @@ def _scalar_rows(lines: list[str], out: dict) -> None:
 def _floor_area_section(lines: list[str], out: dict) -> None:
     """Read the 'Floor Area' section's per-use areas into out['floor_area_by_use']."""
     for i, ln in enumerate(lines):
-        if not ln.lower().rstrip(":").endswith("floor area"):  # tolerate "Townhouse Floor Area"
+        # A table header cell ("Floor Area", "Townhouse Floor Area"), not a prose line that happens
+        # to end in "floor area".
+        if len(ln) > 28 or not ln.lower().rstrip(":").endswith("floor area"):
             continue
         uses: dict = {}
         for j in range(i + 1, min(i + 12, len(lines) - 1)):
             lab = lines[j].lower().rstrip(":")
             if lab in ("residential units", "amenity space", "parking", "number of stalls"):
                 break
-            if lab in _FLOOR_USE_LABELS and re.search(_AREA_RE, lines[j + 1], re.IGNORECASE):
-                v = _table_num(lines[j + 1])
-                if v and v > 0:  # skip a "0" / "N/A 0 m2" use
+            if lab in _FLOOR_USE_LABELS:
+                v = _area_value(lines[j + 1])
+                if v and v > 0:  # skip a "0" / "N/A 0 m2" use, and ambiguous multi-site values
                     uses[_FLOOR_USE_LABELS[lab]] = v
         if uses:
             out["floor_area_by_use"] = uses

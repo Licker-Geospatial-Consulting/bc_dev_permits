@@ -227,6 +227,14 @@ def test_proposal_table_townhouse_variant():
     assert d["units_total"] == 30 and d["unit_mix"] == {"3-bed": 30}
 
 
+def test_floor_area_value_parsing():
+    """A floor-area figure is the number before the unit; spaced thousands join; multi-site declines."""
+    assert surrey._area_value("12, 061 square metres") == 12061.0   # space after the comma
+    assert surrey._area_value("4,867.39 m2") == 4867.39
+    assert surrey._area_value("Site 1: 9,744 square metres / Site 2: 13,961 square metres") is None
+    assert surrey._area_value("N/A") is None
+
+
 def test_apply_claude_pdf_fills_and_conflicts():
     """Claude-read data-sheet fields fill gaps + stamp provenance; a disagreement is logged."""
     meta = {"permit_id": "7925-0315-00", "address": "13216 - 104 Avenue", "status": "Active",
@@ -263,5 +271,6 @@ if __name__ == "__main__":
     test_proposal_table_pairs_interleaved_units()
     test_comparison_table_is_not_a_data_sheet()
     test_proposal_table_townhouse_variant()
+    test_floor_area_value_parsing()
     test_apply_claude_pdf_fills_and_conflicts()
     print("\nAll Surrey harvester tests passed.")
