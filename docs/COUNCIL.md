@@ -327,6 +327,20 @@ the exact instructions you gave per site.
   rental units" → 24 storeys / 230 units / residential / rental; "a 3,922 square metre industrial
   building" → 3,922 m2 / industrial). A rezoning bullet's "from `<current>` to `<proposed>`" →
   `zoning_density`. `extraction_method = "pdf_text"`.
+- **Development data sheet, deterministic, from anywhere in the PDF** (`pdf_data_fields` /
+  `_apply_pdf_data_table`). The richest data is a single-column "Proposal"/"Proposed" summary table
+  (FAR, height/storeys, lot coverage, floor area by use, unit mix, units) that can sit on any page -
+  often deep in a report whose page-1 PROPOSAL did not parse, which this then **resurrects** into a
+  parsed row. It is read label-line-then-value-line from the text layer, pairing interleaved
+  label/value runs by order; the mix is trusted only when it sums to the stated Total; the richest
+  contiguous page-run is taken so the RM-zone comparison table's figures never leak in; a FAR comma
+  is a decimal ("0,46" → 0.46). The data sheet is authoritative, so a table value overrides a weaker
+  PROPOSAL-prose value and the disagreement is logged to `row['conflicts']`. The same
+  bundled-agenda-package guard as parking keeps one report's table off another's page. Floor-area
+  uses populate `occupancies` and set `development_class`; FAR goes to `floor_area_ratio`. Parking
+  (the "Number of Stalls" / "Parking (Part 5)" table) is read positionally by `pdf_parking`. Worked
+  examples: **7086-184 St** (FAR 5.3, 25 storeys, 17,929 m2 residential + 3,616 commercial, 226 units
+  143/56/27), **15284 Fleetwood** (23,148.4 + 438 m2, 358 units incl. 25 studio / 51 micro).
 - **Claude-read data sheet** (not Ollama). The deeper pages (the "Development Considerations" parking
   table, unit mix) are read by Claude in-session - and rendered to an image when the text layer
   fragments the table - and applied with `apply_claude_pdf` (shared `pdf_enrich`): deterministic
