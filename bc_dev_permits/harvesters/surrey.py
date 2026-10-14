@@ -311,7 +311,7 @@ def pdf_parking(pdf_bytes: bytes, permit_id: str | None = None) -> tuple[int | N
 # height, floor area by use, unit mix, units) that can sit on any page - often deep in a report
 # whose PROPOSAL header did not parse. It is read deterministically from the text layer, label line
 # then value line, and a figure is emitted only when the table is unambiguous.
-_AREA_RE = r"(?:sq\.?\s*m\.?|m²|square\s*met(?:re|er)s?)"
+_AREA_RE = r"(?:sq\.?\s*m\.?|sqm|m²|m\s?2\b|square\s*met(?:re|er)s?)"
 _UNIT_MIX_LABELS = {
     "studio": "studio", "bachelor": "bachelor", "micro unit": "micro", "micro": "micro",
     "1-bedroom": "1-bed", "2-bedroom": "2-bed", "3-bedroom": "3-bed", "4-bedroom": "4-bed",
@@ -356,7 +356,9 @@ def _scalar_rows(lines: list[str], out: dict) -> None:
         return next((lines[i + 1] for i in range(len(lines) - 1)
                      if re.fullmatch(pat, lines[i], re.IGNORECASE)), None)
 
-    far = nxt(r"density\s*\(gross\):?|floor area ratio(?:\s*\(far\))?:?|density\s*\(far\):?|density:?|far:?")
+    # A prefix like "Townhouse " is tolerated on the FAR and height labels (ground-oriented reports).
+    far = nxt(r"(?:\w+\s+)?density\s*\(gross\):?|(?:\w+\s+)?floor area ratio(?:\s*\(far\))?:?"
+              r"|density\s*\(far\):?|density:?|far:?")
     # A FAR is a small ratio, so a comma is a decimal separator ("0,46") not a thousands grouping.
     m = far and (re.search(r"(\d+[.,]?\d*)\s*(?:far|fsr)", far, re.IGNORECASE)
                  or re.fullmatch(r"(\d+[.,]?\d*)", far.strip()))
@@ -364,7 +366,7 @@ def _scalar_rows(lines: list[str], out: dict) -> None:
         value = float(m.group(1).replace(",", "."))
         if 0 < value < 25:  # guard against a mis-read; Surrey FARs top out well below this
             out["far"] = value
-    ht = nxt(r"principal building:?|building height:?|max(?:imum)? building height:?") or ""
+    ht = nxt(r"(?:\w+\s+)?principal building:?|(?:\w+\s+)?building height:?|max(?:imum)? building height:?") or ""
     ms = re.search(r"(\d+)\s*stor(?:e|ie)", ht, re.IGNORECASE)
     if ms:
         out["storeys"] = int(ms.group(1))
@@ -379,7 +381,7 @@ def _scalar_rows(lines: list[str], out: dict) -> None:
 def _floor_area_section(lines: list[str], out: dict) -> None:
     """Read the 'Floor Area' section's per-use areas into out['floor_area_by_use']."""
     for i, ln in enumerate(lines):
-        if ln.lower().rstrip(":") != "floor area":
+        if not ln.lower().rstrip(":").endswith("floor area"):  # tolerate "Townhouse Floor Area"
             continue
         uses: dict = {}
         for j in range(i + 1, min(i + 12, len(lines) - 1)):
@@ -388,7 +390,7 @@ def _floor_area_section(lines: list[str], out: dict) -> None:
                 break
             if lab in _FLOOR_USE_LABELS and re.search(_AREA_RE, lines[j + 1], re.IGNORECASE):
                 v = _table_num(lines[j + 1])
-                if v is not None:
+                if v and v > 0:  # skip a "0" / "N/A 0 m2" use
                     uses[_FLOOR_USE_LABELS[lab]] = v
         if uses:
             out["floor_area_by_use"] = uses
@@ -402,17 +404,25 @@ def _unit_section(lines: list[str], out: dict) -> None:
     collected in order and paired by position. The mix is trusted only when it sums to the Total.
     """
     start = next((i for i, ln in enumerate(lines)
-                  if re.fullmatch(r"residential units:?|unit (?:mix|breakdown):?", ln, re.IGNORECASE)), None)
+                  if re.fullmatch(r"(?:\w+\s+)*residential units:?|unit (?:mix|breakdown):?", ln, re.IGNORECASE)),
+                 None)
     if start is None:
         return
     labels, values = _unit_rows(lines[start + 1:start + 24])
-    if "total" not in labels or len(labels) != len(values):
+    if len(labels) != len(values) or None in values:
         return
-    pairs = dict(zip(labels, values, strict=True))
-    total = pairs.pop("total", None)
-    mix = {_UNIT_MIX_LABELS[k]: v for k, v in pairs.items() if k in _UNIT_MIX_LABELS}
-    if total is not None:
-        out["units_total"] = total
+    pairs = list(zip(labels, values, strict=True))
+    if "total" in labels:
+        mapping = dict(pairs)
+        total = mapping.pop("total")
+        mix = {_UNIT_MIX_LABELS[k]: v for k, v in mapping.items() if k in _UNIT_MIX_LABELS}
+    elif len(pairs) == 1 and pairs[0][0] in _UNIT_MIX_LABELS:
+        # A single unit-type row with no Total line (e.g. "3-Bedroom: 30"): that count is the total.
+        mix = {_UNIT_MIX_LABELS[pairs[0][0]]: pairs[0][1]}
+        total = pairs[0][1]
+    else:
+        return
+    out["units_total"] = total
     if mix and sum(mix.values()) == total:
         out["unit_mix"] = mix
 

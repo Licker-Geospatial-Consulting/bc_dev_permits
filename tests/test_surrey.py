@@ -202,6 +202,31 @@ def test_comparison_table_is_not_a_data_sheet():
     assert surrey.proposal_table(_COMPARISON_TABLE) == {}
 
 
+# A ground-oriented report: "Townhouse "-prefixed labels, "m2" area units, one unit type, no Total.
+_TOWNHOUSE_TABLE = """\
+Proposed
+Townhouse Building Height:
+Maximum 10.92 metres
+Townhouse Floor Area Ratio (FAR):
+0.6
+Townhouse Floor Area
+Residential:
+4,867.39 m2
+Townhouse Residential Units:
+3-Bedroom:
+30
+Referrals
+"""
+
+
+def test_proposal_table_townhouse_variant():
+    """Prefixed labels, 'm2' areas and a single unit type with no Total row all read."""
+    d = surrey.proposal_table(_TOWNHOUSE_TABLE)
+    assert d["height_m"] == 10.92 and d["far"] == 0.6
+    assert d["floor_area_by_use"] == {"residential": 4867.39}   # "m2" parsed, not just "sq. m."
+    assert d["units_total"] == 30 and d["unit_mix"] == {"3-bed": 30}
+
+
 def test_apply_claude_pdf_fills_and_conflicts():
     """Claude-read data-sheet fields fill gaps + stamp provenance; a disagreement is logged."""
     meta = {"permit_id": "7925-0315-00", "address": "13216 - 104 Avenue", "status": "Active",
@@ -237,5 +262,6 @@ if __name__ == "__main__":
     test_proposal_table_reads_data_sheet()
     test_proposal_table_pairs_interleaved_units()
     test_comparison_table_is_not_a_data_sheet()
+    test_proposal_table_townhouse_variant()
     test_apply_claude_pdf_fills_and_conflicts()
     print("\nAll Surrey harvester tests passed.")
