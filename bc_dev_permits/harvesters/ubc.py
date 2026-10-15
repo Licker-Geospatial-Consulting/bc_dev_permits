@@ -51,7 +51,7 @@ USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 # page always carries one; it is also in the detail page's <h1>.
 _DP_RE = re.compile(r"\bDP\d{4,5}[A-Za-z]?\b")
 _STATUS_RE = re.compile(
-    r"\b(Permit Approved|Under Construction|Application|Approved|Completed|Permit)\b")
+    r"\b(Permit Approved|Under Construction|Application|Approved|Completed|Complete|Withdrawn|Permit)\b")
 # Shared Claude-read PDF enrichment (see pdf_enrich).
 apply_claude_pdf = pdf_enrich.apply_claude_pdf
 
@@ -62,25 +62,26 @@ apply_claude_pdf = pdf_enrich.apply_claude_pdf
 def get_project_cards(list_html: str, base: str = LIST_URL) -> list[dict]:
     """Return one card per development project from the list page: {url, permit_id, status}.
 
-    Project cards are the links whose text carries a "DP#####" permit number (navigation links do
-    not); the status badge ("Application" / "Permit Approved" / "Under Construction") is read from
-    the same card text.
+    Each project card carries a thumbnail, so its link text begins "Image <Status> <Title>" - that
+    is the signal, not a permit number, because older projects omit the "DP#####" from the card (it
+    is then recovered from the detail page / slug in parse_detail). Navigation links (About Us,
+    Community, the pager) carry no thumbnail and are skipped.
     """
     soup = BeautifulSoup(list_html, "lxml")
     view = soup.select_one(".view-project-view-page") or soup
     cards: dict[str, dict] = {}
     for a in view.find_all("a", href=True):
         text = a.get_text(" ", strip=True)
-        dp = _DP_RE.search(text)
-        if not dp:
+        if not text.startswith("Image"):
             continue
         url = urljoin(base, a["href"]).split("#")[0].split("?")[0].rstrip("/")
         if "/planning-development/" in url or "/sites/" in url:
             continue
+        dp = _DP_RE.search(text)
         status = _STATUS_RE.search(text)
         cards.setdefault(url, {
             "url": url,
-            "permit_id": dp.group(0).upper(),
+            "permit_id": dp.group(0).upper() if dp else None,
             "status": status.group(1) if status else None,
         })
     return list(cards.values())
@@ -168,10 +169,28 @@ def select_pdf_sources(detail_html: str, url: str) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # 4. Live harvest (plain HTTP; PDFs are read by Claude in-session afterwards)
 # --------------------------------------------------------------------------- #
+MAX_PAGES = 40  # safety cap on list pagination (the Drupal view pages with ?page=N, 0-indexed)
+
+
+def _all_project_cards(session, use_cache: bool) -> list[dict]:
+    """Walk every ?page=N of the development-projects list, deduped by url, until a page is empty."""
+    seen: set[str] = set()
+    cards: list[dict] = []
+    for page in range(MAX_PAGES):
+        url = LIST_URL if page == 0 else f"{LIST_URL}?page={page}"
+        new = [c for c in get_project_cards(_cached_get(session, url, use_cache))
+               if c["url"] not in seen]
+        if not new:
+            break
+        seen.update(c["url"] for c in new)
+        cards.extend(new)
+    return cards
+
+
 def harvest(session=None, limit: int | None = None, use_cache: bool = True) -> list[dict]:
-    """Harvest the list + detail pages into dev_permit rows (HTML only; PDF pass is Claude-read)."""
+    """Harvest the list (all pages) + detail pages into dev_permit rows (PDF pass is Claude-read)."""
     session = session or _session()
-    cards = get_project_cards(_cached_get(session, LIST_URL, use_cache))
+    cards = _all_project_cards(session, use_cache)
     if limit:
         cards = cards[:limit]
     rows = []
