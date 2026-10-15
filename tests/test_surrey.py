@@ -227,6 +227,32 @@ def test_proposal_table_townhouse_variant():
     assert d["units_total"] == 30 and d["unit_mix"] == {"3-bed": 30}
 
 
+_SUBDIVISION_TABLE = """\
+Proposed
+Lot Area
+Gross Site Area:
+823 square metres
+Road Dedication:
+4.5 square metres
+Net Site Area:
+819 square metres
+Number of Lots:
+2
+Unit Density:
+24 units per hectare
+Range of Lot Sizes
+412 - 417 square meters
+"""
+
+
+def test_proposal_table_lot_parcel_fields():
+    """A subdivision table (lot area, number of lots, unit density; no floor area/units) is read."""
+    d = surrey.proposal_table(_SUBDIVISION_TABLE)
+    assert d["lot_area"] == 819.0 and d["lot_area_unit"] == "m2"   # net site area preferred
+    assert d["number_of_lots"] == 2
+    assert d["unit_density"] == 24.0
+
+
 def test_floor_area_value_parsing():
     """A floor-area figure is the number before the unit; spaced thousands join; multi-site declines."""
     assert surrey._area_value("12, 061 square metres") == 12061.0   # space after the comma
@@ -271,6 +297,7 @@ if __name__ == "__main__":
     test_proposal_table_pairs_interleaved_units()
     test_comparison_table_is_not_a_data_sheet()
     test_proposal_table_townhouse_variant()
+    test_proposal_table_lot_parcel_fields()
     test_floor_area_value_parsing()
     test_apply_claude_pdf_fills_and_conflicts()
     print("\nAll Surrey harvester tests passed.")

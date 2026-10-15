@@ -352,13 +352,34 @@ def proposal_table(text: str) -> dict:
         return {}
     out: dict = {}
     _scalar_rows(lines, out)
+    _lot_section(lines, out)
     _floor_area_section(lines, out)
     _unit_section(lines, out)
-    # Only a page carrying a summary-specific row (floor-area breakdown or unit rows) is the summary
-    # table; a bare FAR/height page is the RM-zone comparison table and must not qualify.
-    if not any(k in out for k in ("floor_area_by_use", "units_total", "unit_mix")):
+    # Only a page carrying a summary-specific row (lot area, floor-area breakdown or unit rows) is the
+    # summary table; a bare FAR/height page is the RM-zone comparison table and must not qualify.
+    if not any(k in out for k in ("lot_area", "number_of_lots", "floor_area_by_use", "units_total",
+                                  "unit_mix")):
         return {}
     return out
+
+
+def _lot_section(lines: list[str], out: dict) -> None:
+    """Read the Lot Area rows (net/gross site area, number of lots, unit density) into out."""
+    def nxt(pat):
+        return next((lines[i + 1] for i in range(len(lines) - 1)
+                     if re.fullmatch(pat, lines[i], re.IGNORECASE)), None)
+
+    # Net site area (the developable area) is the lot_area; fall back to gross when net is absent.
+    lot = _area_value(nxt(r"net site area:?") or "") or _area_value(nxt(r"gross site area:?") or "")
+    if lot and lot > 0:
+        out["lot_area"] = lot
+        out["lot_area_unit"] = "m2"
+    lots = re.fullmatch(r"\d+", (nxt(r"number of lots:?") or "").strip())
+    if lots:
+        out["number_of_lots"] = int(lots.group(0))
+    dens = re.search(r"(\d+\.?\d*)\s*units?\s*per\s*hectare", nxt(r"unit density:?") or "", re.IGNORECASE)
+    if dens:
+        out["unit_density"] = float(dens.group(1))
 
 
 def _scalar_rows(lines: list[str], out: dict) -> None:
@@ -585,7 +606,7 @@ def _apply_pdf_data_table(row: dict, pdf_bytes: bytes) -> None:
     if not data:
         return
     for key, src in (("number_of_stories", "storeys"), ("units_total", "units_total"),
-                     ("height_m", "height_m")):
+                     ("height_m", "height_m"), ("lot_area", "lot_area")):
         v = data.get(src)
         if v is None:
             continue
@@ -596,6 +617,9 @@ def _apply_pdf_data_table(row: dict, pdf_bytes: bytes) -> None:
         row[key] = v
     if data.get("unit_mix"):
         row["unit_mix"] = data["unit_mix"]
+    for key in ("lot_area_unit", "number_of_lots", "unit_density"):
+        if data.get(key) is not None:
+            row[key] = data[key]
     if data.get("far") is not None:
         row["floor_area_ratio"] = data["far"]
     if data.get("lot_coverage") is not None:
