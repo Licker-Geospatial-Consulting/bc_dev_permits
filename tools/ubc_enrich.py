@@ -15,6 +15,17 @@ from bc_dev_permits.harvesters import ubc
 
 # permit_id -> (claude-read fields, source document) from reading each priority PDF.
 CLAUDE_READ = {
+    # ANSO Renewal (DP24027 Amendment 2) - MAC expansion, an academic (Anthropology & Sociology)
+    # building. Perkins&Will PROJECT INFORMATION sheet (G00-01). Gross floor area (6,681 m2) is
+    # already captured from the HTML, so only the fields the HTML lacks are added here.
+    "DP24027": (
+        {"development_class": "institutional", "occupancy_types": ["institutional"],
+         "lot_area": 4708.2, "lot_area_unit": "m2", "parking_bike_stalls": 50,
+         "occupancies": [{"occupancy": "institutional", "floor_area": 6681.7,
+                          "floor_area_unit": "m2", "detail": "academic (Anthropology & Sociology)"}]},
+        {"title": "Architectural - Issued for DP",
+         "url": "https://planning.ubc.ca/sites/default/files/2024-09/UBC%20ANSO%20-%20Architectural%20-%20Issued%20for%20DP.pdf"},
+    ),
     # Development Permit Board Report: 303 units = 189 in the 14-storey market-rental tower + 114
     # faculty/staff in four 6-storey buildings. Parking: 240 resident + 32 visitor + 31 accessible
     # = 303 vehicle stalls; 675 Class I (long-term) + 70 Class II (visitor) = 745 bicycle stalls.
@@ -56,6 +67,11 @@ CLAUDE_READ = {
 
 # Longer free-text context appended to raw_text (breakdowns a single scalar can't hold).
 NOTES = {
+    "DP24027": "Architect PROJECT INFORMATION (UBC ANSO Renewal, 6303 NW Marine Dr): gross floor "
+               "area 6,681.7 m2 (L00 1,069.6 / L01 2,768.6 / L02 2,280.4 / L03 563.1), site "
+               "4,708.2 m2 (78.5 x 113.1 m), site coverage 59.0%; bicycle parking 50 (Class A 26 + "
+               "Class B 24); roof-level geodetic elevations 67.7-78.6 m; loading from Cecil Green "
+               "Park Road (no on-site vehicle parking stated).",
     "DP24018": "Parking (DP Board Report): 240 resident + 32 visitor (incl 4 EV, 4 accessible) + 31 "
                "accessible = 303 vehicle stalls; 675 Class I (long-term) + 70 Class II (visitor) "
                "bicycle stalls. Units: 189 in the 14-storey market-rental tower + 114 faculty/staff "

@@ -13,6 +13,19 @@ from bc_dev_permits.harvesters import west_van as wv
 
 # permit_id -> (claude-read fields, source document) from reading each priority PDF.
 CLAUDE_READ = {
+    # The Creek (preliminary): 3033 & 3055 Marine Drive rezoning RS2 -> CD, a 6-unit rowhouse
+    # project in three 2-storey blocks (A/B/C). Architect's PROJECT DATA sheet (A-0.1).
+    "3033-3055-marine-drive-townhouses": (
+        # No unit count is set from the titleblock: its "Grand total: 6" is 6 floor-area line items
+        # (3 blocks x 2 floors), not dwelling units, so the HTML's unit count is left to stand.
+        {"development_class": "residential", "occupancy_types": ["residential"],
+         "number_of_stories": 2,
+         "floor_area": 2281.3, "floor_area_unit": "m2", "floor_area_ratio": 0.33,
+         "height_m": 7.62, "lot_area": 6809.3, "lot_area_unit": "m2",
+         "parking_vehicle_stalls": 27, "parking_bike_stalls": 22},
+        {"title": "Architectural Plans",
+         "url": "https://westvancouver.ca/sites/default/files/media/documents/3033-3055-marine-drive_architectural-plans-for-posting-on-web-page-for-preliminary-pim.pdf"},
+    ),
     # Plans sheet P-7 shows a 7-level building (Level Seven = penthouse); the rooftop sauna is an
     # accessory structure (height variance 18.2 -> 19.6 m already captured from the HTML).
     "11-3085-deer-ridge-close": (
@@ -182,6 +195,12 @@ CLAUDE_READ = {
 
 # Per-building detail appended to raw_text for the multi-building applications.
 BREAKDOWNS = {
+    "3033-3055-marine-drive-townhouses": (
+        "Architect PROJECT DATA (The Creek, 3033 & 3055 Marine Drive): proposed CD zone (from RS2); "
+        "lot 73,294.7 sq ft (6,809 m2); FAR 24,555.8 sq ft (FSR 0.33); building height 25 ft "
+        "(7.6 m); parking 22 underground (2/unit) + 5 visitor + 22 bike; salable area 2,267.3 m2 "
+        "across 3 blocks (A 851.7 / B 595.2 / C 820.4 m2, main + upper floor each)."
+    ),
     "875-885-jefferson-avenue": (
         "Proposed four single-family lots: 875-A 565.3 m2, 875-B 575.7 m2, 885-A 544.5 m2, "
         "885-B 554.8 m2 (RS3 minimum is 975 m2). Allowable floor area ~204.4 m2 per 875 lot and "
