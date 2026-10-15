@@ -336,7 +336,7 @@ def _table_int(s: str | None) -> int | None:
 
 
 def _area_value(line: str) -> float | None:
-    """The single floor-area figure stated just before an area unit, or None if none/ambiguous.
+    """Return the single floor-area figure stated just before an area unit, or None if none/ambiguous.
 
     Anchoring to the unit avoids grabbing an unrelated number ("Site 1: 9,744 ..." is 9,744, not 1),
     and a value stating two areas (a multi-site cell) is ambiguous, so it is declined.
@@ -360,7 +360,21 @@ def proposal_table(text: str) -> dict:
     if not any(k in out for k in ("lot_area", "number_of_lots", "floor_area_by_use", "units_total",
                                   "unit_mix")):
         return {}
+    occ = _page_occupancy(lines)
+    if occ:
+        out["occupancy_types"] = occ
     return out
+
+
+def _page_occupancy(lines: list[str]) -> list[str]:
+    """Return the building uses named on the data-sheet page, read before the referral boilerplate.
+
+    The Referrals section ("School District ... schools", fire, parks) would otherwise add spurious
+    uses, so the scan stops there; this lets a subdivision with only a Lot Area table still be
+    classified (e.g. "Single Family Residential" -> residential).
+    """
+    text = re.split(r"\breferrals\b|\bschool district\b", " ".join(lines), maxsplit=1, flags=re.IGNORECASE)[0]
+    return features.occupancy_types(text)
 
 
 def _lot_section(lines: list[str], out: dict) -> None:
@@ -605,16 +619,7 @@ def _apply_pdf_data_table(row: dict, pdf_bytes: bytes) -> None:
         return
     if not data:
         return
-    for key, src in (("number_of_stories", "storeys"), ("units_total", "units_total"),
-                     ("height_m", "height_m"), ("lot_area", "lot_area")):
-        v = data.get(src)
-        if v is None:
-            continue
-        old = row.get(key)
-        if features.has_value(old) and old != v:
-            row.setdefault("conflicts", []).append(
-                {"field": key, "prose": {"value": old}, "table": {"value": v}, "kept": "table"})
-        row[key] = v
+    _apply_table_scalars(row, data)
     if data.get("unit_mix"):
         row["unit_mix"] = data["unit_mix"]
     for key in ("lot_area_unit", "number_of_lots", "unit_density"):
@@ -631,6 +636,20 @@ def _apply_pdf_data_table(row: dict, pdf_bytes: bytes) -> None:
     row["needs_pdf_extraction"] = pdf_enrich.needs_pdf(row)
 
 
+def _apply_table_scalars(row: dict, data: dict) -> None:
+    """Set the authoritative scalar fields from the table, logging any prose disagreement."""
+    for key, src in (("number_of_stories", "storeys"), ("units_total", "units_total"),
+                     ("height_m", "height_m"), ("lot_area", "lot_area")):
+        v = data.get(src)
+        if v is None:
+            continue
+        old = row.get(key)
+        if features.has_value(old) and old != v:
+            row.setdefault("conflicts", []).append(
+                {"field": key, "prose": {"value": old}, "table": {"value": v}, "kept": "table"})
+        row[key] = v
+
+
 def _apply_floor_area_uses(row: dict, data: dict) -> None:
     """Set floor area, occupancies and the development class from the table's per-use areas."""
     fab = data.get("floor_area_by_use")
@@ -642,6 +661,10 @@ def _apply_floor_area_uses(row: dict, data: dict) -> None:
         row["occupancy_types"] = sorted(set((row.get("occupancy_types") or []) + list(fab)))
     elif data.get("units_total") and row.get("development_class") in (None, "unknown"):
         row["occupancy_types"] = sorted(set((row.get("occupancy_types") or []) + ["residential"]))
+    elif data.get("occupancy_types") and row.get("development_class") in (None, "unknown"):
+        # A lot-only table (subdivision): class the uses named on the page, e.g. single-family lots.
+        row["occupancy_types"] = sorted(set((row.get("occupancy_types") or [])
+                                            + data["occupancy_types"]))
     else:
         return
     row["development_class"] = features.development_class(row["occupancy_types"])
