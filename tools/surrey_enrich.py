@@ -47,9 +47,24 @@ PARKING = {
     # garages, no stalls table - so no figure is wired rather than fabricate one.
 }
 
-# permit_id -> the project data read by hand from an architect's "PROJECT DATA" titleblock, for the
-# applications whose report carries no parseable staff-report table (Format C - see module docstring).
+# permit_id -> the project data read by hand for applications whose report carries no parseable
+# staff-report table: an architect's "PROJECT DATA" titleblock (Format C - see module docstring), or
+# a DP-renewal whose only data table sits under the bundled original's application number (which the
+# harvester's bundled-package guard rightly keeps off this permit's row).
 ARCHITECTURAL = {
+    # 15202 Guildford Drive (DP renewal of 7921-0153): "reflects the same development parameters as
+    # the original approved March 2024" - a 20-storey, 175-unit mid-rise. The summary table is in the
+    # bundled original's report (headed 7921-0153), so it is read here for the renewal.
+    "7925-0412-00": {
+        "development_class": "residential", "occupancy_types": ["residential"],
+        "units_total": 175,
+        "unit_mix": {"1-bed": 20, "1-bed-den": 74, "2-bed": 68, "2-bed-den": 1, "3-bed": 5,
+                     "3-bed-den": 7},
+        "floor_area": 12994.1, "floor_area_unit": "m2", "floor_area_ratio": 4.50,
+        "number_of_stories": 20, "height_m": 61.0,
+        "lot_area": 2887.7, "lot_area_unit": "m2", "lot_coverage": 42.0,
+        "occupancies": [{"occupancy": "residential", "floor_area": 12994.1, "floor_area_unit": "m2"}],
+    },
     # Aspen Early Learning Society (child care), 2507 128 St: C-4 -> C-5 rezoning. The report's only
     # data sheet is the architect's titleblock; its text is in drawing order so the parser skips it.
     "7922-0306-00": {
@@ -83,6 +98,11 @@ NOTES = {
                     "lot 974.77 m2, gross floor area 381.37 m2, FAR 0.39 (permitted 0.50), lot "
                     "coverage 29% (max 50%), 3 storeys, height 5.0 m; parking 9 off-street "
                     "(8 + 1 accessible) plus 9 street stalls, 17 required.",
+    "7925-0412-00": "DP renewal (15202 Guildford Drive, original DP 7921-0153): a 20-storey, "
+                    "175-unit mid-rise; lot 2,887.7 m2, residential floor area 12,994.1 m2, net "
+                    "density 4.50, lot coverage 42%, building height 61 m; unit mix 20 one-bed / "
+                    "74 one-bed+den / 68 two-bed / 1 two-bed+den / 5 three-bed / 7 three-bed+den "
+                    "(175 total, 16 adaptable).",
     "7926-0180-00": "Architect PROJECT DATA (Somerset Gardens renovation + deep energy retrofit): an "
                     "existing 166-unit, 4-storey low-rise complex of 3 buildings (A/B/C; footprints "
                     "1,935.44 / 2,079.82 / 2,083.44 m2), 234 existing parking spaces (166 units x "
