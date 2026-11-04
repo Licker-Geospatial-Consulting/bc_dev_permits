@@ -6,10 +6,14 @@ from pathlib import Path
 FILES = {
     "coquitlam": "Coquitlam",
     "halton_hills": "Halton Hills",
+    "langley": "Langley",
     "maple_ridge": "Maple Ridge",
     "new_west": "New Westminster",
     "north_van": "North Vancouver",
     "port_moody": "Port Moody",
+    "richmond": "Richmond",
+    "surrey": "Surrey",
+    "ubc": "UBC",
     "victoria": "Victoria",
     "west_van": "West Vancouver",
 }

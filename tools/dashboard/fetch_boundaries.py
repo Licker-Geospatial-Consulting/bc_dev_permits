@@ -11,10 +11,14 @@ QUERIES = {
     "Maple Ridge": "Maple Ridge, British Columbia, Canada",
     "North Vancouver": "City of North Vancouver, British Columbia, Canada",
     "Port Moody": "Port Moody, British Columbia, Canada",
+    "Richmond": "Richmond, British Columbia, Canada",
+    "Surrey": "Surrey, British Columbia, Canada",
     "Victoria": "Victoria, British Columbia, Canada",
     "West Vancouver": "West Vancouver, British Columbia, Canada",
     "New Westminster": "New Westminster, British Columbia, Canada",
     "Halton Hills": "Halton Hills, Ontario, Canada",
+    "UBC": "University of British Columbia, Vancouver, British Columbia, Canada",
+    "Langley": "Township of Langley, British Columbia, Canada",
 }
 UA = "bc-dev-permits-dashboard/0.1 (+contact: himalya@lgeo.co)"
 s = requests.Session()
