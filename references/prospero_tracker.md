@@ -6,7 +6,7 @@ platform is a vendor product, so expect other BC municipalities to reuse this fl
 
 The *detail* pages are ordinary server-rendered HTML and parse exactly like
 `html_detail_pages.md` (prose → `bc_dev_permits/features.py`, a milestones table). What
-is platform-specific — and lives here — is the **list retrieval** and the **record
+is platform-specific - and lives here - is the **list retrieval** and the **record
 model** (folder-numbered detail URLs, one application spanning many addresses,
 concurrent-application cross-references).
 
@@ -29,7 +29,7 @@ search.aspx (ASP.NET grid) ──filter ACTIVE, page through──> [folderNumbe
   number, application type, application date, status, a short description, and a
   **Details** button linking to `Details.aspx?folderNumber=<FOLDER>`.
 - **Filter to ACTIVE** via the "Application Status" sidebar. Victoria defines an active
-  application as one that **has not yet received a decision by Council** — so the active
+  application as one that **has not yet received a decision by Council** - so the active
   set never carries an "approved"/"refused" status; those move to archived.
 - **Pagination is a stateful ASP.NET AJAX UpdatePanel**, not URL-addressable pages
   (`« 1 2 3 4 5 »`). The numbered links run `pagination(N)`, which sets
@@ -53,11 +53,11 @@ search.aspx (ASP.NET grid) ──filter ACTIVE, page through──> [folderNumbe
 
 ## 2. Detail page (`Details.aspx?folderNumber=<FOLDER>`)
 
-Plain server-rendered GET — a normal HTTP fetch + HTML parser is enough. Map fields:
+Plain server-rendered GET - a normal HTTP fetch + HTML parser is enough. Map fields:
 
 | schema field        | source on the page                                                        |
 |---------------------|---------------------------------------------------------------------------|
-| `permit_id`         | the **folder number** (e.g. `DPV00297`) — from the query string, no PDF-filename recovery needed |
+| `permit_id`         | the **folder number** (e.g. `DPV00297`) - from the query string, no PDF-filename recovery needed |
 | `permit_type`       | the **"Project Type"** field verbatim (e.g. "Development Permit with Variance") |
 | `status`            | the **"Status"** field (`ACTIVE` for the active set)                      |
 | `address`           | the **primary address**; see multi-address note below                     |
@@ -68,7 +68,7 @@ Plain server-rendered GET — a normal HTTP fetch + HTML parser is enough. Map f
 - **Multiple addresses per application.** One folder can list many addresses (e.g.
   `DPV00297` spans 9 Broughton/Fort St lots). The schema has a single `address` column,
   so store the **primary** address there and keep the **full list inside `raw_text`** so
-  it is not lost. Emit exactly **one `dev_permit`** per folder — do not fan out per
+  it is not lost. Emit exactly **one `dev_permit`** per folder - do not fan out per
   address.
 - **development_class** from the description prose: "…with retail at ground level" +
   dwellings → `mixed`; "N purpose-built rental units" / "N unit multi-family" →
@@ -84,7 +84,7 @@ itself carries no drawings/reports:
 - Record the related `REZ` id (in `raw_text`; optionally follow its
   `Details.aspx?folderNumber=REZ…` page for documents).
 - Set `needs_pdf_extraction = true` when no usable materials are attached to the DP
-  folder — the supporting documents live under the rezoning folder.
+  folder - the supporting documents live under the rezoning folder.
 
 ### Which document to extract (low-signal rows)
 
@@ -95,7 +95,7 @@ PDF to hand to the Ollama extractor, deterministically:
    (the live application carries the real materials; e.g. `DPV00294` defers to its ACTIVE
    `REZ00896`).
 2. **Otherwise** → use this page's own **Documents** section. (An ARCHIVED related app is
-   ignored — its documents are stale; fall back to the page's own set.)
+   ignored - its documents are stale; fall back to the page's own set.)
 3. Within the chosen set, prefer the **most recent "letter to mayor/council"**; if there
    is none, take the **most recent document** of any kind. "Most recent" is by the date
    parsed from the document title (`YYYY-MM-DD …`, `Sept 18, 2020 …`), else the last
@@ -111,7 +111,7 @@ not (it needs a local model).
 
 Folder prefixes encode the application type: `DPV` (Development Permit with Variance),
 `REZ` (Rezoning) are confirmed; `DP`, `DVP`, `HAP` (Heritage Alteration) and others are
-likely — confirm the full set in the browser and record it in `COUNCIL.md`. Suggested
+likely - confirm the full set in the browser and record it in `COUNCIL.md`. Suggested
 regex once confirmed: `(?:DPV|DP|DVP|REZ|HAP)\d{4,5}`.
 
 ## 5. Parser notes (from Victoria examples)

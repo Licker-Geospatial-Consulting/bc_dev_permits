@@ -12,7 +12,7 @@ venv/
 .http_cache/
 data/raw/http_cache/
 
-# Data — keep the folders (via .gitkeep) but not their contents by default.
+# Data - keep the folders (via .gitkeep) but not their contents by default.
 # Remove these lines if you want to version harvested outputs.
 data/raw/*
 data/interim/*
@@ -42,3 +42,4 @@ site/            # mkdocs build output
 # Dashboard rebuild intermediates (roads.json is the committed product)
 tools/dashboard/roads_cache/
 tools/dashboard/geocode.log
+tools/portmoody/

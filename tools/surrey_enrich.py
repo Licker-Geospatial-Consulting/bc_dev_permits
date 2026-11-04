@@ -132,7 +132,8 @@ def main() -> None:
         if filled and row.get("development_class") not in (None, "unknown"):
             row["is_parsed"] = True
         note = NOTES.get(permit_id)
-        if note:
+        # Append the context note once; guard so re-running the script never duplicates it.
+        if note and note not in (row.get("raw_text") or ""):
             row["raw_text"] = "\n\n".join(p for p in (row.get("raw_text"), note) if p)
         applied += 1
         summary = ", ".join(f"{k}={v}" for k, v in fields.items() if k != "occupancies")

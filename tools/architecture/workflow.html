@@ -1,0 +1,221 @@
+<title>Permit Pipeline</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f4f1; --surface:#fcfcfa; --surface2:#eef0ec; --ink:#16170f; --muted:#6c6d63;
+  --line:#d4d5cc; --accent:#2a6fd6; --amber:#bd7612;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+  --display:"Archivo",system-ui,sans-serif;
+}
+:root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
+  color-scheme: dark;
+  --bg:#0e0f0d; --surface:#1a1c17; --surface2:#21231b; --ink:#f1f1ea; --muted:#9a9b8f;
+  --line:#2e302a; --accent:#5a9bf0; --amber:#e0a33a;
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0e0f0d; --surface:#1a1c17; --surface2:#21231b; --ink:#f1f1ea; --muted:#9a9b8f;
+  --line:#2e302a; --accent:#5a9bf0; --amber:#e0a33a;
+}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+.wrap{max-width:1040px;margin:0 auto;padding-block:40px 56px;padding-inline:16px}
+header{margin-bottom:22px}
+.kicker{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4.2vw,36px);letter-spacing:-.02em;
+  margin:.18em 0 .3em;text-wrap:balance}
+.lede{color:var(--muted);font-size:15px;line-height:1.55;max-width:66ch;margin:0}
+.lede code{font-family:var(--mono);font-size:.92em;color:var(--ink)}
+
+.figscroll{overflow-x:auto;margin:26px 0 6px;padding-bottom:4px}
+figure{margin:0;min-width:760px}
+svg{width:100%;height:auto;color:var(--ink);display:block}
+figcaption{margin-top:14px;color:var(--muted);font-size:13px;line-height:1.5;max-width:70ch}
+
+/* svg roles */
+.n{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.n.src{fill:var(--surface2)}
+.n.opt{stroke:var(--amber);stroke-dasharray:5 4;stroke-width:1.3}
+.n.hub{fill:var(--surface);stroke:var(--accent);stroke-width:1.6}
+.t{fill:var(--ink);font-family:var(--mono);font-weight:700;font-size:13px}
+.t.pl{font-family:var(--display);font-weight:700}
+.s{fill:var(--muted);font-size:10.5px;font-family:var(--sans)}
+.ln{stroke:var(--ink);stroke-width:1.5;fill:none;opacity:.5}
+.ln.ac{stroke:var(--accent);opacity:.9;stroke-width:1.8}
+.ln.op{stroke:var(--amber);stroke-width:1.5;fill:none;stroke-dasharray:5 4}
+.lbl{fill:var(--muted);font-size:10px;font-family:var(--sans)}
+.lbl.op{fill:var(--amber)}
+.band{fill:var(--muted);font-size:10.5px;font-weight:600;letter-spacing:.08em;
+  font-family:var(--display);text-transform:uppercase}
+
+/* legend + stages */
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin:18px 0 0;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.swatch{width:26px;height:0;border-top:2px solid var(--ink);opacity:.6}
+.swatch.ac{border-top:2px solid var(--accent);opacity:1}
+.swatch.op{border-top:2px dashed var(--amber);opacity:1}
+.stages{margin-top:34px;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.stage h3{margin:0 0 5px;font-family:var(--display);font-size:13px;font-weight:700}
+.stage h3 b{color:var(--accent);font-weight:700}
+.stage p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.5}
+.stage code{font-family:var(--mono);font-size:.9em;color:var(--ink);background:var(--surface2);
+  padding:1px 4px;border-radius:4px}
+.foot{margin-top:26px;font-size:12.5px;color:var(--muted);line-height:1.55;border-top:1px solid var(--line);padding-top:16px}
+.foot code{font-family:var(--mono);color:var(--ink)}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="kicker">bc_dev_permits</div>
+  <h1>Development Permit Pipeline</h1>
+  <p class="lede">How a development application travels from four BC municipal websites into one
+  normalized <code>dev_permit</code> schema, then out to JSON, Postgres, and the map. The whole
+  flow is driven by one CLI: <code>python -m bc_dev_permits.dataset</code>.</p>
+</header>
+
+<div class="figscroll">
+<figure>
+<svg viewBox="0 0 1000 812" role="img"
+  aria-label="Data-flow diagram. Four city sources (North Vancouver and Victoria as HTML, Coquitlam and Maple Ridge as ArcGIS) feed four harvester modules, which parse text into dev_permit rows with features.py. Low-signal rows optionally route through pdf_enrich.py to the Ollama predict.py extractor or in-session Claude reading. The dataset.py CLI orchestrates everything and writes to processed JSON, Postgres via load.py, or stdout; the JSON feeds the QA viewer and the BC Permit Atlas dashboard.">
+  <defs>
+    <marker id="ah" markerWidth="8" markerHeight="8" refX="6.4" refY="3" orient="auto-start-reverse">
+      <path d="M0,0 L7,3 L0,6 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+
+  <!-- band labels -->
+  <text class="band" x="8" y="60">Sources</text>
+  <text class="band" x="8" y="172">Harvesters</text>
+  <text class="band" x="8" y="298">Parse</text>
+  <text class="band" x="8" y="492">Orchestrate</text>
+  <text class="band" x="8" y="632">Output</text>
+  <text class="band" x="8" y="760">View</text>
+
+  <!-- ===== SOURCES (y 36..104) ===== -->
+  <g text-anchor="middle">
+    <rect class="n src" x="90"  y="36" width="200" height="68" rx="9"/>
+    <text class="t pl" x="190" y="66">North Vancouver</text><text class="s" x="190" y="86">HTML application pages</text>
+    <rect class="n src" x="320" y="36" width="200" height="68" rx="9"/>
+    <text class="t pl" x="420" y="66">Victoria</text><text class="s" x="420" y="86">Prospero OurCity tracker</text>
+    <rect class="n src" x="550" y="36" width="200" height="68" rx="9"/>
+    <text class="t pl" x="650" y="62">Coquitlam</text><text class="s" x="650" y="82">ArcGIS Experience</text><text class="s" x="650" y="95">FeatureServer</text>
+    <rect class="n src" x="780" y="36" width="200" height="68" rx="9"/>
+    <text class="t pl" x="880" y="62">Maple Ridge</text><text class="s" x="880" y="82">VertiGIS Studio</text><text class="s" x="880" y="95">ArcGIS MapServer</text>
+  </g>
+
+  <!-- source -> harvester arrows -->
+  <line class="ln" x1="190" y1="104" x2="190" y2="148" marker-end="url(#ah)"/>
+  <line class="ln" x1="420" y1="104" x2="420" y2="148" marker-end="url(#ah)"/>
+  <line class="ln" x1="650" y1="104" x2="650" y2="148" marker-end="url(#ah)"/>
+  <line class="ln" x1="880" y1="104" x2="880" y2="148" marker-end="url(#ah)"/>
+  <text class="lbl" x="198" y="130">scrape</text>
+  <text class="lbl" x="428" y="130">scrape</text>
+  <text class="lbl" x="658" y="130">query ?f=json</text>
+  <text class="lbl" x="888" y="130">query + join</text>
+
+  <!-- ===== HARVESTERS (y 150..212) ===== -->
+  <g text-anchor="middle">
+    <rect class="n" x="90"  y="150" width="200" height="62" rx="9"/>
+    <text class="t" x="190" y="178">north_van.py</text><text class="s" x="190" y="196">requests + BeautifulSoup</text>
+    <rect class="n" x="320" y="150" width="200" height="62" rx="9"/>
+    <text class="t" x="420" y="178">victoria.py</text><text class="s" x="420" y="196">requests + BeautifulSoup</text>
+    <rect class="n" x="550" y="150" width="200" height="62" rx="9"/>
+    <text class="t" x="650" y="178">coquitlam.py</text><text class="s" x="650" y="196">arcgis_common.py</text>
+    <rect class="n" x="780" y="150" width="200" height="62" rx="9"/>
+    <text class="t" x="880" y="178">maple_ridge.py</text><text class="s" x="880" y="196">arcgis_common.py</text>
+  </g>
+
+  <!-- harvesters -> features (funnel) -->
+  <path class="ln" d="M190,212 C190,242 320,236 348,258" marker-end="url(#ah)"/>
+  <path class="ln" d="M420,212 C420,240 440,240 452,258" marker-end="url(#ah)"/>
+  <path class="ln" d="M650,212 C650,240 600,240 572,258" marker-end="url(#ah)"/>
+  <path class="ln" d="M880,212 C880,244 720,238 668,258" marker-end="url(#ah)"/>
+  <text class="lbl" x="500" y="238" text-anchor="middle">parse text &#8594; fields</text>
+
+  <!-- ===== PARSE: features.py (y 260..326) ===== -->
+  <rect class="n hub" x="250" y="260" width="500" height="66" rx="10"/>
+  <text class="t" x="500" y="288" text-anchor="middle">features.py</text>
+  <text class="s" x="500" y="308" text-anchor="middle">deterministic parse &#183; regex / selectors &#8594; dev_permit rows</text>
+
+  <!-- spine parse -> orchestrate -->
+  <line class="ln ac" x1="500" y1="326" x2="500" y2="448" marker-end="url(#ah)"/>
+  <text class="lbl" x="510" y="392">dev_permit rows</text>
+
+  <!-- ===== ENRICH (optional, right) ===== -->
+  <text class="band" x="900" y="250" text-anchor="middle" fill="var(--amber)">Enrich &#183; optional</text>
+  <rect class="n opt" x="772" y="262" width="216" height="52" rx="9"/>
+  <text class="t" x="880" y="286" text-anchor="middle">pdf_enrich.py</text>
+  <text class="s" x="880" y="303" text-anchor="middle">needs_pdf &#183; merge &#183; conflicts</text>
+  <rect class="n opt" x="772" y="340" width="216" height="60" rx="9"/>
+  <text class="t" x="880" y="362" text-anchor="middle" style="font-size:12px">PDF extractors</text>
+  <text class="s" x="880" y="378" text-anchor="middle">predict.py &#183; Ollama text + vision</text>
+  <text class="s" x="880" y="392" text-anchor="middle">Claude-read &#183; in-session</text>
+
+  <!-- enrich connectors -->
+  <path class="ln op" d="M750,284 C762,284 764,286 772,288" marker-end="url(#ah)"/>
+  <text class="lbl op" x="754" y="276">low-signal</text>
+  <line class="ln op" x1="880" y1="314" x2="880" y2="340" marker-end="url(#ah)"/>
+  <text class="lbl op" x="886" y="331">route by doc</text>
+  <path class="ln op" d="M820,400 C800,430 720,452 672,474" marker-end="url(#ah)"/>
+  <text class="lbl op" x="735" y="452">fill gaps + provenance</text>
+
+  <!-- ===== ORCHESTRATE: dataset.py (y 450..522) ===== -->
+  <rect class="n hub" x="250" y="450" width="500" height="72" rx="10"/>
+  <text class="t" x="500" y="478" text-anchor="middle">dataset.py &#183; CLI orchestrator</text>
+  <text class="s" x="500" y="498" text-anchor="middle">HARVESTERS / ENRICHERS registries &#183; --address &#183; --pdf-enrich &#183; --out</text>
+
+  <!-- orchestrate -> outputs -->
+  <path class="ln" d="M470,522 C430,560 300,566 262,592" marker-end="url(#ah)"/>
+  <line class="ln" x1="500" y1="522" x2="500" y2="592" marker-end="url(#ah)"/>
+  <path class="ln" d="M530,522 C570,560 700,566 738,592" marker-end="url(#ah)"/>
+  <text class="lbl" x="300" y="560">--out json</text>
+  <text class="lbl" x="508" y="560">--out db</text>
+  <text class="lbl" x="648" y="560">--out print</text>
+
+  <!-- ===== OUTPUT (y 594..658) ===== -->
+  <g text-anchor="middle">
+    <rect class="n" x="150" y="594" width="200" height="64" rx="9"/>
+    <text class="t" x="250" y="621">data/processed/</text><text class="s" x="250" y="640">&lt;muni&gt;.json</text>
+    <rect class="n" x="400" y="594" width="200" height="64" rx="9"/>
+    <text class="t pl" x="500" y="621">Postgres</text><text class="s" x="500" y="640">load.py &#183; schema.sql</text>
+    <rect class="n" x="650" y="594" width="200" height="64" rx="9"/>
+    <text class="t pl" x="750" y="621">stdout</text><text class="s" x="750" y="640">pretty JSON</text>
+  </g>
+
+  <!-- json -> viewers -->
+  <line class="ln ac" x1="250" y1="658" x2="250" y2="722" marker-end="url(#ah)"/>
+  <path class="ln ac" d="M300,658 C340,690 440,694 468,722" marker-end="url(#ah)"/>
+  <text class="lbl" x="196" y="694">load JSON</text>
+  <text class="lbl" x="430" y="690">geocode + map</text>
+
+  <!-- ===== VIEW (y 724..788) ===== -->
+  <g text-anchor="middle">
+    <rect class="n" x="150" y="724" width="200" height="64" rx="9"/>
+    <text class="t" x="250" y="751">tools/qa</text><text class="s" x="250" y="770">QA review viewer</text>
+    <rect class="n" x="400" y="724" width="200" height="64" rx="9"/>
+    <text class="t" x="500" y="751">tools/dashboard</text><text class="s" x="500" y="770">BC Permit Atlas map</text>
+  </g>
+</svg>
+</figure>
+</div>
+
+<div class="legend">
+  <span><span class="swatch ac"></span> primary data path</span>
+  <span><span class="swatch"></span> module call</span>
+  <span><span class="swatch op"></span> optional PDF enrichment (low-signal rows only)</span>
+</div>
+
+<div class="stages">
+  <div class="stage"><h3><b>1.</b> Sources</h3><p>Four municipalities on three platforms: CNV and Victoria publish <b>HTML</b> pages; Coquitlam and Maple Ridge expose <b>ArcGIS</b> REST services.</p></div>
+  <div class="stage"><h3><b>2.</b> Harvesters</h3><p>One module per city in <code>harvesters/</code>. HTML harvesters share <code>pdf_enrich.py</code>; ArcGIS harvesters share <code>arcgis_common.py</code> (session, paged query, centroid).</p></div>
+  <div class="stage"><h3><b>3.</b> Parse</h3><p><code>features.py</code> turns prose and map attributes into schema fields deterministically, with no model on the common path. Every harvester scores and returns <code>dev_permit</code> rows.</p></div>
+  <div class="stage"><h3><b>4.</b> Enrich <span style="color:var(--amber)">(optional)</span></h3><p>Rows with no units/storeys/area route through <code>pdf_enrich.py</code> to read their PDFs, via Ollama (<code>predict.py</code>) or Claude in-session. Deterministic HTML values always win; disagreements are logged as conflicts.</p></div>
+  <div class="stage"><h3><b>5.</b> Orchestrate</h3><p><code>dataset.py</code> is the CLI entry point: it picks the harvester, applies <code>--address</code>, optionally enriches, and writes the chosen output.</p></div>
+  <div class="stage"><h3><b>6.</b> Output &amp; view</h3><p>Rows land as <code>data/processed/*.json</code>, in Postgres via <code>load.py</code>, or on stdout. The JSON feeds the QA viewer and the BC Permit Atlas dashboard.</p></div>
+</div>
+
+<p class="foot"><code>config.py</code> supplies every harvester's URLs, Ollama settings, cache and DB paths; <code>references/schema.sql</code> defines the <code>dev_permit</code> table plus its occupancy, milestone, and document child tables. Provenance travels with every field (<code>extraction_method</code>, per-field methods, <code>extraction_confidence</code>, <code>needs_review</code>) so a value can always be traced back to its source.</p>
+</div>

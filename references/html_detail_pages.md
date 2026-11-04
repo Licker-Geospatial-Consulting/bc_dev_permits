@@ -7,7 +7,7 @@ document/milestone table.
 
 > **Victoria** parses its *detail* pages the same way these do (server-rendered prose →
 > `features.py`, a milestones table), but reaches them through a platform-specific
-> ASP.NET permit tracker (Prospero) rather than a plain link list — see
+> ASP.NET permit tracker (Prospero) rather than a plain link list - see
 > `prospero_tracker.md`.
 
 ## Pattern
@@ -29,7 +29,7 @@ list page ──> [application links] ──> detail page
 2. **For each detail page**, isolate the main content container (the article/main
    region, not header/nav/footer). Then:
    - **Prose** → concatenate the descriptive `<p>`/`<div>` text into `raw_text` and parse the fields 
-      deterministically with `bc_dev_permits/features.py` (regex — no LLM).
+      deterministically with `bc_dev_permits/features.py` (regex - no LLM).
    - **Address** → usually the page `<h1>`/title and breadcrumb (e.g. "115 East 18th
      Street"). Take it deterministically; don't rely on the LLM for it.
    - **Milestones table** → each row is (Milestone, Date, Documents, How to
@@ -37,19 +37,19 @@ list page ──> [application links] ──> detail page
      Documents anchor to `dev_document` (title = link text, url = href).
    - **permit_id** → often only present inside the PDF filenames (e.g.
      `PLN2025-00010-115-E-18th-St-...`). Regex it from document URLs when absent from
-     the prose: `PLN\d{4}-\d{5}`, `DP\d+`, `REZ\d+`, etc. (varies by city — see COUNCIL.md).
-3. **Fallback rule** — if the main content has no descriptive prose or if the fields to 
+     the prose: `PLN\d{4}-\d{5}`, `DP\d+`, `REZ\d+`, etc. (varies by city - see COUNCIL.md).
+3. **Fallback rule** - if the main content has no descriptive prose or if the fields to 
    be fetched are absent (the user's 651 East 1st example), do not force extraction: 
    set `is_parsed=false`, `needs_pdf_extraction=true`, store whatever links exist in 
    `dev_document`. The Ollama PDF pass fills fields later.
-4. **development_class** — infer from prose + which list section the item came from.
+4. **development_class** - infer from prose + which list section the item came from.
    CNV explicitly splits "Major (6+ residential units / non-residential incl.
    Industrial, Commercial & Institutional)" vs "Minor (1-5 residential units)"; carry
    that hint into classification.
 
 ## Fetching JS-light vs JS-heavy
 
-CNV/West Van/UBC detail pages are server-rendered — plain HTTP + an HTML parser
+CNV/West Van/UBC detail pages are server-rendered - plain HTTP + an HTML parser
 (selectolax/BeautifulSoup) is enough. Use Playwright only if a page renders its body
 via JavaScript. Keep a per-domain rate limit and a descriptive User-Agent.
 
@@ -76,5 +76,5 @@ Fill these in `COUNCIL.md` as you confirm them in the browser. Start points:
 - **UBC**: list at `planning.ubc.ca/planning-development/development-projects`; iterate
   ALL pages (paginated) and take every development-permit entry; parse prose `<div>`s.
 - **New West**: the project *pages* are HTML (parse prose/divs); the project *list*
-  comes from the ArcGIS Experience "Projects List" — see `arcgis_webmaps.md` for how to
+  comes from the ArcGIS Experience "Projects List" - see `arcgis_webmaps.md` for how to
   pull that list, then treat each linked page with this reference.

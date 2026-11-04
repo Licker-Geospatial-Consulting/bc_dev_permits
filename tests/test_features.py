@@ -5,6 +5,7 @@ Focus: reading counts that CNV spells out in prose ("three-unit townhouse", "one
 on-site parking stall") without being fooled by a zone *name* that also contains a
 number word ("RT-1 (Two Unit Residential) zone").
 """
+
 import sys
 from pathlib import Path
 
@@ -26,7 +27,7 @@ def test_units_total_spelled_out_hyphenated():
 
 def test_units_total_ignores_zone_name_false_positive():
     # "Two Unit Residential" is the *existing zone's* name, not the proposal's unit count.
-    # The proposal is a three-unit townhouse — that is what units_total must report.
+    # The proposal is a three-unit townhouse - that is what units_total must report.
     assert features.units_total(KEITH) == 3
 
 
@@ -55,11 +56,15 @@ def test_parking_notes_underground_still_works():
 def test_number_of_stories_tallest_element_wins():
     # A podium stated before the towers must not hide the towers' height: the project's storey
     # count is its TALLEST element, so the max across all storey figures governs.
-    podium_then_towers = ("mixed use four to six storey podiums supported by an expected eight "
-                          "residential towers ranging in height from 30 to 40 storeys")
+    podium_then_towers = (
+        "mixed use four to six storey podiums supported by an expected eight "
+        "residential towers ranging in height from 30 to 40 storeys"
+    )
     assert features.number_of_stories(podium_then_towers) == 40
-    towers_over_low = ("two 38-storey residential towers over a commercial podium and two "
-                       "six-storey rental buildings")
+    towers_over_low = (
+        "two 38-storey residential towers over a commercial podium and two "
+        "six-storey rental buildings"
+    )
     assert features.number_of_stories(towers_over_low) == 38
     # An "existing" building's height is still skipped in favour of the proposal's.
     assert features.number_of_stories("existing three storey building; proposed six storeys") == 6
@@ -67,16 +72,20 @@ def test_number_of_stories_tallest_element_wins():
 
 def test_units_total_before_a_tenure_breakdown():
     # The grand total stated before "including ..." wins over the itemized sub-figures.
-    text = ("66,000 square metres of residential floor area to provide 1,050 residential units, "
-            "including 850 market condo units, 110 units of market rental and 125 units of "
-            "affordable housing")
+    text = (
+        "66,000 square metres of residential floor area to provide 1,050 residential units, "
+        "including 850 market condo units, 110 units of market rental and 125 units of "
+        "affordable housing"
+    )
     assert features.units_total(text) == 1050
 
 
 def test_unit_type_mix_ignores_commercial_parking():
     # "110 commercial and hotel parking spaces" is parking, not 110 commercial units.
-    text = ("468 residential units and a 145 room hotel. A total of 110 commercial and hotel "
-            "parking spaces are also proposed.")
+    text = (
+        "468 residential units and a 145 room hotel. A total of 110 commercial and hotel "
+        "parking spaces are also proposed."
+    )
     assert features.unit_type_mix(text) is None
     # An explicit "<N> commercial units" is still counted.
     assert features.unit_type_mix("6 commercial units at grade") == {"commercial": 6}
@@ -84,24 +93,32 @@ def test_unit_type_mix_ignores_commercial_parking():
 
 def test_tenure_mix_splits_ownership_and_rental():
     # The residential total itemized by tenure: condo (ownership) + rental + affordable.
-    text = ("1,050 residential units, including 850 market condo units, 110 units of market "
-            "rental and 125 units of affordable housing")
+    text = (
+        "1,050 residential units, including 850 market condo units, 110 units of market "
+        "rental and 125 units of affordable housing"
+    )
     assert features.tenure_mix(text) == {
-        "market-condo": 850, "market-rental": 110, "affordable": 125,
+        "market-condo": 850,
+        "market-rental": 110,
+        "affordable": 125,
     }
     # extract_all surfaces it as unit_mix when there is no bedroom or building-type split.
     assert features.extract_all(text)["unit_mix"] == {
-        "market-condo": 850, "market-rental": 110, "affordable": 125,
+        "market-condo": 850,
+        "market-rental": 110,
+        "affordable": 125,
     }
 
 
 def test_parking_notes_keeps_full_breakdown():
     # Every parking/bicycle sentence is kept, so a multi-category breakdown is not lost to one
     # headline number.
-    text = ("The application includes 144 resident parking spaces and 24 visitor parking spaces. "
-            "A total of 110 commercial and hotel parking spaces are also proposed. All off-street "
-            "vehicle parking would be below-grade. A total of 712 long-term and 24 short-term "
-            "bicycle parking spaces would be provided.")
+    text = (
+        "The application includes 144 resident parking spaces and 24 visitor parking spaces. "
+        "A total of 110 commercial and hotel parking spaces are also proposed. All off-street "
+        "vehicle parking would be below-grade. A total of 712 long-term and 24 short-term "
+        "bicycle parking spaces would be provided."
+    )
     notes = features.parking_notes(text)
     assert "144 resident parking" in notes
     assert "110 commercial and hotel parking" in notes
@@ -115,6 +132,55 @@ def test_extract_all_on_keith():
     assert out["occupancy_types"] == ["residential"]
     assert out["units_total"] == 3
     assert out["parking_notes"] and "parking stall" in out["parking_notes"].lower()
+
+
+def test_single_family_lot_subdivision_counts_units_and_mix():
+    # A subdivision stated as "N single family residential lots" yields both the unit count
+    # and a detached unit mix - the "residential" qualifier must not hide the lot count.
+    text = "The applicant proposes a subdivision to create 14 single family residential lots."
+    assert features.units_total(text) == 14
+    assert features.unit_type_mix(text) == {"detached": 14}
+    out = features.extract_all(text)
+    assert out["units_total"] == 14
+    assert out["unit_mix"] == {"detached": 14}
+    assert out["development_class"] == "residential"
+    # The existing Ontario phrasing and a townhouse count are unchanged.
+    assert features.units_total("8 single detached lot subdivision") == 8
+    assert features.units_total("A 60 unit townhouse development.") == 60
+
+
+def test_units_total_ignores_density_figures():
+    # A "units" figure that is really a zoning density must not be read as a dwelling count.
+    assert features.units_total("CD-208 permits townhouses at 32.5-45 units/ha.") is None
+    assert features.units_total("The proposed density is 22 units per acre.") is None
+    assert features.units_total("Density of 20 units per hectare across the site.") is None
+    # A real count beside a density figure is still read.
+    assert features.units_total("A 48-unit building at a density of 45 units/ha.") == 48
+
+
+def test_development_class_from_use_keywords():
+    # Use-types that name no building but still classify deterministically from the prose.
+    cases = [
+        (
+            "The applicant proposes to construct a 45m monopole telecommunications tower.",
+            "institutional",
+        ),
+        (
+            "Non-farm use to permit a private family mausoleum (maximum four crypts).",
+            "institutional",
+        ),
+        ("A Temporary Use permit to allow truck parking on the subject property.", "industrial"),
+        ("Proposed non-farm use for an equipment parking area on the farm.", "industrial"),
+        ("Development permit for a self-storage facility and a truck parking yard.", "industrial"),
+        ("Site-specific amendment to permit a film production studio use.", "commercial"),
+        (
+            "Addition of a special-event-area endorsement to the existing liquor manufacturer licence.",
+            "commercial",
+        ),
+        ("A Homesite Severance subdivision under Section 21(2) of the ALC Act.", "residential"),
+    ]
+    for text, expected in cases:
+        assert features.development_class(features.occupancy_types(text)) == expected, text
 
 
 if __name__ == "__main__":

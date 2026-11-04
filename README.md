@@ -18,7 +18,7 @@ python -m bc_dev_permits.dataset --limit 3
 # 3. save to data/processed/north_van.json
 python -m bc_dev_permits.dataset --limit 3 --out json
 
-# 4. load into Postgres  (needs a running PostgreSQL server — see "Database" below)
+# 4. load into Postgres  (needs a running PostgreSQL server - see "Database" below)
 createdb devpermits
 psql -d devpermits -f references/schema.sql
 export DATABASE_URL=postgresql://user:pw@localhost:5432/devpermits
@@ -28,7 +28,7 @@ python -m bc_dev_permits.dataset --out db
 ## Database (Postgres) for `--out db`
 
 `--out db` upserts into PostgreSQL and is Postgres-specific (JSONB columns,
-`INSERT ... ON CONFLICT`), so it needs a **running PostgreSQL server** — `psycopg`
+`INSERT ... ON CONFLICT`), so it needs a **running PostgreSQL server** - `psycopg`
 (the `[db]` extra) is only the client driver. `--out json` / `--out print` need no
 database.
 
@@ -50,7 +50,7 @@ common commands (run `make help` for the list).
 | Stage | Module | Notes |
 |-------|--------|-------|
 | Harvest | `bc_dev_permits.harvesters.*` | per-municipality fetch; TTL cache in `data/raw/http_cache` |
-| Parse (deterministic) | `bc_dev_permits.features` | plain-regex field extraction — no LLM on HTML |
+| Parse (deterministic) | `bc_dev_permits.features` | plain-regex field extraction - no LLM on HTML |
 | PDF fallback | `bc_dev_permits.modeling.predict` | local Ollama over linked PDFs when a page has no text |
 | Load | `bc_dev_permits.load` / `bc_dev_permits.dataset` | upsert to Postgres or write JSON |
 | Config | `bc_dev_permits.config` | paths + scraper / DB / Ollama settings |
@@ -94,17 +94,17 @@ common commands (run `make help` for the list).
 
 - **Deterministic first:** everything visible in a page's HTML is parsed with regex in
   `features.py`. The Ollama model in `modeling/predict.py` is reserved for PDFs on the
-  fallback path — no page prose is sent to a model.
+  fallback path - no page prose is sent to a model.
 - **Caching:** the harvester caches raw HTML under `data/raw/http_cache` for 6h so
   re-runs are instant. `--no-cache` forces a fresh fetch.
 - **QA viewer:** `make qa` serves a zero-build browser dashboard (`tools/qa/`) for
-  eyeballing harvested output — stats, filters, and per-row parsed-fields-vs-source-prose.
+  eyeballing harvested output - stats, filters, and per-row parsed-fields-vs-source-prose.
   It auto-loads `data/processed/north_van_test.json` and has a "Load JSON" button for any
   `data/processed/<municipality>.json`. No `make`? Run its one-line command directly from
   the repo root: `python -m http.server 8000`, then open `http://localhost:8000/tools/qa/`.
 - **Standalone QA file (share internally):** bundle the viewer + one municipality's data
-  into a single self-contained HTML that opens by double-click (`file://`) — no server, no
-  build — so it can be emailed or dropped on any static host:
+  into a single self-contained HTML that opens by double-click (`file://`) - no server, no
+  build - so it can be emailed or dropped on any static host:
 
   ```bash
   python tools/qa/build_standalone.py \
@@ -115,5 +115,5 @@ common commands (run `make help` for the list).
   ```
 
   The dataset is embedded in the file; React and Babel still load from a CDN, so the
-  viewer needs internet access when opened. The file is a point-in-time snapshot — re-run
+  viewer needs internet access when opened. The file is a point-in-time snapshot - re-run
   the command to refresh it after a new harvest.

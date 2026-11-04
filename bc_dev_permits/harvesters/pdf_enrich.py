@@ -14,6 +14,7 @@ mere fact that a PDF was consulted.
 
 from __future__ import annotations
 
+import re
 import sys
 from typing import TYPE_CHECKING
 
@@ -22,9 +23,68 @@ from bc_dev_permits import features
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+# Canonical street-type abbreviations for comparing civic addresses.
+_ADDR_TYPE = {
+    "STREET": "ST",
+    "AVENUE": "AVE",
+    "ROAD": "RD",
+    "DRIVE": "DR",
+    "BOULEVARD": "BLVD",
+    "CRESCENT": "CRES",
+    "PLACE": "PL",
+    "COURT": "CRT",
+    "LANE": "LN",
+    "HIGHWAY": "HWY",
+    "TERRACE": "TERR",
+}
+
+
+def _norm_addr(s) -> str:
+    """Normalize a civic address for comparison (upper, canonical street type, drop ordinals)."""
+    if not s:
+        return ""
+    s = re.sub(r"[.,]", " ", str(s)).upper()
+    s = re.sub(r"\b(\d+)(ST|ND|RD|TH)\b", r"\1", s)  # 264TH -> 264
+    return " ".join(_ADDR_TYPE.get(t, t) for t in s.split())
+
+
+# Placeholder strings a source uses for "no value" (an empty address renders as "N/A", "-", ...).
+# They must not be protected as if they were real data: a PDF value should fill them.
+_PLACEHOLDERS = {"", "n/a", "na", "none", "null", "nil", "-", "--", "tbd", "to be determined"}
+
+
+def _is_placeholder(v) -> bool:
+    """Return True when v is a 'no value' placeholder string (so a PDF value may replace it)."""
+    return isinstance(v, str) and v.strip().strip(".").lower() in _PLACEHOLDERS
+
+
+def _html_addresses(row: dict) -> list[str]:
+    """Every civic address the HTML gave a row: primary + the full multi-address list.
+
+    A Prospero folder can list several addresses for one application; the harvester keeps the
+    primary in `address` and the rest in `addresses` (and, historically, in a 'Addresses:' line
+    appended to raw_text). All of them are legitimate addresses for the row.
+    """
+    out = [row.get("address"), *(row.get("addresses") or [])]
+    m = re.search(r"Addresses:\s*(.+)", row.get("raw_text") or "")
+    if m:
+        out += [a.strip() for a in m.group(1).split(";")]
+    return [a for a in out if a and not _is_placeholder(a)]
+
+
+def address_matches_any(value, row: dict) -> bool:
+    """Return True when a PDF-read address matches any address the HTML listed (normalized)."""
+    norm = _norm_addr(value)
+    return bool(norm) and any(norm == _norm_addr(a) for a in _html_addresses(row))
+
+
 # Fields carried on a predict result that are metadata, not permit columns.
 PDF_META = {
-    "confidence", "extraction_method", "pdf_source_url", "pdf_document", "occupancies",
+    "confidence",
+    "extraction_method",
+    "pdf_source_url",
+    "pdf_document",
+    "occupancies",
     "field_methods",
 }
 
@@ -85,14 +145,25 @@ def merge_pdf_fields(row: dict, fields: dict) -> int:
         if key in PDF_META or not features.has_value(val):
             continue
         method = pdf_methods.get(key, features.METHOD_PDF_MODEL_TEXT)
-        if features.has_value(row.get(key)):
+        # A placeholder ("N/A", "-", ...) is treated as missing so the PDF value fills it.
+        if features.has_value(row.get(key)) and not _is_placeholder(row.get(key)):
+            # A PDF address that matches any address the HTML listed (one folder can span several)
+            # is not a disagreement - keep the HTML primary and log nothing.
+            if key == "address" and address_matches_any(val, row):
+                continue
             # Keep the deterministic HTML value, but surface a genuine scalar disagreement.
             if isinstance(val, (int, float, str)) and values_conflict(row[key], val):
-                conflicts.append({
+                entry = {
                     "field": key,
-                    "kept": {"value": row[key], "method": row_methods.get(key, features.METHOD_HTML)},
+                    "kept": {
+                        "value": row[key],
+                        "method": row_methods.get(key, features.METHOD_HTML),
+                    },
                     "pdf": {"value": val, "method": method},
-                })
+                }
+                # Guard against duplicating a conflict when the enricher is re-run on the same row.
+                if entry not in conflicts:
+                    conflicts.append(entry)
             continue
         row[key] = val
         row_methods[key] = method
@@ -112,7 +183,9 @@ def record_pdf_provenance(row: dict, fields: dict) -> None:
     base = (row.get("extraction_method") or "html").split("+")[0]
     row["extraction_method"] = f"{base}+{fields.get('extraction_method', 'ollama')}"
     used = set((row.get("field_methods") or {}).values())
-    row["needs_review"] = bool(used & features.NONDETERMINISTIC_METHODS) or bool(row.get("conflicts"))
+    row["needs_review"] = bool(used & features.NONDETERMINISTIC_METHODS) or bool(
+        row.get("conflicts")
+    )
     row["extraction_confidence"] = features.score_confidence(row)
     doc = fields.get("pdf_document") or {}
     if doc.get("url"):
@@ -121,8 +194,14 @@ def record_pdf_provenance(row: dict, fields: dict) -> None:
         if existing:
             existing["extracted"] = True
         else:
-            docs.append({"url": doc["url"], "title": doc.get("title"),
-                         "doc_role": "ollama_source", "extracted": True})
+            docs.append(
+                {
+                    "url": doc["url"],
+                    "title": doc.get("title"),
+                    "doc_role": "ollama_source",
+                    "extracted": True,
+                }
+            )
 
 
 def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None) -> int:
@@ -141,8 +220,9 @@ def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None) -> i
     if not row.get("occupancy_types"):
         row.pop("occupancy_types", None)
 
-    payload = {k: v for k, v in (fields or {}).items()
-               if k not in PDF_META and features.has_value(v)}
+    payload = {
+        k: v for k, v in (fields or {}).items() if k not in PDF_META and features.has_value(v)
+    }
     payload["field_methods"] = dict.fromkeys(payload, features.METHOD_PDF_CLAUDE)
     payload["extraction_method"] = "claude_read"
     if document:
@@ -157,9 +237,16 @@ def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None) -> i
     return filled
 
 
-def enrich(rows: list[dict], *, fetch_html: Callable[[str, bool], str],  # noqa: PLR0913
-           extract: Callable[[str, str, object], dict | None], session=None,
-           use_cache: bool = True, limit: int | None = None, label: str = "pdf") -> int:
+def enrich(
+    rows: list[dict],
+    *,
+    fetch_html: Callable[[str, bool], str],  # noqa: PLR0913
+    extract: Callable[[str, str, object], dict | None],
+    session=None,
+    use_cache: bool = True,
+    limit: int | None = None,
+    label: str = "pdf",
+) -> int:
     """Fill each low-signal row from its best PDF via Ollama (in place). Return count enriched.
 
     `fetch_html(url, use_cache) -> html` and `extract(html, url, session) -> fields|None` are
@@ -176,8 +263,11 @@ def enrich(rows: list[dict], *, fetch_html: Callable[[str, bool], str],  # noqa:
             print(f"{label}: pdf-enrich skipped {row.get('permit_id')}: {exc}", file=sys.stderr)
             continue
         if not fields:
-            print(f"{label}: no PDF document found for {row.get('permit_id')}; left html-only "
-                  "(try --no-cache if the detail page looks stale)", file=sys.stderr)
+            print(
+                f"{label}: no PDF document found for {row.get('permit_id')}; left html-only "
+                "(try --no-cache if the detail page looks stale)",
+                file=sys.stderr,
+            )
             continue
         # Record provenance when the PDF filled a gap OR only disagreed with the page (a conflict
         # is still a reviewable result even if nothing new was written).
@@ -185,6 +275,9 @@ def enrich(rows: list[dict], *, fetch_html: Callable[[str, bool], str],  # noqa:
             record_pdf_provenance(row, fields)
             enriched += 1
         else:
-            print(f"{label}: PDF for {row.get('permit_id')} yielded no usable fields "
-                  "(model returned empty); left html-only", file=sys.stderr)
+            print(
+                f"{label}: PDF for {row.get('permit_id')} yielded no usable fields "
+                "(model returned empty); left html-only",
+                file=sys.stderr,
+            )
     return enriched

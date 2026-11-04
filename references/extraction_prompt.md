@@ -9,7 +9,7 @@ a JSON-schema `format`, so the local model is constrained to valid output.
 ## System prompt
 
 > You extract development-permit facts from municipal text. Return ONLY a JSON object
-> matching the schema. Use `null` for anything not explicitly stated — never guess or
+> matching the schema. Use `null` for anything not explicitly stated - never guess or
 > infer. Copy numbers exactly as written. If the text describes multiple building uses
 > (e.g. shops on the ground floor and apartments above), list each in
 > `occupancy_types`. Set `development_class` to the dominant use, or `"mixed"` when
@@ -96,5 +96,5 @@ Expected output:
 ```
 
 Note how `address` and `status` are left `null` because they came from *elsewhere* on
-the page (the breadcrumb/title and the milestones table) — the caller fills those from
+the page (the breadcrumb/title and the milestones table) - the caller fills those from
 the deterministic parse, not the LLM. The LLM only reasons over the prose it's given.

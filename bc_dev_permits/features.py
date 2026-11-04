@@ -1,7 +1,7 @@
 """Deterministic field extraction from municipal prose.
 
 Per the project rule: fields that appear in HTML / map content are parsed HERE with
-plain regex — no LLM. Ollama is used ONLY for PDFs (see bc_dev_permits.modeling.predict),
+plain regex - no LLM. Ollama is used ONLY for PDFs (see bc_dev_permits.modeling.predict),
 on the fallback path when a page has no usable text.
 
 Every extractor returns None when the value isn't stated, so callers can leave the
@@ -117,13 +117,36 @@ _PERMIT_TYPES = [
 _OCCUPANCY = [
     (
         r"residential|dwelling|apartment|townhouse|townhome|condominium|\bunits?\b"
-        r"|duplex|triplex|fourplex|fiveplex|sixplex|quadruplex|quadplex|houseplex",
+        r"|duplex|triplex|fourplex|fiveplex|sixplex|quadruplex|quadplex|houseplex"
+        # application families whose use is residential but which name no building type:
+        # a homesite severance creates a rural homesite, and single-family / rowhouse lots.
+        r"|homesite severance|single[- ]family|row ?house",
         "residential",
     ),
-    (r"retail|shops?|commercial|restaurant|conference centre|conference center", "commercial"),
+    (
+        r"retail|shops?|commercial|restaurant|conference centre|conference center"
+        # commercial use-types that name no building: a film/production studio, a liquor
+        # manufacturer or an event venue (winery/brewery/distillery tasting + event space).
+        r"|film studio|production studio|winery|brewery|distiller|liquor|event (?:venue|centre|center)",
+        "commercial",
+    ),
     (r"office", "office"),
-    (r"industrial|warehouse|light industrial", "industrial"),
-    (r"institutional|school|church|civic|community centre|daycare|child care", "institutional"),
+    (
+        r"industrial|warehouse|light industrial"
+        # outdoor industrial uses that name no building: truck/vehicle/equipment parking or
+        # storage yards, self/mini storage, contractor laydown.
+        r"|self[- ]storage|mini[- ]storage|storage yard|outdoor storage"
+        r"|truck (?:parking|storage)|vehicle storage|equipment (?:parking|storage)"
+        r"|contractor'?s? yard|laydown",
+        "industrial",
+    ),
+    (
+        r"institutional|school|church|civic|community centre|daycare|child care"
+        # utility / interment infrastructure read as institutional: a telecommunications
+        # tower (monopole) or a mausoleum / columbarium / cemetery.
+        r"|telecommunication|cell tower|monopole|mausoleum|columbarium|cemetery|crematorium|interment",
+        "institutional",
+    ),
     (r"hotel|hospitality", "hotel"),
 ]
 
@@ -149,19 +172,23 @@ def number_of_stories(text: str) -> int | None:
     returned. A count describing an *existing* building to keep is skipped so the proposal's height
     wins ("existing three storey ... proposed six storeys" -> 6).
     """
+
     def _kept(start: int) -> bool:
         return not re.search(r"existing\W*$", text[:start], re.IGNORECASE)
 
     heights: list[int] = []
     # Ranges first ("30 to 40 storeys", "two to six storey") -> the top of the range.
     for m in re.finditer(
-        rf"({_NUM})\s*(?:to|and|through|&|-|–|—)\s*({_NUM})[\s-]*{_STOREY}",  # noqa: RUF001
-        text, re.IGNORECASE,
+        rf"({_NUM})\s*(?:to|and|through|&|-|–|-)\s*({_NUM})[\s-]*{_STOREY}",  # noqa: RUF001
+        text,
+        re.IGNORECASE,
     ):
         if _kept(m.start()):
             heights += [v for v in (_to_int(m.group(1)), _to_int(m.group(2))) if v is not None]
     # Then every single "<N> storey" (this also re-catches the top of a range, harmlessly).
-    for m in re.finditer(rf"({_NUM}){_PAREN}[\s-]*(?:plus\s+basement\s+)?{_STOREY}", text, re.IGNORECASE):
+    for m in re.finditer(
+        rf"({_NUM}){_PAREN}[\s-]*(?:plus\s+basement\s+)?{_STOREY}", text, re.IGNORECASE
+    ):
         if _kept(m.start()) and (v := _count(m)) is not None:
             heights.append(v)
     # If every storey figure sat in an "existing" clause, fall back to the first one stated.
@@ -201,14 +228,20 @@ def _component_counts(text: str) -> dict[str, int]:
             for m in re.finditer(pat, text, re.IGNORECASE):
                 # "one apartment building" / "three townhouse blocks" describe the structure,
                 # not a dwelling count, so a following structure noun disqualifies the match.
-                if re.match(r"\s+(?:building|block|tower|complex|development|structure)",
-                            text[m.end():], re.IGNORECASE):
+                if re.match(
+                    r"\s+(?:building|block|tower|complex|development|structure)",
+                    text[m.end() :],
+                    re.IGNORECASE,
+                ):
                     continue
                 # "three blocks, each containing four townhouse units" is a per-group breakdown of
                 # a larger total, not another increment, so a count introduced by "each containing/
                 # with/of" is skipped (the stated total is counted on its own elsewhere).
-                if re.search(r"each\s+(?:containing|with|of|having|comprising)\s*$",
-                             text[:m.start()][-40:], re.IGNORECASE):
+                if re.search(
+                    r"each\s+(?:containing|with|of|having|comprising)\s*$",
+                    text[: m.start()][-40:],
+                    re.IGNORECASE,
+                ):
                     continue
                 c = _count(m)
                 if c:
@@ -277,11 +310,14 @@ def _units_subdivision(text: str) -> int | None:
     # "single family" or "single detached" (Ontario) are the same single-dwelling lot count.
     # Match the resulting LOTS/homes, not a bare "dwelling": "1 single detached dwelling" inside a
     # townhouse description is one component of the total, left to _units_component_sum.
+    # An optional qualifier is tolerated between the type and the noun ("14 single family
+    # residential lots"), without which the "residential" word hides the lot count.
     single = r"single[\s-](?:family|detached)"
+    noun = r"(?:[\w-]+\s+){0,1}?(?:homes?|houses?|units?|lots?)"
     return _search_count(
         text,
-        rf"(?:into|to)\s+({_NUM}){_PAREN}\s+(?:new\s+)?(?:{single}\s+)?lots?\b",
-        rf"({_NUM}){_PAREN}\s+(?:new\s+)?{single}\s+(?:homes?|houses?|units?|lots?)\b",
+        rf"(?:into|to)\s+({_NUM}){_PAREN}\s+(?:new\s+)?(?:{single}\s+(?:[\w-]+\s+){{0,1}}?)?lots?\b",
+        rf"({_NUM}){_PAREN}\s+(?:new\s+)?{single}\s+{noun}\b",
     )
 
 
@@ -293,17 +329,22 @@ def _units_component_sum(text: str) -> int | None:
     return sum(comp.values()) if len(comp) > 1 else next(iter(comp.values()))
 
 
+# A "units" figure that is actually a DENSITY ("45 units/ha", "22 units per acre", "20.8 u.p.a.")
+# is a zoning density, not a dwelling count, so a trailing per-area qualifier disqualifies the match.
+_NOT_DENSITY = r"(?!\s*(?:/|per\b)\s*(?:ha|hectares?|ac|acres?)\b)"
+
+
 def _units_generic(text: str) -> int | None:
     """Match "<N> residential/rental/housing units", "<N> rental homes", or bare "<N> unit(s)"."""
     return _search_count(
         text,
         rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,3}}?(?:residential|rental|strata|dwelling|housing)"
-        rf"(?:\s+[\w-]+){{0,1}}?\s+units?\b",
+        rf"(?:\s+[\w-]+){{0,1}}?\s+units?\b{_NOT_DENSITY}",
         # "<N> ... rental homes" / "207 rental homes"; a tenure/market word guards against a bare
         # "homes" (a subdivision's "single-family homes" is handled earlier by _units_subdivision).
         rf"({_NUM}){_PAREN}\s+(?:[\w-]+\s+){{0,2}}?"
         rf"(?:rental|market|non[\s-]?market|below[\s-]?market|affordable|residential|strata)\s+homes?\b",
-        rf"({_NUM}){_PAREN}[\s-]+units?\b",
+        rf"({_NUM}){_PAREN}[\s-]+units?\b{_NOT_DENSITY}",
     )
 
 
@@ -402,7 +443,13 @@ _UNIT_TYPES = (
     ("lock-off", r"lock[\s-]?off"),
     ("secondary-suite", r"accessory\s+dwelling|secondary\s+suite"),
     ("commercial", r"commercial"),
-    ("detached", r"(?:single[\s-])?detached\s+(?:home|house|dwelling)"),
+    # A detached dwelling, or a subdivision's single-family / single-detached lots or homes
+    # ("14 single family residential lots" -> {"detached": 14}).
+    (
+        "detached",
+        r"single[\s-](?:family|detached)(?:\s+[\w-]+)?\s+(?:lots?|homes?|houses?|dwellings?)"
+        r"|(?:single[\s-])?detached\s+(?:home|house|dwelling)",
+    ),
 )
 
 
@@ -456,8 +503,13 @@ def tenure_mix(text: str) -> dict | None:
     """
     out: dict[str, int] = {}
     for label, kw in _TENURE_MIX:
-        m = re.search(rf"({_NUM}){_PAREN}\s+(?:{kw})\s+(?:units?|homes?|dwellings?)", text, re.IGNORECASE) \
-            or re.search(rf"({_NUM}){_PAREN}\s+(?:units?|homes?|dwellings?)\s+of\s+(?:{kw})", text, re.IGNORECASE)
+        m = re.search(
+            rf"({_NUM}){_PAREN}\s+(?:{kw})\s+(?:units?|homes?|dwellings?)", text, re.IGNORECASE
+        ) or re.search(
+            rf"({_NUM}){_PAREN}\s+(?:units?|homes?|dwellings?)\s+of\s+(?:{kw})",
+            text,
+            re.IGNORECASE,
+        )
         c = _count(m)
         if c:
             out[label] = c
@@ -472,8 +524,10 @@ def parking_vehicle(text: str) -> int | None:
     parking stalls", "additional eleven off-street parking stalls" and
     "parking for 11 vehicles". Bicycle counts are excluded (see parking_bike()).
     """
-    fillers = (r"(?:secure\s+|underground\s+|off[\s-]?street\s+|on[\s-]?site\s+|surface\s+|new\s+"
-               r"|total\s+|proposed\s+|required\s+|resident\s+|residential\s+|visitor\s+|shared\s+)*")
+    fillers = (
+        r"(?:secure\s+|underground\s+|off[\s-]?street\s+|on[\s-]?site\s+|surface\s+|new\s+"
+        r"|total\s+|proposed\s+|required\s+|resident\s+|residential\s+|visitor\s+|shared\s+)*"
+    )
     return _search_count(
         text,
         rf"(?:additional\s+)?({_NUM}){_PAREN}\s+{fillers}(?:vehicle|vehicular|car)\s+parking\s+(?:spaces?|stalls?)",
@@ -488,10 +542,12 @@ def _sum_split_bike(text: str) -> int | None:
     Only treats the two numbers as bicycle counts when 'bike'/'bicycle' appears nearby, so a
     vehicle 'long-term' phrase is not picked up. Returns the combined total or None.
     """
-    m = re.search(r"(\d+)\s*long[\s-]*term\D{0,40}?(\d+)\s*short[\s-]*term", text, re.IGNORECASE) or re.search(
-        r"(\d+)\s*short[\s-]*term\D{0,40}?(\d+)\s*long[\s-]*term", text, re.IGNORECASE
-    )
-    if m and re.search(r"bicycle|bike", text[max(0, m.start() - 40) : m.end() + 40], re.IGNORECASE):
+    m = re.search(
+        r"(\d+)\s*long[\s-]*term\D{0,40}?(\d+)\s*short[\s-]*term", text, re.IGNORECASE
+    ) or re.search(r"(\d+)\s*short[\s-]*term\D{0,40}?(\d+)\s*long[\s-]*term", text, re.IGNORECASE)
+    if m and re.search(
+        r"bicycle|bike", text[max(0, m.start() - 40) : m.end() + 40], re.IGNORECASE
+    ):
         return int(m.group(1)) + int(m.group(2))
     return None
 
@@ -524,8 +580,11 @@ def parking_notes(text: str) -> str | None:
     only record one headline number.
     """
     sentences = re.split(r"(?<=[.!?])\s+", text)
-    kept = [s.strip() for s in sentences
-            if re.search(r"\bparking\b|\bbicycle\b|\bbike\b", s, re.IGNORECASE)]
+    kept = [
+        s.strip()
+        for s in sentences
+        if re.search(r"\bparking\b|\bbicycle\b|\bbike\b", s, re.IGNORECASE)
+    ]
     note = " ".join(kept).strip()
     return note or None
 
@@ -538,11 +597,18 @@ def height_m(text: str) -> float | None:
     metric heights are returned; a bare "6 storeys" is a storey count, not a height.
     """
     unit = r"(?:m\b|metres?|meters?)"
-    m = re.search(rf"height[^.]{{0,40}}?from\s+[\d.]+\s*{unit}\s+to\s+(\d+(?:\.\d+)?)\s*{unit}", text, re.IGNORECASE)
+    m = re.search(
+        rf"height[^.]{{0,40}}?from\s+[\d.]+\s*{unit}\s+to\s+(\d+(?:\.\d+)?)\s*{unit}",
+        text,
+        re.IGNORECASE,
+    )
     if m:
         return float(m.group(1))
-    m = (re.search(rf"height[^.]{{0,25}}?(\d+(?:\.\d+)?)\s*{unit}", text, re.IGNORECASE)
-         or re.search(rf"(\d+(?:\.\d+)?)\s*{unit}\s+(?:in\s+)?(?:building\s+)?height", text, re.IGNORECASE))
+    m = re.search(
+        rf"height[^.]{{0,25}}?(\d+(?:\.\d+)?)\s*{unit}", text, re.IGNORECASE
+    ) or re.search(
+        rf"(\d+(?:\.\d+)?)\s*{unit}\s+(?:in\s+)?(?:building\s+)?height", text, re.IGNORECASE
+    )
     return float(m.group(1)) if m else None
 
 
@@ -556,8 +622,9 @@ def zoning_density(text: str) -> str | None:
     keyword = r"(?:FSR|FAR|FSI|floor space ratio|floor space index|floor area ratio|density)"
     tail = r"(\d+(?:\.\d+)?)\b(?!\s*stor)"
     # First pass forbids "up to" between the keyword and the number (an allowed-maximum phrase).
-    m = re.search(rf"{keyword}(?:(?!up\s+to)[^\d]){{0,12}}{tail}", text, re.IGNORECASE) \
-        or re.search(rf"{keyword}[^\d]{{0,12}}{tail}", text, re.IGNORECASE)
+    m = re.search(
+        rf"{keyword}(?:(?!up\s+to)[^\d]){{0,12}}{tail}", text, re.IGNORECASE
+    ) or re.search(rf"{keyword}[^\d]{{0,12}}{tail}", text, re.IGNORECASE)
     return f"FSR {m.group(1)}" if m else None
 
 
@@ -570,7 +637,8 @@ _NON_GROSS_AREA = re.compile(
 )
 # "11,654 m2", "3,902.83 m²", and the superscript-split "11,654 m 2".
 _METRIC_AREA = re.compile(
-    r"([\d,]+(?:\.\d+)?)\s*(?:m\s?[²2]|sq\.?\s?m|square\s?met\w*)(?![A-Za-z])", re.IGNORECASE)
+    r"([\d,]+(?:\.\d+)?)\s*(?:m\s?[²2]|sq\.?\s?m|square\s?met\w*)(?![A-Za-z])", re.IGNORECASE
+)
 _ACRE_AREA = re.compile(r"([\d,]+(?:\.\d+)?)\s*(?:acres?|\bac\b)", re.IGNORECASE)
 
 
@@ -591,8 +659,8 @@ def floor_area(text: str) -> tuple[float | None, str | None]:
         #   before: "outdoor amenity space of 124 m2"   (qualifier precedes the number)
         #   after:  "100 m2 of outdoor amenity space"    (qualifier follows the number)
         prev_end = matches[i - 1].end() if i else 0
-        before = text[max(prev_end, m.start() - 28):m.start()]
-        after = re.sub(r"^[\s)]*\([^)]*\)", "", text[m.end():m.end() + 55]).lstrip(" )")
+        before = text[max(prev_end, m.start() - 28) : m.start()]
+        after = re.sub(r"^[\s)]*\([^)]*\)", "", text[m.end() : m.end() + 55]).lstrip(" )")
         amenity_after = bool(re.match(r"of\b", after)) and bool(_NON_GROSS_AREA.search(after[:40]))
         if _NON_GROSS_AREA.search(before) or amenity_after:
             continue
@@ -633,7 +701,7 @@ def rental_or_strata(text: str) -> tuple[str | None, str | None]:
 def rental_mix(text: str) -> dict | None:
     """Split of rental units by affordability, e.g. {'market-rental': 49, 'mid-market-rental': 6}.
 
-    Handles CNV's "49 ... market-rental units and six (6) ... mid-market rental units" —
+    Handles CNV's "49 ... market-rental units and six (6) ... mid-market rental units" -
     the count may be a bare digit or a "(6)" beside a spelled-out number.
     """
     mix: dict[str, int] = {}
@@ -768,7 +836,9 @@ METHOD_PDF_MODEL_TEXT = "pdf_model_text"  # non-deterministic: local text LLM
 METHOD_PDF_MODEL_VISION = "pdf_model_vision"  # non-deterministic: local vision LLM
 METHOD_PDF_CLAUDE = "pdf_claude"  # non-deterministic: Claude read the PDF in-session
 DETERMINISTIC_METHODS = frozenset({METHOD_HTML, METHOD_PDF_REGEX, METHOD_PDF_GEOMETRY})
-NONDETERMINISTIC_METHODS = frozenset({METHOD_PDF_MODEL_TEXT, METHOD_PDF_MODEL_VISION, METHOD_PDF_CLAUDE})
+NONDETERMINISTIC_METHODS = frozenset(
+    {METHOD_PDF_MODEL_TEXT, METHOD_PDF_MODEL_VISION, METHOD_PDF_CLAUDE}
+)
 
 # The permit-content fields we track provenance for (everything a reviewer reads). Excludes
 # bookkeeping columns (permit_id, source_url, status, milestones, documents, ...).

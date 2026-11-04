@@ -3,7 +3,7 @@
 Flow:  Active-Applications index  ->  per-application detail pages  ->  dev_permit rows.
 
 Rule (updated): everything visible in the HTML is parsed DETERMINISTICALLY here.
-Ollama is NOT used on page prose — it is reserved for PDFs on the fallback path,
+Ollama is NOT used on page prose - it is reserved for PDFs on the fallback path,
 i.e. when a detail page carries no usable text and only links documents.
 
 Public API:
@@ -100,7 +100,7 @@ def parse_detail(html: str, url: str) -> dict:
     }
 
     if prose and len(prose) >= MIN_PROSE_CHARS:
-        # Deterministic HTML parse — no LLM.
+        # Deterministic HTML parse - no LLM.
         row.update(features.extract_all(prose))
         row["is_parsed"] = True
         # Finalize the confidence over the FULL row so harvester-provided fields (address)
@@ -120,7 +120,7 @@ def parse_detail(html: str, url: str) -> dict:
 
 
 # --------------------------------------------------------------------------- #
-# 3. Live harvest (needs network — run where cnv.org is reachable)
+# 3. Live harvest (needs network - run where cnv.org is reachable)
 # --------------------------------------------------------------------------- #
 def _build_session():
     """Return a requests Session that retries transient timeouts / 5xx with backoff."""
@@ -311,8 +311,8 @@ def _main_content(soup: BeautifulSoup):
     """Best-effort main-content container, excluding the site nav/header/footer.
 
     CNV renders the application content inside ``#page-content`` (and, nested within it,
-    ``.content-section`` / ``.infoPanel``). Pinning these first keeps the site chrome —
-    crucially the City Hall address in the footer — out of scope; without it we fell back
+    ``.content-section`` / ``.infoPanel``). Pinning these first keeps the site chrome -
+    crucially the City Hall address in the footer - out of scope; without it we fell back
     to the whole document and that footer address leaked into the parsed prose. The
     generic selectors remain as a fallback for other page templates.
     """
@@ -354,7 +354,7 @@ def _prose(main) -> str:
 
     CNV puts the application blurb in a ``<p>`` on most pages but in a bare ``<div>`` on
     others (e.g. 215 West Keith Road). Collect both, in document order, so a page whose
-    blurb is a ``<div>`` is not skipped just because some unrelated ``<p>`` exists — the
+    blurb is a ``<div>`` is not skipped just because some unrelated ``<p>`` exists - the
     previous "divs only if no <p> at all" rule let the footer address win on such pages.
     Tables (milestones) and container ``<div>``s that only hold other blocks are ignored
     so we keep prose, not layout scaffolding.

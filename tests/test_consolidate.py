@@ -64,6 +64,25 @@ def test_same_project_strong_filings_merge():
     print("\nsame-project-merge PASSED ✓")
 
 
+def test_programless_html_record_folds_regardless_of_method():
+    """A variance with no building program folds into the strong record even from an HTML source.
+
+    'Strong' is decided by the program fields (units/storeys/floor), not the extraction method - so a
+    non-arcgis administrative filing (a variance, a bare rezoning) still folds into the real project.
+    """
+    rows = [
+        _row("DP1", "7687 200 St", method="html+claude_read", units_total=620, number_of_stories=6),
+        _row("DV1", "7687 200 St", method="html", parking_vehicle_stalls=12),   # program-less variance
+        _row("RZ1", "7687 200 St", method="html"),                              # bare rezoning
+    ]
+    dropped = consolidate.consolidate_by_address(rows)
+    assert dropped == 2
+    assert len(rows) == 1
+    assert rows[0]["permit_id"] == "DP1"
+    assert {r["permit_id"] for r in rows[0]["related_permits"]} == {"DV1", "RZ1"}
+    print("\nprogramless-html-folds PASSED ✓")
+
+
 def test_distinct_strong_developments_stay_separate():
     """Two strong records at one address with DIFFERENT programs are genuinely distinct -> kept."""
     rows = [

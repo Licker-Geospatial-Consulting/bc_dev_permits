@@ -44,7 +44,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 SCHEMA_SQL = REFERENCES_DIR / "schema.sql"
 
 # --------------------------------------------------------------------------- #
-# Ollama — local LLM fallback for PDFs (bc_dev_permits.modeling.predict)
+# Ollama - local LLM fallback for PDFs (bc_dev_permits.modeling.predict)
 # --------------------------------------------------------------------------- #
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/chat")
 OLLAMA_TEXT_MODEL = os.environ.get("OLLAMA_TEXT_MODEL", "qwen2.5:7b-instruct")
@@ -65,7 +65,7 @@ OLLAMA_VISION_DPI = int(os.environ.get("OLLAMA_VISION_DPI", "220"))
 EXTRACTION_PROMPT = REFERENCES_DIR / "extraction_prompt.md"
 
 # --------------------------------------------------------------------------- #
-# Municipality registry — maps a slug to its harvester's index URL.
+# Municipality registry - maps a slug to its harvester's index URL.
 # See docs/COUNCIL.md for the full municipality list.
 # --------------------------------------------------------------------------- #
 NORTH_VAN_LIST_URL = (
@@ -87,6 +87,13 @@ WEST_VAN_APPROVED_URL = _WV_APPS + "approved-development-applications"
 # pages are plain GETs keyed by folder number.
 VICTORIA_LIST_URL = "https://tender.victoria.ca/webapps/ourcity/prospero/search.aspx"
 VICTORIA_DETAIL_BASE = "https://tender.victoria.ca/webapps/ourcity/Prospero/Details.aspx"
+
+# Township of Langley runs the same Prospero "OurCity" tracker (see
+# references/prospero_tracker.md). Same list grid + folder-numbered detail pages; the
+# detail page carries the Purpose prose, a Documents section, and a Related Permits and
+# Applications section whose active rezoning/variance folders hold the shared materials.
+LANGLEY_LIST_URL = "https://e-connect.tol.ca/OurCity/Prospero/Search.aspx"
+LANGLEY_DETAIL_BASE = "https://e-connect.tol.ca/OurCity/Prospero/Details.aspx"
 
 # Coquitlam publishes through an ArcGIS Experience Builder app (see
 # references/arcgis_webmaps.md). The app is just a UI over one FeatureServer layer, so the
@@ -151,6 +158,14 @@ NEW_WEST_SERVICE_URL = (
 # application documents (Development Permit Board report, architectural / civil / parking drawings)
 # that the harvester reads with Claude for fields the HTML omits. Plain HTTP works (no Cloudflare).
 UBC_LIST_URL = "https://planning.ubc.ca/planning-development/development-projects"
+
+# City of Richmond publishes its entire current-development list as a single multi-page PDF (one
+# table row per application). The table columns (folder number, site address, folder type, status,
+# application-acceptance date, staff contact) parse positionally; every permit attribute lives in
+# the Description prose, which features.py parses. There are no HTML detail pages or a map service,
+# so the harvester reads this one PDF. The file name carries a build number and is republished in
+# place, so RICHMOND_PDF_URL is both the data source and each row's source_url.
+RICHMOND_PDF_URL = "https://www.richmond.ca/__shared/assets/2025currentdevelopment75120.pdf"
 
 # City of Surrey publishes council planning reports as PDFs (one per application) listed on the
 # planning-reports page (a Drupal view, paginated). There are no HTML detail pages, so the

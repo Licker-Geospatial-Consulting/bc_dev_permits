@@ -1,4 +1,4 @@
-"""City of Victoria harvester — Prospero "OurCity" permit tracker.
+"""City of Victoria harvester - Prospero "OurCity" permit tracker.
 
 Flow:  search.aspx ACTIVE list (paged)  ->  per-folder Details.aspx  ->  dev_permit rows.
 

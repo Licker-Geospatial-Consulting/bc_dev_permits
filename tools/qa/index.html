@@ -21,7 +21,7 @@
   <script>window.QA_DEFAULT_JSON = "/data/processed/north_van_test.json";</script>
 
   <!--
-    Pinned exact versions, not "@18" / unqualified "latest" — an unpinned floating
+    Pinned exact versions, not "@18" / unqualified "latest" - an unpinned floating
     version is what silently pulled in a Babel major upgrade and its automatic-runtime
     behavior above. Bump these deliberately, not by surprise.
   -->
@@ -39,7 +39,7 @@
   <!--
     Explicit compile step instead of Babel's passive <script type="text/babel" src="...">
     scanning: that path lets Babel default to the "automatic" JSX runtime, which injects
-    `import { jsx as _jsx } from "react/jsx-runtime"` into the transformed output — a
+    `import { jsx as _jsx } from "react/jsx-runtime"` into the transformed output - a
     bare-specifier import a classic (non-module) script can't resolve, so it throws
     "Cannot use import statement outside a module" even though viewer.jsx itself never
     writes an import. Forcing the "classic" runtime compiles JSX to plain

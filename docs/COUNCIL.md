@@ -2,7 +2,7 @@
 
 One entry per municipality. `source_type` selects the reference file the skill loads.
 Fill the `TODO` blanks (exact selectors, service URLs, field mappings, id regexes) as
-you confirm them in the browser — the entries below capture everything known so far and
+you confirm them in the browser - the entries below capture everything known so far and
 the exact instructions you gave per site.
 
 | slug        | Municipality               | source_type | reference file            |
@@ -17,14 +17,16 @@ the exact instructions you gave per site.
 | ubc         | UBC (Campus + Community Pl)| html        | html_detail_pages.md (+claude-pdf) |
 | surrey      | City of Surrey             | pdf         | (planning report PDFs, claude-read) |
 | victoria    | City of Victoria           | prospero    | prospero_tracker.md       |
+| langley     | Township of Langley        | prospero    | prospero_tracker.md (+claude-pdf) |
+| richmond    | City of Richmond           | pdf         | (one current-development list PDF, positional parse) |
 
 ---
 
-## north_van — City of North Vancouver  (html)
+## north_van - City of North Vancouver  (html)
 
 - **List:** https://www.cnv.org/Business-Development/Building/Land-Use-Approvals/Active-Applications
 - **Scrape both groupings:** "Major Applications (6+ residential units / non-residential)"
-  — which includes **Industrial, Commercial & Institutional** — AND "Minor Applications
+  - which includes **Industrial, Commercial & Institutional** - AND "Minor Applications
   (1-5 residential units)".
 - **Detail page** (example: `.../Active-Applications/115-East-18th-Street`):
   - Address ← page `<h1>` / breadcrumb.
@@ -37,12 +39,12 @@ the exact instructions you gave per site.
 - **permit_id regex:** `PLN\d{4}-\d{5}` (recover from PDF filenames when absent from prose).
 
 
-## coquitlam — City of Coquitlam  (arcgis)
+## coquitlam - City of Coquitlam  (arcgis)
 
 - **App:** https://experience.arcgis.com/experience/346bbb6ec0024422abcf27b0e338dbad/page/Page?org=Coquitlam
 - **FeatureServer layer (query this directly):**
   `https://services2.arcgis.com/Q6Lq3evZUGfPrN7o/arcgis/rest/services/Development_Information_Demo/FeatureServer/0`
-  — layer 0 "Development_Information", polygon, ~484 features. Harvested with
+  - layer 0 "Development_Information", polygon, ~484 features. Harvested with
   `?where=1=1&outFields=...&returnGeometry=true&outSR=4326&f=json`, paged by `resultOffset`.
 - Discovered via the Experience item config:
   `https://www.arcgis.com/sharing/rest/content/items/<itemid>/data?f=json`.
@@ -57,20 +59,20 @@ the exact instructions you gave per site.
 - `extraction_method = "arcgis"`. Bare lot subdivisions / lot-line adjustments / zoning-only
   rezonings state no building use and correctly land as `development_class = "unknown"`.
 
-## maple_ridge — City of Maple Ridge  (vertigis)
+## maple_ridge - City of Maple Ridge  (vertigis)
 
 - **App:** https://apps.vertigisstudio.com/web/?app=8b409970fec048b0940b60fe1e225e39
 - VertiGIS Studio Web over an ArcGIS MapServer (see vertigis_webmaps.md). The service was
   found via the page's resource list (performance entries), not the app config.
 - **MapServer (query this directly):**
   `https://geoservices.mapleridge.ca/server/rest/services/LandDevelopmentViewer/LandDevelopmentData/MapServer`
-  - layer **0 DevelopmentApplications** (polygons) — one application each, ~6757 total (~823 `StatusType='Active'`).
-  - table **2 ApplicationDetails** — key/value rows (`InfoDescription`/`InfoValue`), the
+  - layer **0 DevelopmentApplications** (polygons) - one application each, ~6757 total (~823 `StatusType='Active'`).
+  - table **2 ApplicationDetails** - key/value rows (`InfoDescription`/`InfoValue`), the
     "Application details" section.
-  - table **1 Applicants** — personal names: **not fetched** (PII, no schema column).
+  - table **1 Applicants** - personal names: **not fetched** (PII, no schema column).
 - **No declared relationship:** layer 0 and table 2 join by the shared **`FolderRSN`** key.
   The harvester pages the applications, then bulk-fetches details for the harvested FolderRSNs
-  (`FolderRSN IN (...)`, chunked) and groups them — no `queryRelatedRecords` needed.
+  (`FolderRSN IN (...)`, chunked) and groups them - no `queryRelatedRecords` needed.
 - **Field mapping** (layer 0), handled by `harvesters/maple_ridge.py`:
   - `ReferenceFile` → `permit_id` (e.g. "2019-255-RZ"); `FolderName` = "<id> - <address>" → `address`
   - `FolderDesc` → `permit_type` (Rezoning / Development Permit / Subdivision / Variance Permit /
@@ -84,7 +86,7 @@ the exact instructions you gave per site.
   `Number of Proposed Rental Units` → rental; class derived from the type / zoning / OCP text.
 - `extraction_method = "arcgis"`. Shared ArcGIS transport lives in `harvesters/arcgis_common.py`.
 
-## port_moody — City of Port Moody  (arcgis + engage cross-reference)
+## port_moody - City of Port Moody  (arcgis + engage cross-reference)
 
 - **App:** https://portmoody.maps.arcgis.com/apps/webappviewer/index.html?id=d42a4cd7ece44d2d8dbf759cdcdac203
 - ArcGIS Web AppViewer over a hosted FeatureServer (found via the webappviewer item config →
@@ -94,7 +96,7 @@ the exact instructions you gave per site.
   - layer **0 DevelopmentApplicationsView** (polygons, ~170 features → ~126 unique folders).
     Multiple polygons can share a `Folder_Number` (a master folder spans parcels), so rows are
     **deduped by `Folder_Number`** (keep the richest: has geometry, longest Purpose).
-  - table **1 Milestones** keyed by `FOLDER_NUMBER` — process milestones; duplicated per parcel,
+  - table **1 Milestones** keyed by `FOLDER_NUMBER` - process milestones; duplicated per parcel,
     so collapsed by (name, date) and ordered by date.
 - **Field mapping** (layer 0):
   - `Folder_Number` → `permit_id` (e.g. "ORD00008"); `Address` (first line; "PORT MOODY BC
@@ -103,7 +105,7 @@ the exact instructions you gave per site.
   - `Subject`/`Purpose` → `raw_text`, parsed by `features.py`; `Applicant`/`File_Manager` →
     **excluded** (personal / staff names, PII, no schema column)
 - **Engage cross-reference:** the map's `Purpose` is usually thin or empty for the large
-  rezoning/OCP files — their building programs live on **Engage Port Moody**
+  rezoning/OCP files - their building programs live on **Engage Port Moody**
   (https://engage.portmoody.ca/projects), one page per site. The harvester scrapes that listing
   into an address-keyed index, matches each application by **civic number + distinctive street
   token** (e.g. "80 ELECTRONIC AVE" → `.../80-85-electronic-avenue-...`), and parses the matched
@@ -143,14 +145,14 @@ the exact instructions you gave per site.
   with the Engage URL + description kept in `raw_text` for re-extraction).
 - Shared ArcGIS transport lives in `harvesters/arcgis_common.py`.
 
-## west_van — District of West Vancouver  (html + Claude-read PDF)
+## west_van - District of West Vancouver  (html + Claude-read PDF)
 
 - **Lists (three streams):** the harvester covers all three published indexes, deduped by detail
   url (an application that appears in more than one list is harvested once, under the first/most
   current stage it is in). Detail pages under `.../development-applications/<slug>`.
-  - Active: `.../active-development-applications` (~19) — taken in full, `stage="active"`.
-  - Preliminary: `.../preliminary-development-projects` (~16) — taken in full, `stage="preliminary"`.
-  - Approved: `.../approved-development-applications` (~177) — `stage="approved"`, **limited to the
+  - Active: `.../active-development-applications` (~19) - taken in full, `stage="active"`.
+  - Preliminary: `.../preliminary-development-projects` (~16) - taken in full, `stage="preliminary"`.
+  - Approved: `.../approved-development-applications` (~177) - `stage="approved"`, **limited to the
     last two years**. The date is only on each detail page (there is no per-entry date on the list),
     so every approved page is fetched, then one whose application/decision date is older than the
     cutoff is dropped. The date is the first "Month DD, YYYY" in the lead prose that West Van states
@@ -184,15 +186,15 @@ the exact instructions you gave per site.
 - Claude-read fields for a batch are applied with a small helper (`tools/westvan_enrich.py`); a
   full automated run is not wired into `dataset.py` ENRICHERS because the reads happen in-session.
 
-## halton_hills — Town of Halton Hills, Ontario  (arcgis + html)
+## halton_hills - Town of Halton Hills, Ontario  (arcgis + html)
 
 - **List (HTML):** https://www.haltonhills.ca/work/planning-development/active-development-applications
-- **Map:** https://map.haltonhills.ca/HT5/Index.html?viewer=p.HT5 — a VertiGIS/Geocortex HTML5
+- **Map:** https://map.haltonhills.ca/HT5/Index.html?viewer=p.HT5 - a VertiGIS/Geocortex HTML5
   viewer over an ArcGIS MapServer. Service discovered via the Geocortex Essentials REST site
   config (`connectionString`), handled by `harvesters/halton_hills.py`.
 - **MapServer (query this directly):**
   `https://map.haltonhills.ca/awse/rest/services/eP/MapServer`
-  - layer **24 P_DevelopmentApplications** (polygons) — one application each, the comprehensive
+  - layer **24 P_DevelopmentApplications** (polygons) - one application each, the comprehensive
     source (~118 features). Harvested with `?where=1=1&outFields=...&returnGeometry=true&outSR=4326&f=json`.
 - **Field mapping** (layer 24), handled by `harvesters/halton_hills.py`:
   - `FILE_NO` → `permit_id` (e.g. "D12SUB12.001"; combined files keep the full string, e.g.
@@ -217,7 +219,7 @@ the exact instructions you gave per site.
   - A subpage splits into Description / Process / Status / Submissions sections. The Submissions
     sections are **document lists** ("Contact X to request a copy of ...") and are dropped; the
     remaining prose is kept whole in `raw_text` so parking/amenity notes survive. The count fields
-    **combine by MAX across sections, not sum** (each section restates the totals) — otherwise
+    **combine by MAX across sections, not sum** (each section restates the totals) - otherwise
     "82 total units" plus "81 townhouses + 1 detached" double-counts to 164. A stated grand total
     ("744 total dwelling units") and the "each containing N units" per-block breakdown are handled
     in `features.py` so a nested "<subtotal>, as follows: <sub-components>" list is not summed twice.
@@ -234,9 +236,9 @@ the exact instructions you gave per site.
 - `extraction_method = "arcgis"` (map only), `"arcgis+html"` (enriched) or `"html"` (standalone
   major). Shared ArcGIS transport lives in `harvesters/arcgis_common.py`. First Ontario source;
   still one normalized schema. Terse map-only Site Plans (telecom towers, quarry extensions,
-  warehouses) legitimately carry no unit/floor program — the source publishes none.
+  warehouses) legitimately carry no unit/floor program - the source publishes none.
 
-## new_west — City of New Westminster  (arcgis + Be Heard engagement)
+## new_west - City of New Westminster  (arcgis + Be Heard engagement)
 
 - **App ("Projects on the Go"):** https://experience.arcgis.com/experience/c30fde314b964efaa1623e099be8da40
 - An ArcGIS Experience Builder app that embeds **Dashboards** over one hosted FeatureServer. Chain
@@ -245,7 +247,7 @@ the exact instructions you gave per site.
   `harvesters/new_west.py`.
 - **FeatureServer (query this directly):**
   `https://services3.arcgis.com/A7O8YnTNtzRPIn7T/arcgis/rest/services/POG/FeatureServer/0`
-  — layer 0 "POG", polygon, ~70 features. One row per project (its application files consolidated).
+  - layer 0 "POG", polygon, ~70 features. One row per project (its application files consolidated).
 - **Field mapping** (attribute → `dev_permit`), handled by `harvesters/new_west.py`:
   - `Files` → `permit_id` (the application numbers, newline-separated, e.g. "PAR01366\nRZ000204\n
     DP000860" → "PAR01366, RZ000204, DP000860"); their prefixes → `permit_type`
@@ -270,13 +272,13 @@ the exact instructions you gave per site.
   - **The rule:** enrich only when a project **has a link** and that link resolves to a **real
     project page** (its title starts with "Project:"). A row with **no link**, or a link that
     resolves to a **"page not found"** (the generic platform title, e.g. the retired
-    616-640-sixth-st page), is left as a plain `arcgis` row — no further parsing.
+    616-640-sixth-st page), is left as a plain `arcgis` row - no further parsing.
 - De-duplication: `harvest()` ends with `consolidate.consolidate_by_address` (the general rule),
   though the FeatureServer already emits one row per project so duplicates are rare.
 
-## ubc — UBC (Campus + Community Planning)  (html + Claude-read PDF)
+## ubc - UBC (Campus + Community Planning)  (html + Claude-read PDF)
 
-- **List:** https://planning.ubc.ca/planning-development/development-projects — a Drupal view
+- **List:** https://planning.ubc.ca/planning-development/development-projects - a Drupal view
   (`.view-project-view-page`) of project cards. Plain HTTP works (no Cloudflare). Handled by
   `harvesters/ubc.py`.
 - **Project cards** are the links whose text carries a **"DP#####"** permit number (navigation
@@ -309,9 +311,9 @@ the exact instructions you gave per site.
   the same HTML flow. `extraction_method` is `"html"` or `"html+claude_read"`.
   and the next page is accessed by nav class `pager`
 
-## surrey — City of Surrey  (PDF-first, Claude-read)
+## surrey - City of Surrey  (PDF-first, Claude-read)
 
-- **List:** https://www.surrey.ca/city-government/council-meetings/planning-reports — a paginated
+- **List:** https://www.surrey.ca/city-government/council-meetings/planning-reports - a paginated
   Drupal view (`.views-row` inside `.view-search-planning-reports`, `?page=N`). Plain HTTP works.
   Handled by `harvesters/surrey.py`. **There are no HTML detail pages: each application is a council
   planning report PDF.** The list is a large archive (hundreds of reports), so harvest with a
@@ -350,7 +352,7 @@ the exact instructions you gave per site.
   report's parking table adds 120 vehicle + 245 bicycle stalls to the 230-unit / 24-storey summary.
 - De-duplication: `harvest()` ends with `consolidate.consolidate_by_address` (the general rule).
 
-## victoria — City of Victoria  (prospero)
+## victoria - City of Victoria  (prospero)
 
 - **List (Development Tracker / Prospero):** https://tender.victoria.ca/webapps/ourcity/prospero/search.aspx
 - **Scope:** ACTIVE applications only ("active" = not yet decided by Council), across all
@@ -373,15 +375,85 @@ the exact instructions you gave per site.
 - **Concurrent rezonings:** descriptions like "CONCURRENT WITH REZ#xxxxx. REFER TO
   REZONING FOR ALL APPLICATION MATERIALS" mean the documents live under the linked `REZ`
   folder → record the id and set `needs_pdf_extraction=true`.
-- **permit_id regex:** `(?:DPV|DP|DVP|REZ|HAP)\d{4,5}` — confirm the full prefix set in
+- **permit_id regex:** `(?:DPV|DP|DVP|REZ|HAP)\d{4,5}` - confirm the full prefix set in
   the browser.
 - **Worked examples (description → expected fields), from the user:**
   - *"six storey residential building with retail at ground level"* → 6 storeys, `mixed`.
-  - *932 Balmoral Rd* — "129 new purpose built rental units" → 129 units, rental.
-  - *441 Government St* — "6 story, 51 unit multi-family development" → 6 storeys, 51 units.
-  - *1171 & 1173 May St* — "2 triplex buildings" → 6 units (two addresses, one permit;
+  - *932 Balmoral Rd* - "129 new purpose built rental units" → 129 units, rental.
+  - *441 Government St* - "6 story, 51 unit multi-family development" → 6 storeys, 51 units.
+  - *1171 & 1173 May St* - "2 triplex buildings" → 6 units (two addresses, one permit;
     needs the "N plex buildings" multiplier in `features.py`, see `prospero_tracker.md`).
-  - *1320 Purcell Pl* — "3 storey, 3 unit strata houseplex" → 3 storeys, 3 units, strata.
-- **Note:** the earlier "status = approved" example conflicts with the site — active
+  - *1320 Purcell Pl* - "3 storey, 3 unit strata houseplex" → 3 storeys, 3 units, strata.
+- **Note:** the earlier "status = approved" example conflicts with the site - active
   applications show `Status: ACTIVE` (no Council decision yet), so status is stored as
   `ACTIVE`, not "approved".
+
+## langley - Township of Langley  (prospero + claude-pdf)
+
+- **List (Prospero "OurCity"):** https://e-connect.tol.ca/OurCity/Prospero/Search.aspx
+- **Scope:** ACTIVE applications across all list pages. Same stateful ASP.NET AJAX grid as
+  Victoria, walked with **Playwright** (`[browser]` extra; `playwright install chromium`);
+  detail pages are plain GETs. Without Playwright the harvester degrades to the first page
+  and warns. See `prospero_tracker.md` for the `__doPostBack` injection quirk.
+- **Detail page:** `https://e-connect.tol.ca/OurCity/Prospero/Details.aspx?folderNumber=<FOLDER>`.
+  The detail page carries the full data (the list `search_*` cells mirror it):
+  - **permit_id** <- the `folderNumber` (e.g. `DP101542`).
+  - **permit_type** <- `#...ApplicationTypeLabel` (e.g. "DEVELOPMENT PERMIT", "REZONING",
+    "Agricultural Land Reserve", "Development Variance Permit").
+  - **status** <- `#...ApplicationFolderStatus` (`ACTIVE`).
+  - **address** <- `#...AddressesLabel` (`<br>`-separated; a folder can span many addresses -
+    one `dev_permit`, full list kept in `raw_text`).
+  - **raw_text / fields** <- `#...PurposeLabel` prose, parsed with `features.py`.
+  - **milestones** <- `.completed-task` / `.featured-task` tiles in `#...taskContainer`.
+  - **documents** <- `a[href*='FileDownload']` in `#...documentsContainer`.
+  - **related_permits** <- the Related Permits and Applications blocks
+    (`.related-permits-container .form-result`), each `{permit_id, permit_type, status, url}`.
+- **PDF enrichment (Claude-read, in-session):** `langley.select_pdf_sources` returns ordered
+  PDF candidates - the application's **own** documents first (newest first), then the documents
+  of each **ACTIVE related application** (rezoning first), newest first. So the related
+  rezoning/variance folder is the fallback, read only when the own documents are absent or not
+  parsable. "Most recent" is the date at the end of the document title
+  (`... June 15, 2026` / `... 2026-07-08`). Fields are applied with `langley.apply_claude_pdf`
+  (the shared Victoria conflict mechanism - HTML never overwritten, disagreements logged to
+  `row['conflicts']`). Per-permit reads live in `tools/langley_enrich.py`.
+- **permit_id regex:** `(?:AL|DP|DV|RZ|SD|[A-Z]{2})\d{4,6}` - confirmed prefixes AL
+  (Agricultural Land Reserve), DP (Development Permit), DV (Development Variance Permit),
+  RZ (Rezoning); confirm the full set in the browser.
+- **Worked examples:**
+  - *AL100478* (Agricultural Land Reserve) - own Documents: "Report to Council - June 15,
+    2026" (newer) + "Site Plan 2026-03-19"; no related apps.
+  - *DP101542* (Development Permit, 7 addresses) - own "Site Plan - 2026-07-08"; ACTIVE
+    related `RZ100805` (rezoning, master materials) + `DV100216` (height variance). If the
+    DP's own site plan were not parsable, read `RZ100805`'s documents next.
+
+---
+
+## richmond - City of Richmond  (single current-development list PDF)
+
+- **Source:** one PDF, `config.RICHMOND_PDF_URL`
+  (`https://www.richmond.ca/__shared/assets/2025currentdevelopment75120.pdf`). There are **no HTML
+  detail pages and no map service** - the whole active list is this 18+ page PDF, one table row per
+  application. Handled by `harvesters/richmond.py`. Harvest with `--limit 0` (the limit truncates
+  the row list, not a download count, since it is a single file). The file is cached by URL hash in
+  `data/raw/http_cache/` and reused for `HTTP_CACHE_TTL`.
+- **No ruling lines**, so `find_tables()` returns nothing; the table is parsed **positionally** by
+  column left edge (PDF points, page width 792):
+  Folder Number `x~52` -> `permit_id`; Site Address `x~112` -> `address`; Folder Type `x~190` ->
+  `permit_type`; Status `x~257` -> `status`; APPLICATION_ACCEPTANCE `x~301` -> "Application
+  Accepted" milestone (date part of `dd/mm/yyyy h:mm AM`); Description `x~398` -> `raw_text`
+  (parsed into every program field by `features.extract_all`); City Staff Contact `x~674` -> a
+  staff name, **read only to validate row banding, never stored** (same decision as Halton Hills'
+  `P_CONTAC`).
+- **Row banding (the one subtlety):** a permit's folder number sits on the **bottom** line of its
+  block, and the Folder Type and Description wrap **upward** above it, so a block spans
+  `(previous anchor, this anchor]`. Folder-shaped tokens inside the Description prose
+  ("RZ 21-930951") are excluded as anchors by requiring an anchor in the folder column (`x < 90`);
+  they stay in the Description text.
+- **Every attribute comes from the Description prose** (units, storeys, class, parking, floor
+  area); the columns supply only id / address / type / status / date. Servicing Agreements
+  ("This SA is associated with ...") carry no program, so they stay `development_class = unknown` -
+  not fabricated.
+- **permit_id regex:** `\d{2}-\d{6}` (two-digit year, six-digit sequence, e.g. `26-023785`).
+- **De-dup by address** at the end of `harvest()` (one site often files several applications -
+  a Rezoning and a Development Permit at 5300 No 3 Rd; a Subdivision and a Servicing Agreement at
+  8220 Gilbert Rd).

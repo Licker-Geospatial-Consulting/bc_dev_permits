@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local Ollama field extractor for the dev-permit scraper — PDFs ONLY.
+"""Local Ollama field extractor for the dev-permit scraper - PDFs ONLY.
 
 HTML pages and map attributes are parsed deterministically by bc_dev_permits.features
 and never reach a model. This module is the fallback path for PDF documents.
@@ -7,7 +7,7 @@ and never reach a model. This module is the fallback path for PDF documents.
 Entry points (JSON contract in references/extraction_prompt.md):
   * extract_from_pdf(path)   -> dict   # PRIMARY: text PDFs + scanned/vision PDFs
   * extract_from_text(text)  -> dict   # helper for text ALREADY pulled from a PDF
-                                       # (not for HTML page prose — use features.py)
+                                       # (not for HTML page prose - use features.py)
 
 Design (all via PyMuPDF - fast even on 40-page, 77 MB plan sets):
   1. Route by page size. Standard-size pages (letters/reports) -> pull their text and send
@@ -111,7 +111,7 @@ SYSTEM_PROMPT = (
     "Provide a confidence from 0 to 1 reflecting how completely the text supported the fields."
 )
 
-# JSON schema handed to Ollama's `format` param — mirrors references/extraction_prompt.md
+# JSON schema handed to Ollama's `format` param - mirrors references/extraction_prompt.md
 SCHEMA = {
     "type": "object",
     "properties": {

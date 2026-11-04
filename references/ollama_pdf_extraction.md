@@ -1,19 +1,19 @@
 # Reference: local Ollama field extraction (PDFs only)
 
-Runs entirely on your machine — no data leaves it. One JSON contract
+Runs entirely on your machine - no data leaves it. One JSON contract
 (`references/extraction_prompt.md`) is reused for PDF text input.
 The implementation is `bc_dev_permits/modeling/predict.py`.
 
 Scope: Ollama is used only for PDFs, on the fallback path. HTML pages and map 
-attributes are parsed deterministically by `bc_dev_permits/features.py` — never sent to a model. 
+attributes are parsed deterministically by `bc_dev_permits/features.py` - never sent to a model. 
 Reach for this reference only when a row was flagged `needs_pdf_extraction=true`.
 
 ## When it runs
 
-- **PDF path** — a page had no usable prose, so only PDF links were stored
+- **PDF path** - a page had no usable prose, so only PDF links were stored
   (`needs_pdf_extraction=true`). Download the PDF, then call `extract_from_pdf(path)`.
 - `extract_from_pdf` internally calls `extract_from_text` on the PDF-derived text. 
-   That helper is for PDF text only — do not call it on HTML page prose 
+   That helper is for PDF text only - do not call it on HTML page prose 
    (use `bc_dev_permits/features.py` for that).
 
 ## How it works
@@ -24,7 +24,7 @@ Reach for this reference only when a row was flagged `needs_pdf_extraction=true`
    not text) go to the **tiled vision path** (`extract_from_pdf_vision`, default model
    `minicpm-v`): each sheet is cut into overlapping **high-DPI tiles** with PyMuPDF, each
    tile is OCR'd on its own (one image per request), and the fields are merged across
-   tiles. Sending a whole large-format sheet at once does NOT work — the table downscales
+   tiles. Sending a whole large-format sheet at once does NOT work - the table downscales
    to unreadable and the model hallucinates (we saw `units=100`, `floor_area=12345`);
    tiling keeps the cell text legible so it reads the real values. Split counts the model
    transcribes verbatim into `parking_notes` (e.g. `9+1 VISITOR`, `7 SHORT TERM : 18 LONG
@@ -37,7 +37,7 @@ Reach for this reference only when a row was flagged `needs_pdf_extraction=true`
 5. `llama3.2-vision` was evaluated but its `mllama` architecture failed to load on this
    Ollama build; `minicpm-v` handles the high-resolution table OCR and is the default.
 
-**Reliability note (tiled vision) — treat output as REVIEW-REQUIRED, not trusted.**
+**Reliability note (tiled vision) - treat output as REVIEW-REQUIRED, not trusted.**
 The image path uses a **sliding-window** sweep (`_sliding_clips`): overlapping windows
 whose vertical step is smaller than the window height, so every table row appears WHOLE in
 at least one window (a fixed grid could bisect a row like "PARKING STALLS 9+1 VISITOR" and
@@ -46,12 +46,12 @@ agree on beats a lone misread, and split counts are summed deterministically.
 
 This improves coverage (validation recovered floor area 1321 m2 and unit mix 9 = four
 4-bed + five 3-bed), but does NOT eliminate the core limitation: a local 7B vision model
-(minicpm-v) still **hallucinates** the occasional cell with high self-confidence — in one
+(minicpm-v) still **hallucinates** the occasional cell with high self-confidence - in one
 run it fabricated a bicycle-parking figure that was not on the sheet and reported
 `confidence: 1.0`. Because of this, `extract_from_pdf_vision` **caps its confidence at 0.4**
 so every vision-derived row trips `needs_review` and is never trusted as final. For
 reliable numbers, use a stronger model (a larger VLM or a cloud document-AI such as Azure
-Document Intelligence / Textract) — the sliding-window plumbing is model-agnostic and would
+Document Intelligence / Textract) - the sliding-window plumbing is model-agnostic and would
 carry a better model directly. The deterministic pieces (window geometry / no-bisection
 guarantee, majority-vote merge, split-count summing) are unit-tested in
 `tests/test_predict_vision.py`; the OCR itself needs a live model and is not.
@@ -162,7 +162,7 @@ fields = extract_from_pdf("staff_report.pdf")   # PDF path (auto text/vision)
 ## Cost / performance notes
 
 - A 7–8B text model handles these permit descriptions well and runs fast on a modern
-  laptop/GPU. Reserve the vision model for genuinely scanned PDFs — it's slower.
+  laptop/GPU. Reserve the vision model for genuinely scanned PDFs - it's slower.
 - `temperature=0` keeps extraction deterministic and repeatable for the same input.
 - Batch: process the `needs_pdf_extraction=true` / `extracted=false` queue in the
   background so harvesting never blocks on the LLM.

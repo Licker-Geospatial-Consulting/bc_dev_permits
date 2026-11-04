@@ -1,13 +1,13 @@
 /*
- * Dev Permit QA viewer — browser dashboard for eyeballing harvester output.
+ * Dev Permit QA viewer - browser dashboard for eyeballing harvester output.
  *
  * Dynamic input: instead of a hard-coded data blob, this loads a JSON file at
- * runtime — either the default sample (data/processed/north_van.json, fetched
+ * runtime - either the default sample (data/processed/north_van.json, fetched
  * on start) or any file you pick with the "Load JSON" button. Point it at any
  * data/processed/<municipality>.json the harvester writes.
  *
  * How to run (needs a local static server so the browser can fetch the .jsx and the
- * JSON — file:// is blocked by the browser):
+ * JSON - file:// is blocked by the browser):
  *     make qa           # serves the repo root at http://localhost:8000
  * then open http://localhost:8000/tools/qa/
  *
@@ -149,9 +149,9 @@ const Row = ({ r, idx, expanded, toggle }) => {
             r.dev_class === "industrial" ? "#ffedd5" : "#e0e7ff"
           } fg="#374151">{r.dev_class}</Badge>}
         </div>
-        <div style={{ fontSize: 12, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.status || "—"}</div>
-        <div style={{ fontSize: 12, textAlign: "center" }}>{r.stories ?? "—"}</div>
-        <div style={{ fontSize: 12, textAlign: "center" }}>{r.units ?? "—"}</div>
+        <div style={{ fontSize: 12, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.status || "-"}</div>
+        <div style={{ fontSize: 12, textAlign: "center" }}>{r.stories ?? "-"}</div>
+        <div style={{ fontSize: 12, textAlign: "center" }}>{r.units ?? "-"}</div>
         <div style={{ textAlign: "center" }}>
           <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 4, background: confColor(conf), marginRight: 4 }} />
           <span style={{ fontSize: 11, color: "#374151" }}>{conf}</span>
@@ -171,10 +171,10 @@ const Row = ({ r, idx, expanded, toggle }) => {
               {r.conflicts.map((c, i) => (
                 <div key={i} style={{ fontSize: 12, color: "#7c2d12", padding: "1px 0", display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
                   <b>{c.field}:</b>
-                  <b>{String(c.kept?.value ?? c.claude ?? "—")}</b>
+                  <b>{String(c.kept?.value ?? c.claude ?? "-")}</b>
                   <MethodTag method={c.kept?.method || "pdf_claude"} />
                   <span>≠</span>
-                  <b>{String(c.pdf?.value ?? c.html ?? "—")}</b>
+                  <b>{String(c.pdf?.value ?? c.html ?? "-")}</b>
                   <MethodTag method={c.pdf?.method || "html"} />
                 </div>
               ))}
@@ -209,7 +209,7 @@ const Row = ({ r, idx, expanded, toggle }) => {
           <div>
             <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".5px" }}>Extraction</div>
             <Field label="Parsed" value={r.parsed ? "✓" : "✗"} />
-            <Field label="PDF Enriched" value={r.enriched ? (/claude_read/.test(r.method || "") ? "Yes — Claude read PDF" : "Yes — via Ollama PDF") : "No"} />
+            <Field label="PDF Enriched" value={r.enriched ? (/claude_read/.test(r.method || "") ? "Yes - Claude read PDF" : "Yes - via Ollama PDF") : "No"} />
             <Field label="Needs Review" value={r.review ? "⚠ Yes" : "No"} />
             <Field label="Confidence" value={conf} />
             <Field label="Method" value={r.method} />

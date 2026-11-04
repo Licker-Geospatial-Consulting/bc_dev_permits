@@ -1,5 +1,5 @@
 -- ============================================================================
--- Development Permit Scraper — target schema (PostgreSQL)
+-- Development Permit Scraper - target schema (PostgreSQL)
 -- One normalized model for commercial, residential, mixed-use, industrial,
 -- and institutional applications across all municipalities.
 -- ============================================================================
@@ -15,7 +15,7 @@ CREATE TABLE municipality (
 );
 
 -- ============================================================================
--- dev_permit — one row per application. This is the deliverable table.
+-- dev_permit - one row per application. This is the deliverable table.
 -- ============================================================================
 CREATE TABLE dev_permit (
     id                     BIGSERIAL PRIMARY KEY,
@@ -71,7 +71,7 @@ CREATE TABLE dev_permit (
 );
 
 -- ============================================================================
--- occupancy / building type — WHY a child table instead of columns:
+-- occupancy / building type - WHY a child table instead of columns:
 -- the user noted "some buildings have many". A mixed-use tower is commercial AND
 -- residential (and sometimes institutional). Sparse columns (is_commercial,
 -- is_residential, ...) get unwieldy and can't hold per-type detail like the floor
@@ -89,7 +89,7 @@ CREATE TABLE dev_permit_occupancy (
 );
 
 -- ============================================================================
--- dates — applications have many milestones and they vary by city; a child
+-- dates - applications have many milestones and they vary by city; a child
 -- table beats a fixed set of date columns. Common ones still queryable via a view.
 -- ============================================================================
 CREATE TABLE dev_permit_milestone (
@@ -100,7 +100,7 @@ CREATE TABLE dev_permit_milestone (
 );
 
 -- ============================================================================
--- documents — PDF/attachment links. Populated on the PDF-fallback path AND
+-- documents - PDF/attachment links. Populated on the PDF-fallback path AND
 -- whenever a page links supporting docs (drawings, staff reports).
 -- ============================================================================
 CREATE TABLE dev_document (

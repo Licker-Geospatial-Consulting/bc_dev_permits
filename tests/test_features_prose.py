@@ -5,7 +5,7 @@ parser originally missed (QA'd at extraction_confidence <= 0.4). They lock in th
 generalized unit / parking / storey / floor-area logic in bc_dev_permits.features.
 Prose is embedded verbatim - do NOT edit it to make a test pass; fix the parser.
 
-Regenerate:  python tests/gen (see scratchpad) — or edit CASES by hand.
+Regenerate:  python tests/gen (see scratchpad) - or edit CASES by hand.
 """
 import sys
 from pathlib import Path

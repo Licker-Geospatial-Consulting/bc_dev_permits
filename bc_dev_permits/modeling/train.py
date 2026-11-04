@@ -2,7 +2,7 @@
 
 Placeholder in the Cookiecutter Data Science layout. This project currently extracts
 permit facts deterministically (bc_dev_permits.features) with an Ollama LLM fallback
-for PDFs (bc_dev_permits.modeling.predict) — there is no trained model yet. When a
+for PDFs (bc_dev_permits.modeling.predict) - there is no trained model yet. When a
 classifier/extractor is trained on the harvested corpus, put that code here and have
 it read from data/processed and write artifacts to models/.
 """

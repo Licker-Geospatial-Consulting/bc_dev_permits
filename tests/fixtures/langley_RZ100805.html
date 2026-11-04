@@ -1,0 +1,583 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta http-equiv="X-UA-Compatible" content="IE=Edge" /><title>
+	OurCity Folder Details
+</title><link href="../CSS/bootstrap.min.css" rel="stylesheet" /><link href="../CSS/bootstrap-xxs.css" rel="stylesheet" />
+    <link href="/CSS/Global.css" rel="stylesheet" type="text/css" />
+    <link href="CSS/ProsperoSearch.css" rel="stylesheet" /><link href="../inhouse/CSS/Prospero_Inhouse.css" rel="stylesheet" /><script type="text/javascript" src="../../Shared/Scripts/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-migrate-3.4.1.js"></script>
+    <script type="text/javascript" src="../../Shared/Scripts/bootstrap.bundle.min.js"></script>
+    <script src="../Scripts/Chart.min.js"></script>
+    <script src="../Scripts/legend.js"></script>
+    <script src="../Scripts/googlemaps.js"></script>
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+      <link href="CSS/ProsperoSearch_IE.css" rel="stylesheet" /><link href="../inhouse/CSS/Prospero-IE.css" rel="stylesheet" /> 
+    <![endif]-->
+</head>
+<body>
+    <form name="aspnetForm" method="post" action="./Details.aspx?folderNumber=RZ100805" id="aspnetForm">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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" />
+
+
+<script src="/OurCity/ScriptResource.axd?d=8jFzGEebSZV9chIO-2u5913X9keXJo_VoD_8095otefU-G_9YBthkf9eI-ei4NvD7WIqfU_UvHXM2wV56YuWM1qLkUvAJIH1Glw96EU-aJ6lNIP1LoBHop-Uou9pwCaI36Uvf3hGigDyyEpL019eOKx8RLA1&amp;t=ffffffffbec1863d" type="text/javascript"></script>
+<script src="../Scripts/FixFocus.js" type="text/javascript"></script>
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="015FEA21" />
+<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="WpPFgbl3UKZoT5+8uzb0Wt9Gf6IQs/cxSrugMoM+zf91Hi4ozYOFQKmrj6W8Ia2rIi3aDNBPdw10nM7zPtTVuLsyXVC32mrgxBScE4CiyJkNtkgiGex7/IfebnjSBY+SLIpTARFE7dEUmNd0A4/eRzs/vfQmX6TZ1eNiGvemD9MPi9ZOdrSqx6fNytnNoPzxUoHM3pdWNNlJMNQ+kK6XJnxd4mcBUigtuP60p1uqbPHCsJWm+6pJGhKPUp+B5TXfxinMo0gHPFentBZvIIzxgjpRsEJozpRaiOwufF2qweErv05Ck56vRs69a178Wer1S1q97j9knYdOaLJvP+iT/hSU4Q/aSa4okneab7vc2Q2tWwzqxL/OqCUrXG8Ih4F6Y1fAfnkjzrgfL6fRa+O0J3f0bXCUmQDVTAWUCDXDrPotuUuGx84R2wJ2eDzLOvpfL3p4gGoaa1DRQNES5K7d1fIE8iA=" />
+        <div id="ctl00_prospero" class="prospero" current_page="/OurCity/Prospero/Details.aspx">
+            <div class="container-fluid ourcity-header-container" id="prospero-header-container" >
+                    <img class="ourcity-header hide-big" src=" https://www.tol.ca/en/images/structure/logo.svg" /><img class="ourcity-header hide-small" src=" https://www.tol.ca/en/images/structure/logo.svg" /><img class="ourcity-header-print" src=" https://www.tol.ca/en/images/structure/logo.svg" />
+                    <span class='prospero-banner-content'>Development Activity Portal - Application Details</span>
+                    <div class="prospero-menu btn-group nav-header-button"><button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-bs-toggle="dropdown"><img src="../Prospero/images/menunew.png" class="menu-icon" /><span class="menu-text"></span></button><ul class="dropdown-menu pull-right" role="menu"><li role="presentation" ><a href="javascript:scrollTo('sectionTop')" class="menuitem">Top</a></li><li role="presentation" ><a href="javascript:scrollTo('sectionDocuments')" class="menuitem">Documents</a></li><li role="presentation" ><a href="javascript:scrollTo('sectionProgress')" class="menuitem">Task Progress</a></li><li role="presentation" ><a href="javascript:scrollTo('sectionRelatedPermitsandApplications')" class="menuitem">Related Applications</a></li><li role="presentation" ><a href="javascript:scrollTo('sectionDisclaimer')" class="menuitem">Disclaimer</a></li><li role="presentation" ><a href="../Prospero/Search.aspx" class="menuitem">Back to Search</a></li><li role="presentation" ><a href="../Prospero/Unsubscribe.aspx" class="menuitem">Manage My Subscriptions</a></li><li role="presentation" ><a href="../Prospero/Subscribe.aspx" class="menuitem">Add Subscriptions</a></li><li role="presentation" ><a href="../Prospero/AutoSubscribe.aspx" class="menuitem">Add Future Application Subscriptions</a></li><li role ="presentation" ><a href="JavaScript:void(0);" onclick="clickMyCityLoginButton();" class="menuitem" >Login</a></li></ul></div>  
+            </div>
+            <div class="prospero-body" id="resizableBodyDiv">
+                <div id="bg-photo"></div>
+                <div id="bg-spacer"></div>
+                
+    
+
+   <div class="tdg-content">
+        <div id="ctl00_FeaturedContent_removeControlsSmallPanel" class="remove-controls-panel-hide">
+	
+                <div class="modal fade" id="removeAccountsConfirmationModalSmall" tabindex="-1" role="dialog" aria-labelledby="removeAccountsConfirmationModalLabelSmall">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title config-message-background" id="removeAccountsConfirmationModalLabelSmall">Confirm Unsubscription</h4>
+                            </div>
+                            <div class="modal-body config-message-background">Are you sure you want to unsubscribe to all of the selected folders?</div>
+                            <div class="modal-footer">
+                                <div class="col-sm-6 text-left margin-bottom">
+                                    <input type="button" class="btn btn-primary btn-back" data-bs-dismiss="modal" value="Cancel" />
+                                </div>
+                                <div class="col-sm-6 text-left">
+                                    <input type="submit" name="ctl00$FeaturedContent$removeAccountsButtonSmall" value="Unsubscribe" id="ctl00_FeaturedContent_removeAccountsButtonSmall" class="btn btn-primary btn-danger" />
+                                </div>
+                                <div class="col-sm-12 config-message-background"></div>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+                <!-- /.modal -->
+            
+</div>
+
+        <!--Modal for progress legend-->
+        <div class="modal" id="legendModal" style="transition:none;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title">Legend</h4>
+                    </div>
+                    <div class="modal-body" style="height: 100%">
+                        <div class='legend-row'><img class="task-image" src="../Prospero/Images/gold-star.png"><span class='task-text'>Council meeting</span></div>
+                         <div><div id="CompletedTaskLegend" class="completed-task">  <span id="ctl00_FeaturedContent_CompletedTaskTextLegend"><span class='task-text '>Completed Task</span></span></div></div>
+                        <div><div id="CurrentActiveTaskLegend" class="featured-task">  <span id="ctl00_FeaturedContent_CurrentActiveTextLegend"><span class='task-text heavy-font'>Current Active Task</span></span></div></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-bs-dismiss="modal" style="width:100%">Close</button>
+                    </div>
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+ 
+        <!--Modal for council legend-->
+        <div class="modal" id="councilLegendModal" style="transition:none;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title">Legend</h4>
+                    </div>
+                    <div class="modal-body" style="height: 100%">
+                        <div class='legend-row'><img class="task-image" src="../Prospero/Images/gold-star.png"><span class='task-text'>Council meeting</span></div>
+                        <div><div id="CurrentActiveTaskCouncilLegend" class="featured-task">  <span id="ctl00_FeaturedContent_CurrentActiveTextCouncilLegend"><span class='task-text heavy-font'>Current Active Task</span></span></div></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-bs-dismiss="modal" style="width:100%">Close</button>
+                    </div>
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+
+        <!--Modal for mycity login warning -->
+        <div class="modal" id="loginWarningModal" style="transition:none;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title">MyCity Login</h4>
+                    </div>
+                    <div class="modal-body" style="height: 100%">
+                        To subscribe, you are required to register and log into MyTownship. Do you wish to do so now?
+                    </div>
+                    <div class="modal-footer">
+                        <div class="col-sm-12 col-xs-12 col-xxs-12 remove-left-pad remove-right-pad">
+                            <input type="button" name="ctl00$FeaturedContent$registrationSuccessButton" value="YES" onclick="javascript:__doPostBack(&#39;ctl00$FeaturedContent$registrationSuccessButton&#39;,&#39;&#39;)" id="ctl00_FeaturedContent_registrationSuccessButton" class="btn btn-default col-sm-5 col-xs-5 col-xxs-5" />
+                            <button type="button" class="btn btn-default col-sm-5 col-xs-5 col-xxs-5" data-bs-dismiss="modal">NO</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+        <!-- /.modal -->       
+        
+       <!--MAIN INFO AREA HTML-->
+        <div class="form-result">
+            <div class="form-group">
+                <div class="col-xs-12 spacer"></div>
+            </div>
+            <div class="col-sm-12 col-xs-12  content-container sectionTopContainer" id="sectionTopContainer" >
+                <div class="row content-container-header" id="sectionTop">
+                    <div class="col-xs-12 heavy-font ">
+                        <span id="ctl00_FeaturedContent_HeadingLabel"> 2880 260 ST</span>
+                    </div>
+                </div>
+                <div class="col-sm-6 remove-side-pad">
+                    <div id="ctl00_FeaturedContent_ApplicantPanel">
+	
+                    <div class="row  remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font ">Application Contact:</div>
+                        <div class="col-xs-8 col-xxs-12">
+                            <span id="ctl00_FeaturedContent_ApplicantLabel">SHERENE KURIEN<br/>Telephone: <a href='tel:672-879-9949'>672-879-9949</a><br/>Email: <script type='text/javascript'>var a = new Array('EN','.C','PM','DE','T@','LO','RV','AL','VE','A ','LO');document.write("<a href='mailto:"+a[3]+a[8]+a[10]+a[2]+a[0]+a[4]+a[5]+a[6]+a[7]+a[1]+a[9]+"'>"+a[3]+a[8]+a[10]+a[2]+a[0]+a[4]+a[5]+a[6]+a[7]+a[1]+a[9]+"</a>");</script></span>
+                        </div>
+                    </div>
+                    
+</div>
+                    <div class="row remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font ">Project Type:</div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_ApplicationTypeLabel">REZONING</span>
+                        </div>
+                    </div>
+                     <div class="row remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font ">Folder Number:</div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_ApplicationFolderNumber">RZ100805</span>
+                        </div>
+                    </div>
+                     <div class="row remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font ">Application Date:</div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_ApplicationDateLabel">Jul 08, 2026</span>
+                        </div>
+                    </div>
+                    <div class="row remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font ">Addresses:</div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_AddressesLabel">           2880       260 ST                        <br/>           2888       260 ST                        <br/>           26035      28 AVE                        <br/>           26081      28 AVE                        <br/>           26103      28 AVE                        <br/>           26141      28 AVE                        <br/>           26195      28 AVE                        <br/></span>
+                        </div>
+                    </div>
+                    <div class="row remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font ">City Contact:</div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_CityContactLabel"> ALEX ROWLEY<br/>Email: <script type='text/javascript'>var a = new Array('ar','l.','ow','to','le','ca','y@');document.write("<a href='mailto:"+a[0]+a[2]+a[4]+a[6]+a[3]+a[1]+a[5]+"'>"+a[0]+a[2]+a[4]+a[6]+a[3]+a[1]+a[5]+"</a>");</script><br/>Telephone: <a href='tel:604-532-7561'>604-532-7561</a></span>
+                        </div>
+                    </div>
+                    <div class="row remove-side-pad">
+                         <div class="col-xs-4 col-xxs-12 heavy-font ID=">Status:</div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_ApplicationFolderStatus">ACTIVE</span>
+                        </div>
+                    </div>
+                    <div class="row remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font ">Purpose:</div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_PurposeLabel">The applicant proposes to rezone property from Suburban Residential Zone (SR-2) to General Industrial Zone (M-2) for the development of two industrial buildings. The applicant further proposes to vary the building height by 3.65 m.</span>
+                        </div>
+                    </div>
+                    <div class="row remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font "><span id="ctl00_FeaturedContent_HotlinksTitle">Links:</span></div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_hotLinksText"><a href='https://tol.maps.arcgis.com/apps/webappviewer/index.html?id=b76f381bd257497fbab10200f74f1c52&query=DevelopmentActivity_WebApp2018_2068,Folder_number,RZ100805'>View On Development Activity Map</a></span>
+                        </div>
+                    </div>
+                    <div class="row remove-side-pad">
+                        <div class="col-xs-4 col-xxs-12 heavy-font "></div>
+                        <div class="col-xs-8 col-xxs-12 ">
+                            <span id="ctl00_FeaturedContent_Label2"></span>
+                        </div>
+                    </div>
+
+                    <div id="ctl00_FeaturedContent_subscribeButtonsUpdatePanel">
+	
+                            <div id="ctl00_FeaturedContent_subscribeButtonPanel" class="form-group">
+		
+                                <div class="row remove-side-pad margin-top margin-bottom">
+                                    <div class="col-xs-4 col-xxs-12 heavy-font "></div>
+                                    <div class="col-xs-8 col-xxs-12 ">
+                                        <input type="submit" name="ctl00$FeaturedContent$subscribeButton" value="Subscribe" id="ctl00_FeaturedContent_subscribeButton" class="btn btn-primary btn-subscribe" />
+                                    </div>
+                                </div>
+                            
+	</div>
+                            
+                        
+</div>
+                </div>
+                <div id="ctl00_FeaturedContent_sectionTopMapContainer" class="col-sm-6 topMapContainer">
+                    <div class="hide-big heavy-font">Map: </div>
+                    <div id="map"></div>
+                </div>
+            </div>
+
+        </div><!--END MAIN INFO AREA HTML-->
+
+         <!--DOCUMENTS HTML-->
+       <div id="ctl00_FeaturedContent_documentsContainer" class="documentsContainer">
+             <!--SPACER-->
+            <div class="form-group">
+                <div class="col-xs-12 spacer"></div>
+            </div>
+            <div class="form-result">
+                <div class="col-sm-12 col-xs-12  content-container">
+
+                    <div class="row content-container-header" id="sectionDocuments">
+                        <div class="col-xs-12 heavy-font">
+                            <span id="ctl00_FeaturedContent_DocumentsSectionNameLabel">Documents</span>
+                        </div>
+                    </div>
+                    <div class="col-xs-12">
+                        <div><a href="FileDownload.aspx?fileId=68385C260708145921931647&folderId=68385C260708120604709329">Site Plan - 2026-07-08</a></div>
+                    </div>
+                </div>
+            </div>
+       </div><!--END DOCUMENTS HTML-->
+
+        <!--COUNCIL MEETINGS TASK HTML-->
+       <!--END TASK HTML-->
+
+       
+       <!--TASK HTML-->
+       <div id="ctl00_FeaturedContent_taskContainer" class="taskContainer">
+            <!--SPACER-->
+            <div class="form-group">
+                <div class="col-xs-12 spacer"></div>
+            </div>
+            <div class="form-result" >
+                <div class="col-sm-12 col-xs-12  content-container">
+
+                    <div class="row content-container-header" id="sectionProgress">
+                        <div class="col-xs-12 heavy-font" id="sectionProgressDiv">
+                            <span id="ctl00_FeaturedContent_TaskSectionNameLabel">Task Progress</span>
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#legendModal" class="legend-link">(Legend)</a>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 task-container">
+                        <div data-bs-toggle="tooltip" title data-bs-original-title="Application received by Planner and reviewed" class="col-xs-12  completed-task"><div class="remove-side-pad  col-xs-12 col-sm-4 "><img class="task-image" src="../Prospero/Images/Default.png"><div class='task-type'>APPLICATION REVIEW</div></div><div class="col-xxs-12 col-xs-6 col-sm-4 remove-side-pad"><div class='task-text'>Start Date: Sep 25, 2026</div></div><div class="col-xxs-12 col-xs-6 col-sm-4 remove-side-pad"><div class='task-text'>Completed Date: Sep 25, 2026</div></div></div><div data-bs-toggle="tooltip" title data-bs-original-title="Letter to agent/owner outlining Development Services comments" class="col-xs-12  completed-task"><div class="remove-side-pad  col-xs-12 col-sm-4 "><img class="task-image" src="../Prospero/Images/Default.png"><div class='task-type'>FILE REVIEW LETTER</div></div><div class="col-xxs-12 col-xs-6 col-sm-4 remove-side-pad"><div class='task-text'>Start Date: Sep 25, 2026</div></div><div class="col-xxs-12 col-xs-6 col-sm-4 remove-side-pad"><div class='task-text'>Completed Date: Sep 25, 2026</div></div></div>
+                    </div>
+                </div>
+            </div>
+        </div><!--END TASK HTML-->
+
+      
+       <!--PROCESSING DAYS HTML-->
+       <div id="ctl00_FeaturedContent_processingContainer" class="processingContainer">
+            <!--SPACER-->
+            <div class="form-group">
+                <div class="col-xs-12 spacer"></div>
+            </div>
+            <div class="form-result ">
+                <div class="col-sm-12 col-xs-12  content-container ">
+
+                    <div class="row content-container-header" id="sectionActiveProcessingDays">
+                        <div class="col-xs-12 heavy-font">
+                            <span id="ctl00_FeaturedContent_ActiveProcessingSectionNameLabel"></span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="my-chart"></canvas>
+                    </div>
+                    <div class="legend-container">
+                        <div id="my-chart-legend"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div><!--END PROCESSING DAYS HTML-->
+       <!--RELATED PERMITS HTML-->
+       <div id="ctl00_FeaturedContent_permitsContainer" class="permitsContainer">
+           <!--SPACER-->
+            <div class="form-group">
+                <div class="col-xs-12 spacer"></div>
+            </div>
+            <div  class="form-result ">
+                <div class="col-sm-12 col-xs-12  content-container">
+                    <div class="row content-container-header" id="sectionRelatedPermitsandApplications">
+                        <div class="col-xs-12 heavy-font">
+                            <span id="ctl00_FeaturedContent_RelatedPermitsSectionNameLabel">Related Applications</span>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 related-permits-container">
+                        <div style="cursor: pointer;" class="form-result" onclick="window.location = '../Prospero/Details.aspx?folderNumber=DV100216'"><div class="content-container related-project"><div class="row related-permits-row heavy-font"><div class="col-xs-4">DV100216</div><div class="col-xs-4">Development Variance Permit</div></div><div class="row related-permits-row"><div class="col-xs-4 ">Application Date:  Jul 08, 2026</div><div class="col-xs-7">Status:  <span class="heavy-font">ACTIVE<span></div><div ><div class="col-xs-10 ">The applicant proposes to vary the building height by 3.65 m.</div><div class="col-xs-2 hide-small" style="text-align:right" onclick="window.location = '../Prospero/Details.aspx?folderNumber=DV100216'" ><button class="btn btn-primary related-project-details-btn" onclick="return false;">Details<span class="glyphicon glyphicon-chevron-right"></span></button></div></div><div style="display:block; text-align:right;"><span class="drilldown-span glyphicon glyphicon-chevron-right hide-big" ></span></div></div></div></div><br/><div style="cursor: pointer;" class="form-result" onclick="window.location = '../Prospero/Details.aspx?folderNumber=DP101542'"><div class="content-container related-project"><div class="row related-permits-row heavy-font"><div class="col-xs-4">DP101542</div><div class="col-xs-4">DEVELOPMENT PERMIT</div></div><div class="row related-permits-row"><div class="col-xs-4 ">Application Date:  Jul 08, 2026</div><div class="col-xs-7">Status:  <span class="heavy-font">ACTIVE<span></div><div ><div class="col-xs-10 ">The applicant proposes to rezone property from Suburban Residential Zone (SR-2) to Industrial Zone (M-2) for the development of two industrial buildings. The applicant further proposes to vary the building height by 3.65 m.</div><div class="col-xs-2 hide-small" style="text-align:right" onclick="window.location = '../Prospero/Details.aspx?folderNumber=DP101542'" ><button class="btn btn-primary related-project-details-btn" onclick="return false;">Details<span class="glyphicon glyphicon-chevron-right"></span></button></div></div><div style="display:block; text-align:right;"><span class="drilldown-span glyphicon glyphicon-chevron-right hide-big" ></span></div></div></div></div><br/>
+                    </div>
+                </div>
+            </div>
+        </div><!--END RELATED PERMITS HTML-->
+        <!--SPACER-->
+       <div id="ctl00_FeaturedContent_disclaimerContainer" class="disclaimerContainer">
+            <div class="form-group">
+                <div class="col-xs-12 spacer"></div>
+            </div>
+            <div  class="form-result ">
+                <div class="col-sm-12 col-xs-12  content-container">
+                    <div class="row content-container-header" id="sectionDisclaimer">
+                        <div class="col-xs-12 heavy-font">
+                            <span id="ctl00_FeaturedContent_DisclaimerSectionNameLabel">Disclaimer</span>
+                        </div>
+                    </div>
+                    <div class="disclaimer-container">
+                        
+
+<i>Every effort has been made to provide information that is current and accurate. Nevertheless, inadvertent errors in information may occur. The information contained here is subject to change at any time without notice. The Township of Langley assumes no responsibility or liability for any errors or omissions in the content of this site. The information contained on this page is provided for discussion only, with no guarantees of completeness, accuracy, usefulness or timeliness.</i>
+
+
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="hidden" name="ctl00$FeaturedContent$municipalDays" id="ctl00_FeaturedContent_municipalDays" value="55" />
+    <input type="hidden" name="ctl00$FeaturedContent$applicantDays" id="ctl00_FeaturedContent_applicantDays" value="16" />
+    <input type="hidden" name="ctl00$FeaturedContent$pieChartWidth" id="ctl00_FeaturedContent_pieChartWidth" value="200" />
+    <input type="hidden" name="ctl00$FeaturedContent$pieChartColour1" id="ctl00_FeaturedContent_pieChartColour1" value="#A6D785" />
+    <input type="hidden" name="ctl00$FeaturedContent$pieChartColour2" id="ctl00_FeaturedContent_pieChartColour2" value="#69D2E7" />
+    <input type="hidden" name="ctl00$FeaturedContent$showActiveProcessing" id="ctl00_FeaturedContent_showActiveProcessing" value="false" />
+    <input type="hidden" name="ctl00$FeaturedContent$fullAddressHiddenField" id="ctl00_FeaturedContent_fullAddressHiddenField" />
+    <input type="hidden" name="ctl00$FeaturedContent$municipalChartLabel" id="ctl00_FeaturedContent_municipalChartLabel" value="With Township" />
+    <input type="hidden" name="ctl00$FeaturedContent$applicantChartLabel" id="ctl00_FeaturedContent_applicantChartLabel" value="With Applicant" />
+    <input type="submit" name="ctl00$FeaturedContent$LoginButton" value="Login" id="ctl00_FeaturedContent_LoginButton" style="visibility: hidden" />
+
+    <script type="text/javascript">
+        /**************************************/
+        //Browser detect util returns ie version or -1 if not ie
+        var getIEVersion = function(){
+            var rv = -1;
+            if(navigator.appName == 'Microsoft Internet Explorer')
+            {
+                var ua = navigator.userAgent;
+                var re  = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
+                if(re.exec(ua) != null)
+                    rv = parseFloat( RegExp.$1 );
+            }
+            return rv;
+        }
+        var version = getIEVersion();
+
+        // add background color
+        $(window).ready(function () {
+            $('#resizableBodyDiv').addClass("prospero-folderDetails-content");
+        });
+
+
+        /**************************************/
+        //TASK TOOL TIP PLACEMENT
+        $(document).ready(function () {
+            $('[data-bs-toggle="tooltip"]').tooltip({ 'placement': 'top' });
+        });
+
+        /**************************************/
+        //PROCESSING DAYS INIT
+        $(document).ready(function () {
+            var showSection = document.getElementById('ctl00_FeaturedContent_showActiveProcessing').value;
+            if ((version < 9 && version > -1) || showSection === "false") {
+                $('#ctl00_FeaturedContent_processingContainer').hide();
+            }
+            else {
+                if (document.getElementById("my-chart")) {
+                    var municipalDayString = document.getElementById('ctl00_FeaturedContent_municipalDays').value;
+                    var applicantDayString = document.getElementById('ctl00_FeaturedContent_applicantDays').value;
+                    var colour1 = document.getElementById('ctl00_FeaturedContent_pieChartColour1').value;
+                    var colour2 = document.getElementById('ctl00_FeaturedContent_pieChartColour2').value;
+                    var municipalLabel = document.getElementById('ctl00_FeaturedContent_municipalChartLabel').value;
+                    var applicantLabel = document.getElementById('ctl00_FeaturedContent_applicantChartLabel').value;
+                    var totalDays = parseInt(municipalDayString) + parseInt(applicantDayString);
+                    var data = [
+                                {
+                                    value: municipalDayString / totalDays,
+                                    color: colour1,
+                                    title: "<b>&nbsp;" + municipalLabel + ":</b> " + municipalDayString + " days"
+                                },
+                                {
+                                    value: applicantDayString / totalDays,
+                                    color: colour2,
+                                    title: "<b>&nbsp;" + applicantLabel + ":</b> " + applicantDayString + " days"
+                                }
+                    ]
+
+                    var options = {
+                        //Boolean - Whether we should animate the chart	
+                        animation: false
+
+                    }
+                    //Get the context of the canvas element we want to select
+                    var ctx = document.getElementById("my-chart").getContext("2d");
+                    var width = document.getElementById("ctl00_FeaturedContent_pieChartWidth").value;
+                    $('.chart-container')[0].style.height = (width / 2) + "px";
+                    ctx.canvas.width = width;
+                    ctx.canvas.height = width / 2;
+                    var myNewChart = new Chart(ctx).Pie(data, options);
+                    legend(document.getElementById("my-chart-legend"), data);
+                }
+            }
+        });
+
+        /**************************************/
+
+        $(document).ready(function () {
+            //MAP RESIZING UTILITY
+            var mapFrame = $('#map');
+            mapFrame.height($(document).height());//start with a hardcoded width so that the map gets a minimum size (the parent div is too small 
+            mapFrame.width($('#ctl00_FeaturedContent_sectionTopMapContainer').width());
+            if (mapFrame.height() > 400) {
+                mapFrame.height(400);
+            }
+            if (mapFrame.width() > 500) {
+                mapFrame.width(500);
+            }
+
+            // MODAL RESIZING AND REPOSITIONING
+            $('.modal').on('show.bs.modal', reposition);
+            // Reposition when the window is resized
+            $(window).on('resize', function () {
+                $('.modal:visible').each(reposition);
+            });
+        });
+
+        //embed the same code into the window resize for responsize behaviour
+        
+            $(window).on('resize', function () {
+                    var mapFrame = $('#map');
+                    mapFrame.height($(document).height());//start with a hardcoded width so that the map gets a minimum size (the parent div is too small 
+                    mapFrame.width($('#ctl00_FeaturedContent_sectionTopMapContainer').width());
+                    if (mapFrame.height() > 400) {
+                        mapFrame.height(400);
+                    }
+                    if (mapFrame.width() > 500) {
+                        mapFrame.width(500);
+                    }
+
+
+                });
+        
+        /**************************************/
+        //NAVIGATION BUTTON HELPER
+        //used to scroll the menu items to the correct section based on element id
+        var scrollTo = function (elementId) {
+            if (typeof elementId === "string" && document.getElementById(elementId)) {
+                //var offset = $(elementId).offset();
+                var position = getOffsetRect(document.getElementById(elementId));
+                var scrollToPos = position.top - 50;//offset by 50 so that the fixed header is accounted for
+                $("#resizableBodyDiv").animate({
+                    scrollTop: scrollToPos,
+                    scrollLeft: 0
+                });
+                return true;
+            }
+            return false;
+        }
+
+        function getOffsetRect(elem) {
+            // (1)
+            var box = elem.getBoundingClientRect()
+            var bodyElement = document.getElementById("resizableBodyDiv");
+
+            // (2)
+            var scrollTop = bodyElement.scrollTop;
+            var scrollLeft = bodyElement.scrollLeft;
+
+            // (3)
+            var clientTop = bodyElement.clientTop || 0;
+            var clientLeft = bodyElement.clientLeft || 0
+
+            // (4)
+            var top = box.top + scrollTop - clientTop
+            var left = box.left + scrollLeft - clientLeft
+
+            return { top: Math.round(top), left: Math.round(left) }
+        }
+
+        var clickMyCityLoginButton = function (source, eventArgs) {
+            var mycityLoginButton = document.getElementById('ctl00_FeaturedContent_LoginButton');
+            setWait();
+            mycityLoginButton.click();
+            return true;
+        }
+
+        function reposition() {
+            var modal = $(this),
+            dialog = $('.modal-dialog:visible');
+            modal.css('display', 'block');
+
+            // Dividing by two centers the modal exactly, but dividing by three 
+            // or four works better for larger screens.
+            dialog.css("margin-top", Math.max(0, ($(window).height() - dialog.height()) / 3));
+        }
+
+        var AttachEvents = function () {
+            // Reposition when a modal is shown
+            $('.modal').off().on('show.bs.modal', reposition);
+            // Reposition when the window is resized
+            $(window).off().on('resize', function () {
+                $('.modal:visible').each(reposition);
+            });
+        }
+
+        var setWait = function () {
+            document.body.style.cursor = "wait";
+        }
+      </script>
+
+                <section class="content-wrapper main-content clear-fix">
+                    
+                </section>
+            </div>         
+        </div>
+    
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAssSW4tNoKwq1WtSePWsyrgKuWAa4bYbw"></script>
+<script type="text/javascript">
+//<![CDATA[
+geocodeAddress(' 2880 260 ST LANGLEY BC V4W 2Z8');//]]>
+</script>
+</form>
+
+    <script>
+        var headerOffset;
+
+        $(window).on('load', function () {
+            headerOffset = $('#prospero-header-container').css('height');
+            headerOffset = headerOffset.substr(0, headerOffset.indexOf('px', 0));
+            var windowHeightWithoutHeader = window.innerHeight - headerOffset;
+            $("#resizableBodyDiv").css("height", windowHeightWithoutHeader + "px");
+        });
+
+        $(window).on("resize",  function () {
+            
+            var windowHeightWithoutHeader = window.innerHeight - headerOffset;
+            $("#resizableBodyDiv").css("height", windowHeightWithoutHeader + "px");
+        });
+
+        $(window).on("orientationchange", function( event ) {
+            
+            var windowHeightWithoutHeader = window.innerHeight - headerOffset;
+            $("#resizableBodyDiv").css("height", windowHeightWithoutHeader + "px");
+        });
+
+    </script>
+</body>
+</html>

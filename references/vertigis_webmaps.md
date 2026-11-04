@@ -10,7 +10,7 @@ doesn't.
 
 DevTools → Network → filter `FeatureServer` / `MapServer` / `query` while clicking a
 development polygon. VertiGIS may also load an **app config JSON** listing the map's
-service URLs — grep the network log for `.json` responses that contain
+service URLs - grep the network log for `.json` responses that contain
 `"url": ".../FeatureServer"`. Record the layer URL(s) and field names in `COUNCIL.md`.
 
 ## The Maple Ridge specifics you flagged
@@ -29,11 +29,11 @@ service URLs — grep the network log for `.json` responses that contain
   structured attributes (status, dates, id) directly. No LLM on map attributes.
 
 If the layer has **no** relationship and instead stacks multiple features on the same
-geometry, fall back to the plain paged `?where=1=1` query and emit one row per feature —
+geometry, fall back to the plain paged `?where=1=1` query and emit one row per feature -
 exactly as in the ArcGIS reference.
 
 ## Everything else
 
 Geometry → representative lat/lon, `extraction_method='arcgis'`, raw attributes into
-`raw_text`, parse-or-PDF fallback, polite paging with checksum-based change detection —
+`raw_text`, parse-or-PDF fallback, polite paging with checksum-based change detection -
 all identical to `arcgis_webmaps.md`.

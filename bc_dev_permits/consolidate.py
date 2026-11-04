@@ -35,9 +35,14 @@ def address_key(address: str | None) -> str | None:
 
 
 def is_strong(row: dict) -> bool:
-    """Return True for a record worth keeping on its own: enriched, or with a real program."""
-    if (row.get("extraction_method") or "arcgis") != "arcgis":
-        return True
+    """Return True for a record worth keeping on its own: one that states a building program.
+
+    A record is "strong" when it carries a real program (units / storeys / floor area). Everything
+    else - a variance, a subdivision, a sign or streamside permit, a bare rezoning - is an
+    administrative filing for the project at that address and folds into the strong record, whatever
+    source it came from. (Program fields, not the extraction method, decide this: an HTML or
+    PDF-read source is not automatically "strong", or a variance with no program would never fold.)
+    """
     return any(row.get(f) not in (None, "", [], {}) for f in _PROGRAM_FIELDS)
 
 
@@ -65,9 +70,11 @@ def _dedup_milestones(milestones: list[dict]) -> list[dict]:
 
 def _best_record(group: list[dict]) -> dict:
     """Pick the representative record: geocoded first, then the one with the most source text."""
+
     def key(row: dict) -> tuple:
         has_geom = 1 if row.get("latitude") is not None else 0
         return (has_geom, len(row.get("raw_text") or ""))
+
     return max(group, key=key)
 
 
@@ -77,14 +84,27 @@ def merge_related(primary: dict, victims: list[dict]) -> None:
     The victims' identity, type, address, status and milestones are preserved on the primary - as a
     ``related_permits`` list and an appended raw_text block - instead of surviving as separate rows.
     """
-    related = [{
-        "permit_id": v.get("permit_id"),
-        "permit_type": v.get("permit_type"),
-        "address": v.get("address"),
-        "status": v.get("status"),
-    } for v in victims]
-    # Append, so a second consolidation pass keeps earlier siblings.
-    primary["related_permits"] = (primary.get("related_permits") or []) + related
+    related = [
+        {
+            "permit_id": v.get("permit_id"),
+            "permit_type": v.get("permit_type"),
+            "address": v.get("address"),
+            "status": v.get("status"),
+        }
+        for v in victims
+    ]
+    # Append, so a second consolidation pass keeps earlier siblings. A harvester may already have
+    # listed some of these as related applications (its own related-apps list), and the primary
+    # itself may appear, so de-duplicate by permit_id and drop any self-reference.
+    combined = (primary.get("related_permits") or []) + related
+    seen: set = {primary.get("permit_id")}
+    deduped = []
+    for r in combined:
+        pid = r.get("permit_id")
+        if pid not in seen:
+            seen.add(pid)
+            deduped.append(r)
+    primary["related_permits"] = deduped
 
     # Keep the record geocodable: borrow a sibling's centroid when the primary has none.
     if primary.get("latitude") is None:

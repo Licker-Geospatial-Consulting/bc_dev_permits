@@ -6,10 +6,10 @@ cnv.org, and this keeps the test hermetic). Fixtures are trimmed real pages: eac
 the real ``#page-content`` subtree plus the site-footer City Hall address block, so the
 "footer must not leak into the application prose" regression is genuinely exercised.
 
-  * 115_east_18th  — description lives in a <p>            (happy path)
-  * 215_west_keith — description lives in a bare <div>     (regression: previously the
+  * 115_east_18th  - description lives in a <p>            (happy path)
+  * 215_west_keith - description lives in a bare <div>     (regression: previously the
                      parser missed it and captured the City Hall footer address instead)
-  * 453_west_24th  — no usable prose, only a PDF link      (PDF-fallback path)
+  * 453_west_24th  - no usable prose, only a PDF link      (PDF-fallback path)
 
 Run:  python -m pytest -q            (or:  python -m tests.test_north_van)
 """
@@ -23,7 +23,7 @@ from bc_dev_permits.harvesters import north_van  # noqa: E402
 FIX = Path(__file__).parent / "fixtures"
 
 # The City Hall address that sits in every CNV page footer. It must never end up in the
-# application prose — that was the 215 West Keith Road bug.
+# application prose - that was the 215 West Keith Road bug.
 CITY_HALL = "141 West 14th"
 
 
@@ -73,7 +73,7 @@ def test_215_west_keith_div_prose_regression():
     """Description is a bare <div>: it must be captured, NOT the footer address.
 
     Previously ``_prose`` only looked at <p> tags, found none in the content, and the
-    only qualifying <p> on the page was the City Hall address in the footer — so raw_text
+    only qualifying <p> on the page was the City Hall address in the footer - so raw_text
     became "141 West 14th Street ..." and the row was wrongly flagged for PDF extraction.
     """
     row = _parse("215-West-Keith-Road")
