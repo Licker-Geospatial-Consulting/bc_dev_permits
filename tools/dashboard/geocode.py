@@ -22,6 +22,7 @@ CITY = {
     "ubc": ("Vancouver", (49.2606, -123.2460), "BC"),
     "langley": ("Langley", (49.1009, -122.6610), "BC"),
     "richmond": ("Richmond", (49.1666, -123.1336), "BC"),
+    "vancouver": ("Vancouver", (49.2497, -123.1193), "BC"),
 }
 
 # Street-type suffixes used to pick a civic street phrase out of a UBC project address.

@@ -12,6 +12,7 @@ QUERIES = {
     "North Vancouver": "City of North Vancouver, British Columbia, Canada",
     "Port Moody": "Port Moody, British Columbia, Canada",
     "Richmond": "Richmond, British Columbia, Canada",
+    "Vancouver": "Vancouver, British Columbia, Canada",
     "Surrey": "Surrey, British Columbia, Canada",
     "Victoria": "Victoria, British Columbia, Canada",
     "West Vancouver": "West Vancouver, British Columbia, Canada",

@@ -18,6 +18,7 @@ from bc_dev_permits.harvesters import vancouver
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 LIST_HTML = (FIXTURES / "vancouver_list.html").read_text(encoding="utf-8")
 DETAIL_HTML = (FIXTURES / "vancouver_868_e_hastings.html").read_text(encoding="utf-8")
+LETTER_PDF = (FIXTURES / "vancouver_prior_to_letter.pdf").read_bytes()
 URL_868 = "https://www.shapeyourcity.ca/868-e-hastings-st"
 
 
@@ -110,3 +111,33 @@ def test_apply_claude_pdf_logs_conflict_keeps_html():
     assert "development_class" in conflicts
     assert conflicts["development_class"]["kept"]["value"] == "commercial"
     assert conflicts["development_class"]["pdf"]["value"] == "institutional"
+
+
+# --- approved: prior-to letter parsing (deterministic text) -----------------
+def test_letter_parking_counts():
+    assert vancouver._letter_parking("providing ninety-five (95) parking spaces") == 95
+    assert vancouver._letter_parking("a total of three parking spaces") == 3
+    assert vancouver._letter_parking("providing zero parking spaces") == 0
+    assert vancouver._letter_parking("one surface parking space") == 1
+    # "over four levels of underground parking" has no "parking space" token -> no count
+    assert vancouver._letter_parking("over four levels of underground parking") is None
+
+
+def test_parse_prior_to_letter_reads_approval_paragraph():
+    fields = vancouver.parse_prior_to_letter(LETTER_PDF)
+    assert fields is not None
+    assert fields["development_class"] == "mixed"          # "mixed-use ... commercial retail"
+    assert fields["number_of_stories"] == 6                # "six (6)-storey"
+    assert fields["units_total"] == 89                     # "eighty-nine (89) ... units"
+    assert fields["parking_vehicle_stalls"] == 95          # "ninety-five (95) parking spaces"
+    assert fields["rental_or_strata"] == "rental"
+    assert "approved to develop" in fields["approval_text"]
+
+
+def test_parse_prior_to_letter_none_without_approval():
+    # A PDF with no "approved to ..." paragraph yields None (not every letter is an approval).
+    import pymupdf
+
+    doc = pymupdf.open()
+    doc.new_page().insert_text((54, 72), "Dear applicant, your file is under review.", fontsize=10)
+    assert vancouver.parse_prior_to_letter(doc.tobytes()) is None

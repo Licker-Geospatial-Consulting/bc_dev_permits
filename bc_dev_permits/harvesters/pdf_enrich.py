@@ -204,14 +204,17 @@ def record_pdf_provenance(row: dict, fields: dict) -> None:
             )
 
 
-def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None) -> int:
-    """Merge Claude-read PDF fields into a row; record provenance + conflicts. Return count filled.
+def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None, *,
+                     method: str = features.METHOD_PDF_CLAUDE, method_tag: str = "claude_read") -> int:
+    """Merge PDF-sourced fields into a row; record provenance + conflicts. Return count filled.
 
     Shared by the Claude-read harvesters (West Vancouver, UBC): ``fields`` is the schema-shaped dict
-    Claude extracted from the PDF (only stated values). Each is stamped method ``pdf_claude``
-    (non-deterministic), deterministic HTML values are never overwritten, and a genuine HTML-vs-PDF
-    disagreement is logged to ``row['conflicts']`` - all via the shared merge code, the same way
-    Ollama results are handled.
+    Claude extracted from the PDF (only stated values). Each is stamped ``method`` (``pdf_claude`` by
+    default, non-deterministic), deterministic HTML values are never overwritten, and a genuine
+    HTML-vs-PDF disagreement is logged to ``row['conflicts']`` - all via the shared merge code, the
+    same way Ollama results are handled. Pass ``method=METHOD_PDF_REGEX, method_tag='letter'`` for a
+    DETERMINISTIC parse over a PDF's own text (e.g. Vancouver's prior-to-letter approval paragraph),
+    so the fields are treated as deterministic and do not force needs_review.
     """
     # A low-signal HTML row carries a placeholder development_class="unknown" / empty occupancy;
     # clear those so the PDF's concrete class fills the gap instead of logging a false conflict.
@@ -223,8 +226,8 @@ def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None) -> i
     payload = {
         k: v for k, v in (fields or {}).items() if k not in PDF_META and features.has_value(v)
     }
-    payload["field_methods"] = dict.fromkeys(payload, features.METHOD_PDF_CLAUDE)
-    payload["extraction_method"] = "claude_read"
+    payload["field_methods"] = dict.fromkeys(payload, method)
+    payload["extraction_method"] = method_tag
     if document:
         payload["pdf_document"] = document
     if "occupancies" in (fields or {}):
@@ -237,10 +240,10 @@ def apply_claude_pdf(row: dict, fields: dict, document: dict | None = None) -> i
     return filled
 
 
-def enrich(
+def enrich(  # noqa: PLR0913
     rows: list[dict],
     *,
-    fetch_html: Callable[[str, bool], str],  # noqa: PLR0913
+    fetch_html: Callable[[str, bool], str],
     extract: Callable[[str, str, object], dict | None],
     session=None,
     use_cache: bool = True,

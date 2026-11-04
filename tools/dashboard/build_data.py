@@ -14,6 +14,7 @@ FILES = {
     "richmond": "Richmond",
     "surrey": "Surrey",
     "ubc": "UBC",
+    "vancouver": "Vancouver",
     "victoria": "Victoria",
     "west_van": "West Vancouver",
 }

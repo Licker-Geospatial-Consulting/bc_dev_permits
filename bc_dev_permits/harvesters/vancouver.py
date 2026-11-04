@@ -51,7 +51,9 @@ CACHE_DIR = str(config.HTTP_CACHE_DIR)
 CACHE_TTL = config.HTTP_CACHE_TTL
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/125.0 Safari/537.36")
-DEFAULT_STREAMS = ("new", "active")
+# Harvest all three snapshot streams by default (New is a subset of Active, so the three dedupe to
+# Active + Approved). Pass streams=("new", "active") to skip the larger Approved backlog.
+DEFAULT_STREAMS = ("new", "active", "approved")
 
 # A Vancouver application number: two/three-letter prefix, year, sequence (DP-2026-00743,
 # RZ-2025-00012, DE-2024-00456).
@@ -249,9 +251,9 @@ def harvest(session=None, limit: int | None = None, use_cache: bool = True,
             streams=DEFAULT_STREAMS) -> list[dict]:
     """Harvest the snapshot list + ShapeYourCity detail pages into rows (PDF pass is Claude-read).
 
-    Defaults to the New + Active streams; pass ``streams=("new", "active", "approved")`` to include
-    the approved backlog. One physical site can file several applications, so rows are collapsed by
-    civic address before returning.
+    Defaults to all three streams (New + Active + Approved); pass ``streams=("new", "active")`` to
+    skip the larger Approved backlog. One physical site can file several applications, so rows are
+    collapsed by civic address before returning.
     """
     session = session or _session()
     cards = parse_list(_cached_get(session, LIST_URL, use_cache), streams)
@@ -328,6 +330,80 @@ def download_pdf(session, document: dict, use_cache: bool = True) -> bytes:
     with open(path, "wb") as fh:
         fh.write(content)
     return content
+
+
+# --------------------------------------------------------------------------- #
+# Prior-to letter parsing (approved apps; deterministic text parse)
+# --------------------------------------------------------------------------- #
+# For APPROVED applications ShapeYourCity no longer hosts the architectural drawings - the only
+# document is the City's "prior-to permit issuance" letter. Its first page opens with an
+# authoritative approval paragraph ("... has been approved to develop a six (6)-storey mixed-use ...
+# containing eighty-nine (89) ... units ... providing ninety-five (95) parking spaces ...") that
+# states storeys / units / use / tenure and, crucially, the PARKING count the ShapeYourCity prose
+# usually omits. That paragraph is parsed DETERMINISTICALLY (features over its text, plus a
+# parking-count pattern) and merged as a second source (method pdf_text_regex), with HTML kept and
+# disagreements logged to conflicts.
+_APPROVAL_START = re.compile(r"(?:has been|is|been)\s+approved\s+to\b", re.IGNORECASE)
+_APPROVAL_END = re.compile(
+    r"(A permit may be issued|prior[- ]?to permit issuance|HOW TO RESPOND|Please note that|"
+    r"This letter|A Development Permit)", re.IGNORECASE)
+_WORD_NUM = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+             "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12}
+# A parking count directly qualifying "parking space(s)": a parenthetical digit ("(95) parking
+# spaces"), a bare digit, or a spelled 0-12 ("two parking spaces"). "four levels of underground
+# parking" has no "parking space" token, so it correctly yields no count.
+_LETTER_PARKING = re.compile(
+    r"(?:\((\d+)\)|\b(\d+)\b|\b(" + "|".join(_WORD_NUM) + r")\b)\s+"
+    r"(?:surface |underground |below[- ]grade |additional )?parking space",
+    re.IGNORECASE)
+
+
+def _approval_paragraph(pdf_bytes: bytes) -> str | None:
+    """Return the 'has been approved to ...' summary paragraph from a prior-to letter's first pages."""
+    import pymupdf  # optional dep, see pyproject [pdf]
+
+    with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
+        text = " ".join(doc[i].get_text() for i in range(min(2, doc.page_count)))
+    text = re.sub(r"\s+", " ", text)
+    start = _APPROVAL_START.search(text)
+    if not start:
+        return None
+    tail = text[start.start():]
+    end = _APPROVAL_END.search(tail)
+    para = (tail[:end.start()] if end else tail[:600]).strip()
+    return para or None
+
+
+def _letter_parking(text: str) -> int | None:
+    """Parse a vehicle-parking count stated as 'N parking space(s)' in the approval paragraph."""
+    m = _LETTER_PARKING.search(text)
+    if not m:
+        return None
+    paren, digit, word = m.groups()
+    if paren or digit:
+        return int(paren or digit)
+    return _WORD_NUM[word.lower()]
+
+
+def parse_prior_to_letter(pdf_bytes: bytes) -> dict | None:
+    """Parse an approved app's prior-to letter into schema fields (deterministic text parse).
+
+    Returns the fields stated in the City's approval paragraph (via features over its text, plus the
+    parking count), and the paragraph itself under ``approval_text``; None when no paragraph is found.
+    """
+    para = _approval_paragraph(pdf_bytes)
+    if not para:
+        return None
+    parsed = features.extract_all(para)
+    keep = ("development_class", "occupancy_types", "occupancies", "number_of_stories",
+            "units_total", "unit_mix", "rental_or_strata", "rental_subtype", "floor_area",
+            "floor_area_unit", "height_m", "zoning_density")
+    out = {k: parsed.get(k) for k in keep if features.has_value(parsed.get(k))}
+    parking = _letter_parking(para)
+    if parking is not None:
+        out["parking_vehicle_stalls"] = parking
+    out["approval_text"] = para
+    return out
 
 
 # --------------------------------------------------------------------------- #

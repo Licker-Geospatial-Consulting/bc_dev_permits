@@ -468,16 +468,34 @@ the exact instructions you gave per site.
   **ShapeYourCity** (EngagementHQ) consultation page:
   `868 E Hastings St - DP-2026-00743 - posted October 8, 2026`. Handled by `harvesters/vancouver.py`.
   The snapshot URL is **dated** - update it to the newest snapshot when CityHallWatch publishes one.
-- **Streams:** `harvest()` defaults to **New + Active** (`DEFAULT_STREAMS`); New is a subset of
-  Active, so the two dedupe to the Active set. Pass `streams=("new","active","approved")` for the
-  larger Approved backlog (a later iteration).
+- **Streams:** `harvest()` defaults to **all three** streams - New + Active + Approved
+  (`DEFAULT_STREAMS`); New is a subset of Active, and Approved is the ~220-row "past 12 months"
+  backlog (pass `streams=("new","active")` to skip it). Totals: ~14 New, ~18 Active-only, ~221
+  Approved ≈ 253 rows.
+- **Approved applications: HTML prose + the prior-to letter.** ShapeYourCity **removes the
+  architectural drawings once an application is approved** - an approved app's only document is the
+  City's **"Prior-to letter"**, so the Claude-read drawing enrichment (floor area / unit mix / site
+  area) is **not available** for Approved rows. But a prior-to letter's first page opens with the
+  City's authoritative approval paragraph - *"approved to develop a six (6)-storey mixed-use ...
+  containing eighty-nine (89) ... units ... providing ninety-five (95) parking spaces ..."* - which
+  states storeys / units / use / tenure and, crucially, the **parking count** the ShapeYourCity
+  prose omits. `vancouver.parse_prior_to_letter` parses that paragraph **deterministically**
+  (`features` over its text + a parking-count pattern) and `tools/vancouver_enrich.py` merges it as
+  a second source (method `pdf_text_regex`, so it does not force review): HTML is kept, gaps are
+  filled (parking rose from ~0 to ~64 of 221), and disagreements go to `row['conflicts']`. The
+  letter's conditions pages (regulatory requirements, not provided figures) are **not** parsed. The
+  Claude-read drawing enrichment below is therefore **New + Active** only.
 - **List parsing (deterministic):** each `<li>` anchor text is `<address> - <app number>`
   (sometimes `<address> - <note> - <app number>`), joined by an **en/em-dash with spaces** - the
   address is the first such segment, so a civic-number **range** ("2120-2150 W 10th Ave", bare
   hyphen) is not split. permit_id `[A-Z]{2,3}-\d{4}-\d{4,6}` (DP / RZ / DE / ...); the posted /
   approval date becomes the milestone (Application Posted / Approved / Permit Issued).
 - **Detail (ShapeYourCity, plain HTTP, server-rendered):** the project prose lives in a
-  `div.full-description` block (parsed by `features.py`); the Application Documents list is the
+  `div.full-description` block (parsed by `features.py`). Vancouver states the gross **floor area in
+  imperial** ("A floor area of approximately 2,612 sq. ft.", "A proposed FSR of 3.50 (86,006
+  sq.ft.)"); `features.floor_area` captures these gated phrasings ("floor area of X sq ft" / "FSR of
+  N (X sq ft)") and converts to m2, so the column stays single-unit (it still ignores lot/parcel and
+  per-use areas). The Application Documents list is the
   `a.document-library-widget-link` anchors (title = link text with the "(814 KB) (pdf)" suffix
   stripped). The page renders only the **first few** documents behind a **"more" button** - the full
   set is served by the document-library widget's own `.../widgets/<id>/documents` endpoint, which

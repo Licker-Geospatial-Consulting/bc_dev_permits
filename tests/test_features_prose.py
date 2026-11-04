@@ -375,6 +375,27 @@ def test_units_total_through_tenure_descriptors(prose, expected):
         ("226 m 2 (2,433 ft 2 ) of outdoor amenity space", None, None),  # only amenity -> no gross
         ("residential floor space 80,080 m 2 and commercial floor space 6,300 m 2", 80080.0, "m2"),
         ("a 1.44 acre portion of the lot", 1.44, "acre"),  # acres still work
+        # Vancouver's imperial GFA phrasings (no metric equivalent) -> captured, converted to m2.
+        ("A floor area of approximately 2,612 sq. ft. (0.61 Floor Space Ratio)", 242.7, "m2"),
+        ("A proposed above grade floor area of 8,480 sq.ft.", 787.8, "m2"),
+        ("A proposed FSR of 3.50 (86,006 sq.ft.) A proposed height of 22.0 m", 7990.2, "m2"),
+        ("A proposed Floor Space Ratio of 2.03 (approximately 16,632 sq.ft.)", 1545.2, "m2"),
+        ("A total Floor Space Ratio 3.0 (approx. 3,707.56 sq. ft.) for buildings", 344.4, "m2"),
+        # "floor space of" and an FSR used loosely as an area label (no ratio number).
+        ("A total floor space of approx. 2,422 sq. ft. Building 2: 530 sq. ft.", 225.0, "m2"),
+        ("A proposed Floor Space Ratio of approximately 2,969 sq. ft.", 275.8, "m2"),
+        # FSR parenthetical with "for the site" filler between the ratio and the bracket.
+        ("A total proposed Floor Space Ratio of 0.10 for the site (approximately 26,000 sq. ft)",
+         2415.5, "m2"),
+        ("A total proposed floor area for approximately 1,400 sq. ft. Hours", 130.1, "m2"),
+        # change-of-use bare area after "consisting of:" -> floor area ...
+        ("change of use to Fitness Centre on this site, consisting of: Approximately 7,359.00 sq.ft.",
+         683.7, "m2"),
+        # ... but a patio's "consisting of: Approximately X sq ft" is NOT the floor area.
+        ("install a permanent outdoor patio, consisting of; Approximately 350 sq. ft.", None, None),
+        # A lot/parcel area or a per-use area is NOT the gross floor area (no gate match).
+        ("minimum parcel area 3,000 sq.ft. Category B", None, None),
+        ("approximately 11,000 sq. ft. of ground floor retail", None, None),
     ],
 )
 def test_floor_area_excludes_amenity_and_reads_superscript(prose, area, unit):

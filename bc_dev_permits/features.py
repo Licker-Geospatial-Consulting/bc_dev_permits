@@ -640,6 +640,38 @@ _METRIC_AREA = re.compile(
     r"([\d,]+(?:\.\d+)?)\s*(?:m\s?[²2]|sq\.?\s?m|square\s?met\w*)(?![A-Za-z])", re.IGNORECASE
 )
 _ACRE_AREA = re.compile(r"([\d,]+(?:\.\d+)?)\s*(?:acres?|\bac\b)", re.IGNORECASE)
+# A gross floor area stated in imperial units, captured ONLY when the phrasing marks it as the
+# building's floor area - "(gross) floor area of X sq ft" or an FSR's parenthetical "FSR of N
+# (X sq ft)". Vancouver's prose states the GFA this way with no metric equivalent (e.g. "A floor
+# area of approximately 2,612 sq. ft. (0.61 FSR)"). The context gate keeps lot/parcel areas and
+# per-use areas ("22,200 sq ft of commercial space") from masquerading as the GFA. Converted to m2
+# so the column stays single-unit alongside the metric and PDF-read values.
+_SQFT = r"(?:sq\.?\s?ft|square\s?feet|\bsf\b|ft\s?[²2])"
+_APPROX = r"(?:approx(?:imately)?\.?\s+)?"
+_FSR_KW = r"(?:FSR|FAR|floor\s+space\s+ratio|floor\s+area\s+ratio|floor\s+space\s+index)"
+# "(gross) floor area/space of|for X sq ft" (Vancouver says "floor area of", "floor space of",
+# and occasionally "floor area for").
+_IMPERIAL_GFA = re.compile(
+    rf"(?:gross\s+)?floor\s+(?:area|space)\s+(?:of|for)\s+{_APPROX}([\d,]+(?:\.\d+)?)\s*{_SQFT}"
+    r"(?![A-Za-z])", re.IGNORECASE)
+# A change-of-use / tenant improvement states its floor area as a bare figure after "consisting
+# of:" ("change of use to Fitness Centre ... consisting of: Approximately 7,359 sq. ft."). Captured
+# only in that introducer and only when no patio/outdoor/amenity qualifier is present (which would
+# mark the figure as a patio/amenity area - e.g. an outdoor patio's "Approximately 350 sq. ft.").
+_CONSISTING_SQFT = re.compile(
+    rf"consisting\s+of\s*:?\s*(?:an?\s+)?(?:total\s+)?{_APPROX}([\d,]+(?:\.\d+)?)\s*{_SQFT}",
+    re.IGNORECASE)
+# An FSR's parenthetical GFA: "FSR of N (X sq ft)", allowing short filler between the ratio and the
+# bracket ("FSR of 0.10 for the site (approximately 26,000 sq. ft)"). The filler cannot contain a
+# digit or another bracket, so it never crosses into a different figure.
+_IMPERIAL_FSR_PAREN = re.compile(
+    rf"\b{_FSR_KW}\)?\s+(?:of\s+)?[\d.]+[^(\d]{{0,20}}\(\s*{_APPROX}([\d,]+(?:\.\d+)?)\s*{_SQFT}",
+    re.IGNORECASE)
+# "FSR" used loosely as a floor-area label: "Floor Space Ratio of approximately 2,969 sq. ft."
+# (an area directly after "of", no ratio number) - distinct from the parenthetical form above.
+_IMPERIAL_FSR_DIRECT = re.compile(
+    rf"\b{_FSR_KW}\s+of\s+{_APPROX}([\d,]+(?:\.\d+)?)\s*{_SQFT}", re.IGNORECASE)
+_SQFT_TO_M2 = 0.09290304
 
 
 def floor_area(text: str) -> tuple[float | None, str | None]:
@@ -667,6 +699,21 @@ def floor_area(text: str) -> tuple[float | None, str | None]:
         areas.append(float(m.group(1).replace(",", "")))
     if areas:
         return max(areas), "m2"
+    # No metric GFA stated: fall back to an imperial GFA in the gated phrasings, converted to m2.
+    # Several figures (e.g. two buildings) can appear; take the largest, matching the metric path.
+    imperial = [
+        float(m.group(1).replace(",", ""))
+        for pattern in (_IMPERIAL_GFA, _IMPERIAL_FSR_PAREN, _IMPERIAL_FSR_DIRECT)
+        for m in pattern.finditer(text)
+    ]
+    if imperial:
+        return round(max(imperial) * _SQFT_TO_M2, 1), "m2"
+    # Change-of-use / TI bare floor area, gated against patio/amenity text so a patio area never
+    # masquerades as the gross floor area.
+    if not _NON_GROSS_AREA.search(text):
+        m = _CONSISTING_SQFT.search(text)
+        if m:
+            return round(float(m.group(1).replace(",", "")) * _SQFT_TO_M2, 1), "m2"
     m = _ACRE_AREA.search(text)
     if m:
         return float(m.group(1).replace(",", "")), "acre"

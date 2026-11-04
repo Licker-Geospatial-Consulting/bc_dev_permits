@@ -21,10 +21,11 @@ the prose called "commercial", a unit count the prose under-read) - those surfac
 overwrites.
 """
 import json
+import sys
 from pathlib import Path
 
-from bc_dev_permits import config
-from bc_dev_permits.harvesters import vancouver
+from bc_dev_permits import config, features
+from bc_dev_permits.harvesters import pdf_enrich, vancouver
 
 # permit_id -> (claude-read fields, doc-title hint naming the sheet read)
 CLAUDE_READ: dict[str, tuple[dict, str]] = {
@@ -261,8 +262,49 @@ def _resolve_document(row: dict, hint: str) -> dict | None:
     return None
 
 
+def apply_prior_to_letters(session, rows: list[dict], use_cache: bool = True) -> int:
+    """Merge each APPROVED app's prior-to-letter approval paragraph into its row (deterministic).
+
+    For approved applications ShapeYourCity hosts only the City's prior-to letter (no drawings); its
+    approval paragraph states storeys / units / use / tenure and the parking count the ShapeYourCity
+    prose usually omits. Parsed with ``vancouver.parse_prior_to_letter`` and merged via the shared
+    code stamped ``pdf_text_regex`` (deterministic): HTML is kept, gaps (esp. parking) are filled,
+    and disagreements are logged to ``row['conflicts']``.
+    """
+    enriched = 0
+    for row in rows:
+        if row.get("status") != "Approved":
+            continue
+        letter = next((d for d in row.get("documents") or []
+                       if "prior-to" in (d.get("title") or "").lower()), None)
+        if not letter:
+            continue
+        try:
+            fields = vancouver.parse_prior_to_letter(vancouver.download_pdf(session, letter, use_cache))
+        except (OSError, ValueError, RuntimeError) as exc:
+            print(f"  letter skipped {row.get('permit_id')}: {exc}", file=sys.stderr)
+            continue
+        if not fields:
+            continue
+        approval = fields.pop("approval_text", None)
+        filled = vancouver.apply_claude_pdf(
+            row, fields, {"title": letter.get("title"), "url": letter.get("url")},
+            method=features.METHOD_PDF_REGEX, method_tag="letter")
+        # apply_claude_pdf clears an "unknown" class to None expecting the source to refill it; when
+        # the letter states no use, restore the placeholder so the row keeps a class.
+        if row.get("development_class") is None:
+            row["development_class"] = "unknown"
+            row.setdefault("occupancy_types", [])
+        # Keep the authoritative approval sentence in raw_text (richer than the ShapeYourCity prose).
+        if approval and approval not in (row.get("raw_text") or ""):
+            row["raw_text"] = "\n\n".join(p for p in (row.get("raw_text"), f"Approved: {approval}") if p)
+        if filled or row.get("conflicts"):
+            enriched += 1
+    return enriched
+
+
 def main() -> None:
-    """Apply the Claude-read fields to data/processed/vancouver.json in place."""
+    """Apply the Claude-read fields (New/Active) + prior-to letters (Approved) to vancouver.json."""
     path = Path(config.PROCESSED_DATA_DIR) / "vancouver.json"
     rows = json.loads(path.read_text(encoding="utf-8"))
     by_id = {r["permit_id"]: r for r in rows}
@@ -280,8 +322,10 @@ def main() -> None:
         applied += 1
         print(f"{permit_id}: filled {filled} field(s) | method={row['extraction_method']} "
               f"| conflicts={len(row.get('conflicts') or [])} | needs_review={row['needs_review']}")
+    letters = apply_prior_to_letters(vancouver._session(), rows)
     path.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"applied {applied}/{len(CLAUDE_READ)} Claude-read record(s); wrote {path}")
+    print(f"applied {applied}/{len(CLAUDE_READ)} Claude-read record(s); "
+          f"enriched {letters} approved row(s) from prior-to letters; wrote {path}")
 
 
 if __name__ == "__main__":
