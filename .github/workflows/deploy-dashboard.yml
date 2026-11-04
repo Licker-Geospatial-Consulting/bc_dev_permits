@@ -1,0 +1,40 @@
+name: Deploy dashboard to Cloudflare Pages
+
+# Auto-deploys the permit-atlas/ folder to your EXISTING Cloudflare Pages project, so the
+# dashboard link you already shared (both the *.pages.dev URL and any custom domain) stays the
+# same. This replaces the manual drag-and-drop upload.
+#
+# One-time setup (see the repo discussion / Cloudflare dashboard):
+#   1. Create a Cloudflare API token with the "Cloudflare Pages: Edit" permission
+#      (My Profile -> API Tokens -> Create Token -> "Edit Cloudflare Workers" template works,
+#      or a custom token scoped to Account > Cloudflare Pages > Edit).
+#   2. In GitHub: repo -> Settings -> Secrets and variables -> Actions -> add two secrets:
+#        CLOUDFLARE_API_TOKEN   = the token from step 1
+#        CLOUDFLARE_ACCOUNT_ID  = your account id (Cloudflare dashboard -> Workers & Pages,
+#                                 shown in the right-hand sidebar / URL)
+#   3. Set PROJECT_NAME below to your existing Pages project's name (its *.pages.dev prefix).
+#   4. Set the --branch flag to your project's PRODUCTION branch name (Cloudflare -> your Pages
+#      project -> Settings -> Builds & deployments -> "Production branch"). A deploy whose
+#      --branch matches that name updates the LIVE link; any other value makes a preview URL.
+
+on:
+  push:
+    branches: [hb_dev]          # the git branch whose pushes trigger a deploy (change if needed)
+    paths:
+      - 'permit-atlas/**'       # only redeploy when the dashboard folder actually changes
+  workflow_dispatch: {}         # also allow manual runs from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy permit-atlas to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # project-name is the PROJECT name (permit-atlas), NOT the URL (permit-atlas-db2.pages.dev).
+          # --branch=main matches the project's production branch, so this updates the live
+          # (shared) permit-atlas-db2.pages.dev link rather than creating a preview deployment.
+          command: pages deploy permit-atlas --project-name=permit-atlas --branch=main

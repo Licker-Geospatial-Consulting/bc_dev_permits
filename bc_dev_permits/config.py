@@ -159,6 +159,17 @@ NEW_WEST_SERVICE_URL = (
 # that the harvester reads with Claude for fields the HTML omits. Plain HTTP works (no Cloudflare).
 UBC_LIST_URL = "https://planning.ubc.ca/planning-development/development-projects"
 
+# City of Vancouver has no single machine-readable application index; CityHallWatch publishes a
+# periodic snapshot post (New / Active / Approved applications), each line linking to the city's
+# ShapeYourCity (EngagementHQ) consultation page. The snapshot is the list (address, application
+# number, posted date); each ShapeYourCity page carries the project prose + an Application Documents
+# list whose site-plan / elevation PDFs hold the project-data table (floor area, height, site area,
+# parking) read with Claude. VANCOUVER_LIST_URL is a DATED snapshot - update it when a newer one is
+# published (see docs/COUNCIL.md).
+VANCOUVER_LIST_URL = (
+    "https://cityhallwatch.wordpress.com/2026/11/02/development-applications-snapshot-1-nov-2026/"
+)
+
 # City of Richmond publishes its entire current-development list as a single multi-page PDF (one
 # table row per application). The table columns (folder number, site address, folder type, status,
 # application-acceptance date, staff contact) parse positionally; every permit attribute lives in

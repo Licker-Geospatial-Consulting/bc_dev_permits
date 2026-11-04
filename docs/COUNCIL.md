@@ -19,6 +19,7 @@ the exact instructions you gave per site.
 | victoria    | City of Victoria           | prospero    | prospero_tracker.md       |
 | langley     | Township of Langley        | prospero    | prospero_tracker.md (+claude-pdf) |
 | richmond    | City of Richmond           | pdf         | (one current-development list PDF, positional parse) |
+| vancouver   | City of Vancouver          | html+pdf    | (CityHallWatch snapshot + ShapeYourCity, Claude-read PDF) |
 
 ---
 
@@ -457,3 +458,48 @@ the exact instructions you gave per site.
 - **De-dup by address** at the end of `harvest()` (one site often files several applications -
   a Rezoning and a Development Permit at 5300 No 3 Rd; a Subdivision and a Servicing Agreement at
   8220 Gilbert Rd).
+
+---
+
+## vancouver - City of Vancouver  (CityHallWatch snapshot + ShapeYourCity + Claude-read PDF)
+
+- **List:** `config.VANCOUVER_LIST_URL` - a **CityHallWatch** snapshot post that lists every
+  application under three headings (New / Active / Approved), each line linking to the city's
+  **ShapeYourCity** (EngagementHQ) consultation page:
+  `868 E Hastings St - DP-2026-00743 - posted October 8, 2026`. Handled by `harvesters/vancouver.py`.
+  The snapshot URL is **dated** - update it to the newest snapshot when CityHallWatch publishes one.
+- **Streams:** `harvest()` defaults to **New + Active** (`DEFAULT_STREAMS`); New is a subset of
+  Active, so the two dedupe to the Active set. Pass `streams=("new","active","approved")` for the
+  larger Approved backlog (a later iteration).
+- **List parsing (deterministic):** each `<li>` anchor text is `<address> - <app number>`
+  (sometimes `<address> - <note> - <app number>`), joined by an **en/em-dash with spaces** - the
+  address is the first such segment, so a civic-number **range** ("2120-2150 W 10th Ave", bare
+  hyphen) is not split. permit_id `[A-Z]{2,3}-\d{4}-\d{4,6}` (DP / RZ / DE / ...); the posted /
+  approval date becomes the milestone (Application Posted / Approved / Permit Issued).
+- **Detail (ShapeYourCity, plain HTTP, server-rendered):** the project prose lives in a
+  `div.full-description` block (parsed by `features.py`); the Application Documents list is the
+  `a.document-library-widget-link` anchors (title = link text with the "(814 KB) (pdf)" suffix
+  stripped). The page renders only the **first few** documents behind a **"more" button** - the full
+  set is served by the document-library widget's own `.../widgets/<id>/documents` endpoint, which
+  `fetch_documents` follows so `row['documents']` holds every document (e.g. 1188 Cardero: 8, not 4).
+  The real PDF is fetched from `.../documents/<id>/download`, which 302-redirects to a short-lived
+  signed S3 URL (`download_pdf` follows it; bytes cached by document id).
+- **Claude-read PDF enrichment (not Ollama; see the pdf-parsing memory).** The richer project data -
+  **floor area, building height, site area, unit mix, vehicle + bicycle parking** - lives only in
+  the application PDFs. The **primary parsing documents** are the project data / project statistics /
+  site plan / **design rationale** sheets (their table carries the full program), read first by
+  `_DOC_PRIORITY` (**project-stats / data / site plan / rationale -> elevation -> architectural ->
+  ... -> operational letter -> postcard**); a stats table is read **visually** (render the page with
+  pymupdf, read the PNG). **If the primary sheet lacks a figure, read other documents** - the value
+  often lives elsewhere (2397 E 11th's floor area is on the notification postcard; 438 W King
+  Edward's parking and 500 Dunsmuir's 62 stalls are in the operational letter / site plan). Fields
+  are applied with `vancouver.apply_claude_pdf` (shared merge): deterministic HTML is never
+  overwritten, each PDF field is stamped `pdf_claude`, and a genuine HTML-vs-PDF disagreement (a
+  daycare the prose called "commercial"; a unit count the prose under-read; a site-area figure the
+  prose mislabelled as floor area) is logged to `row['conflicts']` (the Victoria conflict
+  mechanism). Per-project reads live in `tools/vancouver_enrich.py` (the `CLAUDE_READ` dict, applied
+  after the plain harvest).
+- **Worked example - 868 E Hastings St (DP-2026-00743):** a ~350 sq ft permanent patio for an
+  existing Restaurant Class-1. The HTML gives the prose (commercial); the "Site plan project
+  details" sheet's statistics table gives site 283.35 m2, 2 storeys, 7.25 m, FSR 1.13, 0 vehicle +
+  3 bicycle stalls.
