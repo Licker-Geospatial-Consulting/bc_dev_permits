@@ -10,6 +10,7 @@ FILES = {
     "maple_ridge": "Maple Ridge",
     "new_west": "New Westminster",
     "north_van": "North Vancouver",
+    "dnv": "North Vancouver (District)",
     "port_moody": "Port Moody",
     "richmond": "Richmond",
     "surrey": "Surrey",
