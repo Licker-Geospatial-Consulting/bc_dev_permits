@@ -9,8 +9,8 @@ from shapely.geometry import mapping, shape
 QUERIES = {
     "Coquitlam": "Coquitlam, British Columbia, Canada",
     "Maple Ridge": "Maple Ridge, British Columbia, Canada",
-    "North Vancouver": "City of North Vancouver, British Columbia, Canada",
-    "North Vancouver (District)": "District of North Vancouver, British Columbia, Canada",
+    "City of North Vancouver": "City of North Vancouver, British Columbia, Canada",
+    "District of North Vancouver": "District of North Vancouver, British Columbia, Canada",
     "Port Moody": "Port Moody, British Columbia, Canada",
     "Richmond": "Richmond, British Columbia, Canada",
     "Vancouver": "Vancouver, British Columbia, Canada",
