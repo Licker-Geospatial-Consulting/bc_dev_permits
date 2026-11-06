@@ -21,6 +21,7 @@ the exact instructions you gave per site.
 | richmond    | City of Richmond           | pdf         | (one current-development list PDF, positional parse) |
 | vancouver   | City of Vancouver          | html+pdf    | (CityHallWatch snapshot + ShapeYourCity, Claude-read PDF) |
 | burnaby     | City of Burnaby            | pdf         | (one Major Development Projects PDF, ruled-table find_tables) |
+| dnv         | District of North Vancouver| api         | (dnv_search JSON API; NOT the City = `north_van`) |
 
 ---
 
@@ -555,3 +556,32 @@ the exact instructions you gave per site.
   number is unique to one application, but the PDF occasionally lists it twice with differently
   punctuated addresses ("Ptn 3405 Willingdon Ave" vs "Portion of 3405 Willingdon Avenue"), which the
   civic-address dedup misses; the richer record is kept.
+
+---
+
+## dnv - District of North Vancouver  (public JSON API)
+
+- **NOT the City of North Vancouver** (that is `north_van`, an HTML harvester). This is the
+  **District**, whose "significant development applications" page is a React SPA with no server-
+  rendered content - but it is backed by a **public JSON API** (`config.DNV_API_ALL` /
+  `DNV_API_ONE`, on `app.dnv.org/dnv_search`), so the harvester reads the API directly: no SPA
+  rendering, and the data survives even when a project's HTML detail page has been retired (e.g.
+  2012 Old Dollarton Rd).
+- **Two endpoints.** `.../significant-development-application/all` lists every application keyed by
+  case number (a lighter summary used for the map); `.../significant-development-application?case
+  Number=<id>` returns the FULL record. `harvest()` lists the case numbers from `/all`, then fetches
+  each full record (cached by URL hash as `dnv_<hash>.json`).
+- **Structured -> no prose parsing.** The record maps straight onto the schema (`parse_record`):
+  `caseNumber` -> permit_id; `planWorkClass` -> permit_type (Rezoning with DP / Preliminary / DP
+  Council); `prjProjectNameS` -> development_name; `planCaseAddresses` -> address; `siteAreaN` ->
+  lot_area; `plpropTotalFlrSpcN` -> floor_area; `plunitcountSUM` -> units_total; `plpropTotalParkSpcN`
+  -> parking; **`latitude`/`longitude` come from the API (no geocoding)**; `milestones*` dates ->
+  milestones, the furthest-along one -> status. `development_class` is derived from the floor-area-
+  **by-use** fields (`plPropTownFlrSPcSum`/`...Res...`/`...Com...`/`...Ins...`/`...Ind...`; several
+  non-zero -> mixed), `number_of_stories` from the per-building "Pl Building Proposed" table's
+  Storeys column, `zoning_density` as the computed proposed FSR (floor / lot), and `rental_or_strata`
+  from the description ("ownership" -> strata, "rental" -> rental).
+- **permit_id:** the case number, `PLN####-#####` / `PRE####-#####`.
+- **De-dup by address** at the end of `harvest()` (one site can carry a current application and a
+  preliminary one - e.g. 331 Riverside Dr has PLN2026-00015 and PRE2025-00012, kept separate as
+  distinct programs).

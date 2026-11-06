@@ -159,6 +159,16 @@ NEW_WEST_SERVICE_URL = (
 # that the harvester reads with Claude for fields the HTML omits. Plain HTTP works (no Cloudflare).
 UBC_LIST_URL = "https://planning.ubc.ca/planning-development/development-projects"
 
+# District of North Vancouver (distinct from the City of North Vancouver harvester). Its
+# "significant development applications" page is a React SPA over a public JSON API. The list
+# endpoint returns every application keyed by case number (lighter summary); the per-application
+# endpoint returns the full record (floor area, parking, milestones, lat/long), so the harvester
+# reads the API directly - no SPA rendering, and the data survives even when a project's HTML page is
+# retired. DNV_LIST_URL is the human page recorded as each row's source_url base.
+DNV_LIST_URL = "https://www.dnv.org/business-development/significant-development-applications"
+DNV_API_ALL = "https://app.dnv.org/dnv_search/api/v1/significant-development-application/all"
+DNV_API_ONE = "https://app.dnv.org/dnv_search/api/v1/significant-development-application?caseNumber="
+
 # City of Burnaby publishes its Major Development Projects as a single multi-page PDF: one ruled
 # table, one row per rezoning application. Unlike Richmond the table HAS grid lines, so pymupdf's
 # find_tables() recovers the columns directly (Type, Rezoning, Developer/Architect, Address,
