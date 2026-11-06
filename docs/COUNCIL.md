@@ -20,6 +20,7 @@ the exact instructions you gave per site.
 | langley     | Township of Langley        | prospero    | prospero_tracker.md (+claude-pdf) |
 | richmond    | City of Richmond           | pdf         | (one current-development list PDF, positional parse) |
 | vancouver   | City of Vancouver          | html+pdf    | (CityHallWatch snapshot + ShapeYourCity, Claude-read PDF) |
+| burnaby     | City of Burnaby            | pdf         | (one Major Development Projects PDF, ruled-table find_tables) |
 
 ---
 
@@ -521,3 +522,36 @@ the exact instructions you gave per site.
   existing Restaurant Class-1. The HTML gives the prose (commercial); the "Site plan project
   details" sheet's statistics table gives site 283.35 m2, 2 storeys, 7.25 m, FSR 1.13, 0 vehicle +
   3 bicycle stalls.
+
+---
+
+## burnaby - City of Burnaby  (single Major Development Projects PDF, ruled table)
+
+- **Source:** one PDF, `config.BURNABY_PDF_URL`
+  (`.../acquiadam/2024-08/Major-Development-Projects.pdf`). One 15-page **ruled** table, one row per
+  major rezoning application. Handled by `harvesters/burnaby.py`; harvest with `--limit 0`. Cached
+  by URL hash in `data/raw/http_cache/` for `HTTP_CACHE_TTL`.
+- **Ruled table -> `find_tables()`.** Unlike Richmond, Burnaby's table has grid lines, so pymupdf's
+  `find_tables()` recovers the 10 columns directly (no positional parsing). Column -> field:
+  Type `->` `permit_type` (the development type); Rezoning `->` `permit_id` (`REZ #NN-NN`);
+  Developer/Architect `->` kept in `raw_text`; Address `->` `address`; Development `->` `raw_text`
+  prose; Residential Strata Units + Residential Rental Units `->` unit counts / mix; Status `->`
+  `status` + a `"<stage> YYYY.MM.DD"` milestone. The repeated column-header row and the "CITY OF
+  BURNABY" banner are skipped.
+- **Attributes** come from the Development prose plus the two unit columns. `number_of_stories` /
+  `floor_area` are parsed by `features.extract_all`. The two unit columns each hold a breakdown -
+  a strata bedroom/type mix ("5 2-Bedroom Twnhouse 70 3-Bedroom Twnhouse") and/or a rental
+  tenure/bedroom mix ("213 units Market Rental 91 units Non-Mkt Rental") - and **both are merged into
+  `unit_mix` with distinct keys** (`_mix_from_cell`), so neither masks the other. `units_total` is a
+  total stated in the Development prose ("A total of 622 ... units") when present, else the strata +
+  rental column totals **summed** (a mixed strata+rental project counts different units; 3588
+  Wayburne = 83 townhouse strata + 126 rental apartments = 209), falling back to whichever single
+  column is populated (`_desc_total` / `_cell_total`). `development_class` is taken from the **Type
+  keyword first** (mixed / industrial / office->commercial / institutional before the broad
+  residential keywords, so "...Residential Tower With Commercial Podium" is mixed), then the prose.
+- **permit_id regex:** `(?:REZ|PRJ|DP|BLD)\s*#?\s*[\d-]+` (the Rezoning column; almost all are
+  `REZ #NN-NN`).
+- **De-dup:** `consolidate_by_address`, then a **permit-id** pass (`_dedup_permit_ids`) - a REZ
+  number is unique to one application, but the PDF occasionally lists it twice with differently
+  punctuated addresses ("Ptn 3405 Willingdon Ave" vs "Portion of 3405 Willingdon Avenue"), which the
+  civic-address dedup misses; the richer record is kept.

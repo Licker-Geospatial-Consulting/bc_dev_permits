@@ -159,6 +159,17 @@ NEW_WEST_SERVICE_URL = (
 # that the harvester reads with Claude for fields the HTML omits. Plain HTTP works (no Cloudflare).
 UBC_LIST_URL = "https://planning.ubc.ca/planning-development/development-projects"
 
+# City of Burnaby publishes its Major Development Projects as a single multi-page PDF: one ruled
+# table, one row per rezoning application. Unlike Richmond the table HAS grid lines, so pymupdf's
+# find_tables() recovers the columns directly (Type, Rezoning, Developer/Architect, Address,
+# Development, Residential Strata Units, Residential Rental Units, Status). The Rezoning column is
+# the permit id (REZ #NN-NN), Type is the development type, and the Development + strata + rental
+# columns carry the program parsed by features.py. BURNABY_PDF_URL is both the data source and each
+# row's source_url.
+BURNABY_PDF_URL = (
+    "https://www.burnaby.ca/sites/default/files/acquiadam/2024-08/Major-Development-Projects.pdf"
+)
+
 # City of Vancouver has no single machine-readable application index; CityHallWatch publishes a
 # periodic snapshot post (New / Active / Approved applications), each line linking to the city's
 # ShapeYourCity (EngagementHQ) consultation page. The snapshot is the list (address, application

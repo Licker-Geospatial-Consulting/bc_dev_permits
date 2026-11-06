@@ -19,6 +19,7 @@ import sys
 
 from bc_dev_permits import config
 from bc_dev_permits.harvesters import (
+    burnaby,
     coquitlam,
     halton_hills,
     langley,
@@ -49,6 +50,7 @@ HARVESTERS = {
     "langley": langley.harvest,
     "richmond": richmond.harvest,
     "vancouver": vancouver.harvest,
+    "burnaby": burnaby.harvest,
 }
 
 # slug -> optional batch PDF-enricher(rows, use_cache=True) -> count (needs Ollama)
