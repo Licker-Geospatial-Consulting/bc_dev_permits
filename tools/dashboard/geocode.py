@@ -4,6 +4,7 @@ Writes tools/dashboard/geocoded.json = {slug: {permit_id: [lat, lon, approx_bool
 Addresses that don't resolve fall back to the city centroid (approx=True).
 """
 import json
+import math
 import re
 import time
 from pathlib import Path
@@ -23,6 +24,7 @@ CITY = {
     "langley": ("Langley", (49.1009, -122.6610), "BC"),
     "richmond": ("Richmond", (49.1666, -123.1336), "BC"),
     "vancouver": ("Vancouver", (49.2497, -123.1193), "BC"),
+    "burnaby": ("Burnaby", (49.2488, -122.9805), "BC"),
 }
 
 # Street-type suffixes used to pick a civic street phrase out of a UBC project address.
@@ -81,6 +83,70 @@ def wv_query(addr):
         civic = dash.group(2)
     street = re.search(rf"[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*\s+{_WV_TYPES}\b", addr)
     return f"{civic} {street.group(0)}" if street else None
+# Street-type suffixes used to pick one civic "number street" out of a Burnaby PDF address.
+# Kingsway is both a street name and its own type, so it is listed directly.
+_BBY_TYPES = (r"(?:Avenue|Ave|Street|St|Road|Rd|Drive|Dr|Way|Highway|Hwy|Boulevard|Blvd|"
+              r"Place|Pl|Crescent|Cres|Lane|Ln|Court|Crt|Kingsway)")
+# Canonical full form for each abbreviation, so "6800 Lougheed Hwy" and "6800 Lougheed Highway"
+# (or "Willingdon Ave" and "Willingdon Avenue") build the SAME query and land on the same point -
+# otherwise the variants geocode kilometres apart and never cluster for spreading.
+_BBY_TYPE_CANON = {"ave": "Avenue", "av": "Avenue", "st": "Street", "rd": "Road", "dr": "Drive",
+                   "hwy": "Highway", "blvd": "Boulevard", "cres": "Crescent", "pl": "Place",
+                   "ln": "Lane", "crt": "Court"}
+
+
+def burnaby_query(addr):
+    """Build 'civic street' from a Burnaby address, dropping the Ptn/Portion qualifier.
+
+    Burnaby's PDF lists a legal portion and sometimes several addresses: "Ptn 6800 Lougheed
+    Highway", "Portion of 7201 11th Avenue", "6470 and 6508 Silver Avenue", "1700/4800 Kingsway
+    and portion of 4750 Kingsway". The qualifier and the slash/range duplicates are stripped, then
+    the first real "civic-number + street" phrase is taken (the street name may be an ordinal like
+    "11th", but the connector "and" and a second civic number never start the street), so one
+    geocodable address is picked out of the list. The street type is normalized to its full form so
+    abbreviation variants ("Hwy"/"Highway", "Ave"/"Avenue") collapse to one query and one point. A
+    bare project name ("Central Administrative Area") has no civic number and returns None ->
+    city centroid.
+    """
+    a = (addr or "").strip()
+    a = re.sub(r"(?i)\b(?:ptn|portion)\b\.?\s*(?:of\s+)?", " ", a)   # drop Ptn / Portion (of)
+    a = re.sub(r"(\d+)(?:\s*/\s*\d+)+", r"\1", a)                    # "4120/60/70" -> "4120"
+    a = re.sub(r"\s+", " ", a).strip()
+    gap = r"(?:(?!and\b)(?!\d{3,6}\b)[A-Za-z0-9][A-Za-z0-9.]*\s+){0,3}?"
+    m = re.search(rf"(\d{{2,6}})\s+({gap}{_BBY_TYPES})\b", a)
+    if not m:
+        return None
+    parts = f"{m.group(1)} {m.group(2)}".split()
+    parts[-1] = _BBY_TYPE_CANON.get(parts[-1].rstrip(".").lower(), parts[-1])
+    return " ".join(parts)
+
+
+def spread_coincident(entries, radius_m=25.0):
+    """Nudge resolved points that share a coordinate onto a small ring of nearby points.
+
+    Several distinct applications can sit at one civic site (e.g. the portions behind "Ptn 6800
+    Lougheed Highway", "Ptn of 6800 Lougheed Hwy" and "Portion of 6800 Lougheed Highway"), which
+    all geocode to the same spot and would stack into one marker. Each such group is spread evenly
+    on a ~25 m circle so the applications read as separate, nearby markers. Centroid fallbacks
+    (approx=True, location genuinely unknown) are left stacked. Deterministic: ordered by permit_id.
+    """
+    groups = {}
+    for pid, (lat, lon, approx) in entries.items():
+        if approx:
+            continue
+        groups.setdefault((round(lat, 6), round(lon, 6)), []).append(pid)
+    for (lat, lon), pids in groups.items():
+        if len(pids) < 2:
+            continue
+        dlat = radius_m / 111_320.0
+        dlon = radius_m / (111_320.0 * math.cos(math.radians(lat)))
+        n = len(pids)
+        for i, pid in enumerate(sorted(pids)):
+            ang = 2 * math.pi * i / n
+            entries[pid][0] = round(lat + dlat * math.cos(ang), 6)
+            entries[pid][1] = round(lon + dlon * math.sin(ang), 6)
+
+
 UA = "bc-dev-permits-dashboard/0.1 (+contact: himalya@lgeo.co)"
 CACHE = Path("tools/dashboard/geocache.json")
 cache = json.loads(CACHE.read_text(encoding="utf-8")) if CACHE.exists() else {}
@@ -97,6 +163,8 @@ def query_for(row, slug):
         return surrey_query(addr)
     if slug == "ubc":
         return ubc_query(addr)
+    if slug == "burnaby":
+        return burnaby_query(addr)
     # A usable street address starts with a house number; take the first of any range.
     if re.match(r"^\d", addr):
         m = re.match(r"(\d+)\s*[-–]\s*\d+\s+(.*)", addr)   # "216-232 East 3rd Street"
@@ -179,6 +247,10 @@ for slug, (city, centroid, province) in CITY.items():
             out[slug][pid] = [centroid[0], centroid[1], True]
             approx += 1
         CACHE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")  # checkpoint
+    # Burnaby's PDF has no coordinates, so many legal-portion applications share one civic site;
+    # spread the coincident resolved points so they plot as separate, nearby markers.
+    if slug == "burnaby":
+        spread_coincident(out[slug])
     print(f"{slug}: geocoded={hit} approx(centroid)={approx}")
 
 Path("tools/dashboard/geocoded.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
