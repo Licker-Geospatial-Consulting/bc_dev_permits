@@ -22,6 +22,7 @@ the exact instructions you gave per site.
 | vancouver   | City of Vancouver          | html+pdf    | (CityHallWatch snapshot + ShapeYourCity, Claude-read PDF) |
 | burnaby     | City of Burnaby            | pdf         | (one Major Development Projects PDF, ruled-table find_tables) |
 | dnv         | District of North Vancouver| api         | (dnv_search JSON API; NOT the City = `north_van`) |
+| white_rock  | City of White Rock         | arcgis      | arcgis_webmaps.md (layer 1 + Milestones table 3) |
 
 ---
 
@@ -585,3 +586,36 @@ the exact instructions you gave per site.
 - **De-dup by address** at the end of `harvest()` (one site can carry a current application and a
   preliminary one - e.g. 331 Riverside Dr has PLN2026-00015 and PRE2025-00012, kept separate as
   distinct programs).
+
+---
+
+## white_rock - City of White Rock  (ArcGIS Experience Builder over a hosted FeatureServer)
+
+- **Source:** the "Development Application Information Portal" (an ArcGIS Experience app,
+  `config.WHITE_ROCK_APP_URL`) is a UI over one hosted FeatureServer,
+  `config.WHITE_ROCK_SERVICE_URL` (`maps.whiterockcity.ca/server/.../Development_Applications`).
+  The harvester queries the service directly (see `arcgis_webmaps.md`); handled by
+  `harvesters/white_rock.py`, harvest with `--limit 0`.
+- **Two layers.** `layer 1` **Development Applications** (polygons) is one feature per application
+  folder; `table 3` **Milestones** holds the process milestones, joined on `FOLDER_NUMBER`
+  (relationship id 0, one-to-many). `harvest()` pulls layer 1 with geometry, bulk-fetches table 3
+  in `FOLDER_NUMBER IN (...)` chunks, and joins them.
+- **Attribute -> field:** `FILE_NUMBER` -> `permit_id` (e.g. `26-039`); `CIVIC_ADDRESS` ->
+  `address` (first line; the `WHITE ROCK BC <postal>` tail is dropped - the layer's separate
+  `Address` field is empty for every record, so the civic address is read from `CIVIC_ADDRESS`);
+  `TYPE` -> `permit_type` (ZONING AMENDMENT / MAJOR DEVELOPMENT PERMIT / BOARD OF VARIANCE APPEAL /
+  PRE-APPLICATION REVIEW / ...); `Folder_Status` -> `status` (RECEIVED / IN-PROGRESS / COMPLETED);
+  `SUBJECT` + `PURPOSE` -> `raw_text`; `Application_Date` -> an "Application Received" milestone;
+  `FOLDER_NUMBER` -> the Milestones join key; geometry -> `latitude`/`longitude` (ring centroid).
+- **Program from PURPOSE.** `PURPOSE` is the only prose, parsed by `features.extract_all` for the
+  building program (units, storeys, tenure, class). It is a one-line summary, so the strong files
+  (rezonings, major DPs) yield units/storeys while the many administrative filings (variances,
+  pre-application reviews, sign permits) carry no program and stay `development_class = unknown`,
+  `needs_review = true` - not fabricated.
+- **permit_id:** `FILE_NUMBER`, the `YY-NNN` application number.
+- **De-dup by address** (`consolidate.consolidate_by_address`) at the end of `harvest()`: the thin
+  administrative filings fold into the strong record at the same civic address (e.g. a DVP folds
+  into the OCP/Zoning file at 14780 North Bluff Rd), with their ids/statuses kept as
+  `related_permits` and milestones merged.
+- **PII:** `Manager`, `Applicant_Name`, `MostRecent_UserStamp` and the created/last_edited user
+  fields are staff / personal names and are never requested or stored (see CLAUDE.md data handling).

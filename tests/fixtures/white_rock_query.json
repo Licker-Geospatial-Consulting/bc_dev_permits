@@ -1,0 +1,370 @@
+{
+  "applications": [
+    {
+      "attributes": {
+        "OBJECTID": 327946,
+        "FILE_NUMBER": "26-032",
+        "FOLDER_NUMBER": "BOV00046",
+        "CIVIC_ADDRESS": "14693 WEST BEACH AVE\r\nWHITE ROCK BC  V4B 2T9",
+        "TYPE": "BOARD OF VARIANCE APPEAL",
+        "SUBJECT": "Board of Variance",
+        "PURPOSE": "Variance to permit retaining wall structure over 0.6m within the side yard setback.",
+        "Folder_Status": "IN-PROGRESS",
+        "Application_Date": 1791504000000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.81534725453243,
+              49.02515935750619
+            ],
+            [
+              -122.81527954021365,
+              49.0254110175327
+            ],
+            [
+              -122.81512827043657,
+              49.02534756152244
+            ],
+            [
+              -122.81512663389626,
+              49.025109170528786
+            ],
+            [
+              -122.81534725453243,
+              49.02515935750619
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 327804,
+        "FILE_NUMBER": "26-002",
+        "FOLDER_NUMBER": "DVP00045",
+        "CIVIC_ADDRESS": "14780 NORTH BLUFF RD\r\nWHITE ROCK BC  V4B 3E1",
+        "TYPE": "DEVELOPMENT VARIANCE PERMIT",
+        "SUBJECT": "Development Variance Permit",
+        "PURPOSE": "Variance to setback requirements for construction of a new telecommunications building\r\n",
+        "Folder_Status": "IN-PROGRESS",
+        "Application_Date": 1773619200000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.81236214004132,
+              49.03041351668607
+            ],
+            [
+              -122.81298118124144,
+              49.03041488320371
+            ],
+            [
+              -122.81298254795611,
+              49.030734235553325
+            ],
+            [
+              -122.81298392015461,
+              49.03105358789408
+            ],
+            [
+              -122.81236529511503,
+              49.03105222387018
+            ],
+            [
+              -122.81236214004132,
+              49.03041351668607
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 327805,
+        "FILE_NUMBER": "23-016",
+        "FOLDER_NUMBER": "OCP00011",
+        "CIVIC_ADDRESS": "14780 NORTH BLUFF RD\r\nWHITE ROCK BC  V4B 3E1",
+        "TYPE": "OCP/ZONING AMENDMENT",
+        "SUBJECT": "Combined Official Community Plan, Zoning Amendment and Major Development Permit",
+        "PURPOSE": "Combined applications to process OCP and Zoning amendment to allow for a 6 storey development (TELUS Living -100 market rental units + Telus Communication facility). \r\nOCP amendments from the Institutional/Utility designation to Town Centre Transition land use designation. Zoning amendments from the P-1 zone to a CD Zone.\r\n\r\nThis file is being processed concurrently with associated files - ZON00059  MJP00036.",
+        "Folder_Status": "IN-PROGRESS",
+        "Application_Date": 1690848000000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.81236214004132,
+              49.03041351668607
+            ],
+            [
+              -122.81298118124144,
+              49.03041488320371
+            ],
+            [
+              -122.81298254795611,
+              49.030734235553325
+            ],
+            [
+              -122.81298392015461,
+              49.03105358789408
+            ],
+            [
+              -122.81236529511503,
+              49.03105222387018
+            ],
+            [
+              -122.81236214004132,
+              49.03041351668607
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 327786,
+        "FILE_NUMBER": "19-017",
+        "FOLDER_NUMBER": "ZON00016",
+        "CIVIC_ADDRESS": "15704 NORTH BLUFF RD\r\nWHITE ROCK BC  V4B 3G5",
+        "TYPE": "ZONING AMENDMENT",
+        "SUBJECT": "Combined Zoning Amendment and Major Development Permit",
+        "PURPOSE": "Combined applications to process Rezoning of these properties from RS-1 to CD Zone (CD-67) to allow for a 87-unit 4 storey multi-family residential development. (149 market/non-market apartments) (Courtyard Commons)\r\n\r\nThis file is being processed concurrently with associated files - ZON00016, MJP00017",
+        "Folder_Status": "IN-PROGRESS",
+        "Application_Date": 1571875200000,
+        "Folder_Completion_Date": null
+      },
+      "geometry": {
+        "rings": [
+          [
+            [
+              -122.78537759732001,
+              49.03055531123474
+            ],
+            [
+              -122.78567720059885,
+              49.03055623507555
+            ],
+            [
+              -122.78590961251234,
+              49.030556950744256
+            ],
+            [
+              -122.78590936576674,
+              49.030661007531556
+            ],
+            [
+              -122.78596351467475,
+              49.03066116015121
+            ],
+            [
+              -122.78596342010604,
+              49.030701703044144
+            ],
+            [
+              -122.78618437436212,
+              49.03070234113492
+            ],
+            [
+              -122.78618451608077,
+              49.03064436849799
+            ],
+            [
+              -122.78618452714645,
+              49.03063987072967
+            ],
+            [
+              -122.78635745277523,
+              49.03064036911492
+            ],
+            [
+              -122.78644504968669,
+              49.03064061940953
+            ],
+            [
+              -122.78671640693025,
+              49.03064140012056
+            ],
+            [
+              -122.78700469204087,
+              49.03064222763094
+            ],
+            [
+              -122.78724995574353,
+              49.03064293013701
+            ],
+            [
+              -122.78724909588271,
+              49.03093506892174
+            ],
+            [
+              -122.78721906029064,
+              49.030954688670306
+            ],
+            [
+              -122.78537624035269,
+              49.030949019953134
+            ],
+            [
+              -122.78537759732001,
+              49.03055531123474
+            ]
+          ]
+        ]
+      }
+    }
+  ],
+  "milestones": [
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ZON00016",
+        "Milestone": "INITIAL REVIEW",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1657238400000,
+        "Milestone_Completion_Date": 1657238400000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "OCP00011",
+        "Milestone": "APPLICATION INTAKE",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1700179200000,
+        "Milestone_Completion_Date": 1700179200000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ZON00016",
+        "Milestone": "PUBLIC HEARING / NOTIFICATION",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1658102400000,
+        "Milestone_Completion_Date": 1683676800000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "OCP00011",
+        "Milestone": "INITIAL APPLICATION OCP LUPC",
+        "Milestone_Status": "REJECTED",
+        "Milestone_Start_Date": 1719964800000,
+        "Milestone_Completion_Date": 1722211200000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "BOV00046",
+        "Milestone": "INITIAL REVIEW",
+        "Milestone_Status": "IN-PROGRESS",
+        "Milestone_Start_Date": 1792022400000,
+        "Milestone_Completion_Date": null
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "OCP00011",
+        "Milestone": "INITIAL APPLICATION OCP REVIEW",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1717113600000,
+        "Milestone_Completion_Date": 1719532800000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ZON00016",
+        "Milestone": "3RD READING / COVENANTS",
+        "Milestone_Status": "IN-PROGRESS",
+        "Milestone_Start_Date": 1658707200000,
+        "Milestone_Completion_Date": null
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ZON00016",
+        "Milestone": "APPLICATION REVIEW",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1657238400000,
+        "Milestone_Completion_Date": 1657238400000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "DVP00045",
+        "Milestone": "INITIAL REVIEW",
+        "Milestone_Status": "IN-PROGRESS",
+        "Milestone_Start_Date": 1776211200000,
+        "Milestone_Completion_Date": null
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "OCP00011",
+        "Milestone": "INITIAL APPLICATION OCP LUPC",
+        "Milestone_Status": "REJECTED",
+        "Milestone_Start_Date": 1696204800000,
+        "Milestone_Completion_Date": 1697414400000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ZON00016",
+        "Milestone": "LUPC & 1ST AND 2ND READING",
+        "Milestone_Status": "APPROVED",
+        "Milestone_Start_Date": 1657238400000,
+        "Milestone_Completion_Date": 1657238400000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "BOV00046",
+        "Milestone": "APPLICATION INTAKE",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1791504000000,
+        "Milestone_Completion_Date": 1791504000000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "DVP00045",
+        "Milestone": "APPLICATION INTAKE",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1773619200000,
+        "Milestone_Completion_Date": 1773878400000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ZON00016",
+        "Milestone": "PUBLIC INFO MEETING",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1599609600000,
+        "Milestone_Completion_Date": 1599609600000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "OCP00011",
+        "Milestone": "INITIAL APPLICATION OCP REVIEW",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1695168000000,
+        "Milestone_Completion_Date": 1695945600000
+      }
+    },
+    {
+      "attributes": {
+        "FOLDER_NUMBER": "ZON00016",
+        "Milestone": "APPLICATION INTAKE",
+        "Milestone_Status": "COMPLETED",
+        "Milestone_Start_Date": 1657238400000,
+        "Milestone_Completion_Date": 1657238400000
+      }
+    }
+  ]
+}

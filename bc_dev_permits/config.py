@@ -132,6 +132,18 @@ PORT_MOODY_SERVICE_URL = (
 PORT_MOODY_ENGAGE_BASE = "https://engage.portmoody.ca"
 PORT_MOODY_ENGAGE_PROJECTS_URL = "https://engage.portmoody.ca/projects"
 
+# White Rock publishes through an ArcGIS Experience Builder app over one hosted FeatureServer (see
+# references/arcgis_webmaps.md): layer 1 Development Applications (polygons) + table 3 Milestones,
+# joined on FOLDER_NUMBER (relationship 0). The harvester queries the service directly and parses
+# each feature's PURPOSE for the building program. WHITE_ROCK_APP_URL is the human-facing Experience
+# recorded as each row's source_url.
+WHITE_ROCK_APP_URL = (
+    "https://experience.arcgis.com/experience/0083423c595b431e80c8575fdcef4ed1/page/Page"
+)
+WHITE_ROCK_SERVICE_URL = (
+    "https://maps.whiterockcity.ca/server/rest/services/apps/Development_Applications/FeatureServer"
+)
+
 # Town of Halton Hills (Ontario). The map viewer (map.haltonhills.ca/HT5, a VertiGIS/Geocortex
 # HTML5 viewer) is a UI over an ArcGIS MapServer; layer 24 (P_DevelopmentApplications) carries
 # every application's structured attributes + description. The public HTML page lists the ~10

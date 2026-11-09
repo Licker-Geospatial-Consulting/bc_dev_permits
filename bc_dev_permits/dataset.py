@@ -34,6 +34,7 @@ from bc_dev_permits.harvesters import (
     vancouver,
     victoria,
     west_van,
+    white_rock,
 )
 
 # slug -> harvest callable(limit=None, use_cache=True) -> list[dict]
@@ -53,6 +54,7 @@ HARVESTERS = {
     "vancouver": vancouver.harvest,
     "burnaby": burnaby.harvest,
     "dnv": dnv.harvest,
+    "white_rock": white_rock.harvest,
 }
 
 # slug -> optional batch PDF-enricher(rows, use_cache=True) -> count (needs Ollama)
