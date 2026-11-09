@@ -17,6 +17,7 @@ QUERIES = {
     "Surrey": "Surrey, British Columbia, Canada",
     "Victoria": "Victoria, British Columbia, Canada",
     "West Vancouver": "West Vancouver, British Columbia, Canada",
+    "White Rock": "White Rock, British Columbia, Canada",
     "New Westminster": "New Westminster, British Columbia, Canada",
     "Halton Hills": "Halton Hills, Ontario, Canada",
     "UBC": "University of British Columbia, Vancouver, British Columbia, Canada",
