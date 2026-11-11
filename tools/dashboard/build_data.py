@@ -6,6 +6,7 @@ from pathlib import Path
 FILES = {
     "burnaby": "Burnaby",
     "coquitlam": "Coquitlam",
+    "delta": "Delta",
     "halton_hills": "Halton Hills",
     "langley": "Langley",
     "maple_ridge": "Maple Ridge",

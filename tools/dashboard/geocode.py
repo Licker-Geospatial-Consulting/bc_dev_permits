@@ -25,6 +25,7 @@ CITY = {
     "richmond": ("Richmond", (49.1666, -123.1336), "BC"),
     "vancouver": ("Vancouver", (49.2497, -123.1193), "BC"),
     "burnaby": ("Burnaby", (49.2488, -122.9805), "BC"),
+    "delta": ("Delta", (49.0847, -123.0587), "BC"),
 }
 
 # Street-type suffixes used to pick a civic street phrase out of a UBC project address.
@@ -147,6 +148,27 @@ def spread_coincident(entries, radius_m=25.0):
             entries[pid][1] = round(lon + dlon * math.sin(ang), 6)
 
 
+# Street-type suffixes for pulling one civic address out of a Delta address.
+_DELTA_TYPES = (r"(?:Avenue|Ave|Street|St|Road|Rd|Drive|Dr|Boulevard|Blvd|Way|Crescent|Cres|"
+                r"Place|Pl|Lane|Ln|Court|Crt|Highway|Hwy)")
+
+
+def delta_query(addr):
+    """Build 'civic street' from a Delta address (first civic address of a multi-address list).
+
+    Delta lists several civic addresses per application ("5360 12 Avenue and 1146, 1156 and 1170
+    53A Street", "11810, 11818 ... 90 Avenue") and uses numbered streets ("12 Avenue", "120 Street",
+    "53A Street"). The first civic number that is directly followed by a street - numbered
+    ("12 Avenue") or named ("Ladner Trunk Road") - is taken; the comma-separated civic numbers that
+    share one street collapse onto that street, and a bare project name (no civic) returns None.
+    """
+    addr = (addr or "").strip()
+    m = re.search(
+        rf"(\d{{2,6}})\s+(\d{{1,3}}[A-Z]?\s+{_DELTA_TYPES}|"
+        rf"[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*\s+{_DELTA_TYPES})\b", addr)
+    return f"{m.group(1)} {m.group(2)}" if m else None
+
+
 UA = "bc-dev-permits-dashboard/0.1 (+contact: himalya@lgeo.co)"
 CACHE = Path("tools/dashboard/geocache.json")
 cache = json.loads(CACHE.read_text(encoding="utf-8")) if CACHE.exists() else {}
@@ -165,6 +187,8 @@ def query_for(row, slug):
         return ubc_query(addr)
     if slug == "burnaby":
         return burnaby_query(addr)
+    if slug == "delta":
+        return delta_query(addr)
     # A usable street address starts with a house number; take the first of any range.
     if re.match(r"^\d", addr):
         m = re.match(r"(\d+)\s*[-–]\s*\d+\s+(.*)", addr)   # "216-232 East 3rd Street"
@@ -247,9 +271,9 @@ for slug, (city, centroid, province) in CITY.items():
             out[slug][pid] = [centroid[0], centroid[1], True]
             approx += 1
         CACHE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")  # checkpoint
-    # Burnaby's PDF has no coordinates, so many legal-portion applications share one civic site;
-    # spread the coincident resolved points so they plot as separate, nearby markers.
-    if slug == "burnaby":
+    # Burnaby's PDF and Delta's multi-address lists collapse several applications onto one civic
+    # site; spread the coincident resolved points so they plot as separate, nearby markers.
+    if slug in ("burnaby", "delta"):
         spread_coincident(out[slug])
     print(f"{slug}: geocoded={hit} approx(centroid)={approx}")
 
