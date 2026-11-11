@@ -21,6 +21,7 @@ from bc_dev_permits import config
 from bc_dev_permits.harvesters import (
     burnaby,
     coquitlam,
+    delta,
     dnv,
     halton_hills,
     langley,
@@ -53,6 +54,7 @@ HARVESTERS = {
     "richmond": richmond.harvest,
     "vancouver": vancouver.harvest,
     "burnaby": burnaby.harvest,
+    "delta": delta.harvest,
     "dnv": dnv.harvest,
     "white_rock": white_rock.harvest,
 }

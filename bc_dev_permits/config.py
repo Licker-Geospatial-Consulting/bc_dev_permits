@@ -217,3 +217,14 @@ RICHMOND_PDF_URL = "https://www.richmond.ca/__shared/assets/2025currentdevelopme
 # deterministically (units / storeys / floor area), and the deeper data-sheet pages are read with
 # Claude for parking / unit mix. Each report PDF lives at /sites/default/files/planning-reports/.
 SURREY_LIST_URL = "https://www.surrey.ca/city-government/council-meetings/planning-reports"
+
+# City of Delta publishes development applications on its engagement portal, Let's Talk Delta (an
+# EngagementHQ / "Hive" site like Engage Port Moody). The /projects page lists every project card
+# with a data-project-category; the harvester takes the "Development" category and keeps only the
+# BUILDING development applications - those whose "Application Process" timeline includes a "Building
+# Permit" stage (so a rezoning-only file, a road / utility project, or a policy page like SSMUH or
+# the OCP update is excluded). Each kept project page is server-rendered: a description widget
+# (Location / File Number / Applicant + purpose prose), the timeline, and a Document Library of
+# download_file PDFs. DELTA_PROJECTS_URL is the list; DELTA_BASE builds each project + document URL.
+DELTA_BASE = "https://letstalk.delta.ca"
+DELTA_PROJECTS_URL = "https://letstalk.delta.ca/projects"

@@ -23,6 +23,7 @@ the exact instructions you gave per site.
 | burnaby     | City of Burnaby            | pdf         | (one Major Development Projects PDF, ruled-table find_tables) |
 | dnv         | District of North Vancouver| api         | (dnv_search JSON API; NOT the City = `north_van`) |
 | white_rock  | City of White Rock         | arcgis      | arcgis_webmaps.md (layer 1 + Milestones table 3) |
+| delta       | City of Delta              | html        | html_detail_pages.md (EngagementHQ; Building-Permit filter) |
 
 ---
 
@@ -619,3 +620,44 @@ the exact instructions you gave per site.
   `related_permits` and milestones merged.
 - **PII:** `Manager`, `Applicant_Name`, `MostRecent_UserStamp` and the created/last_edited user
   fields are staff / personal names and are never requested or stored (see CLAUDE.md data handling).
+
+---
+
+## delta - City of Delta  (Let's Talk Delta, EngagementHQ - building-permit filter)
+
+- **Source:** the engagement portal `config.DELTA_PROJECTS_URL`
+  (`letstalk.delta.ca/projects`), an EngagementHQ / "Hive" site like Engage Port Moody. Every
+  project is a `.project.card` carrying `data-project-category`; the harvester takes the
+  **Development** category and keeps only the BUILDING development applications. Handled by
+  `harvesters/delta.py`; harvest with `--limit 0`. Pages are server-rendered - plain HTTP +
+  BeautifulSoup, no JS. Cached by URL hash in `data/raw/http_cache/`.
+- **The filter (user's rule):** a project is a building development application only when its
+  "Application Process" **timeline (`.timeline-item`) contains a "Building Permit" stage**
+  (`has_building_permit`). This drops a rezoning-only file (e.g. the Chisholm St rezoning), a road
+  / utility project (96 Avenue), and a policy page (SSMUH, the OCP update, a grant). Of 26
+  Development-category projects, 17 pass.
+- **Attribute -> field:** the description block (`.hive-block-content` with the Location / File
+  Number labels) gives `File Number` -> `permit_id` (e.g. LU009764; falls back to the slug, then the
+  latest timeline LU #), `Location` -> `address` (or a civic address pulled from the project name
+  when there is no Location line), the page `<h1>` / card -> `development_name`, and the purpose
+  prose -> the program. The timeline -> `milestones` (status + date); the active stage -> `status`.
+  The Document Library `download_file` PDFs -> `documents` (architectural / landscape **drawings**,
+  the New Application Report as **staff_report**, notices, arborist / traffic / survey reports).
+- **Prose parsing (`program_fields`).** A revised application restates its program several times, so
+  the parse is split: the **intro** (before the first "... Application Overview") states the headline
+  once - `development_class`, storeys, units, height, FSR - and the **"Revised Application Overview"**
+  bullet block adds parking and floor area. The stale **"Original Application Overview"** is never
+  parsed. Delta-specific cleaning first removes the civic address from the prose (so a civic number
+  is not read as a stall count) and reduces each "from A to B" revision to its final value B. FSR is
+  read in any of Delta's phrasings ("FSR of 1.36", "floor space ratio to 1.36", "2.95 Floor Space
+  Ratio (FSR)") and a value above ~20 is rejected as a misread.
+- **permit_id:** the file number, `LU######` (occasionally `PRE`/`DP`), from the "File Number" /
+  "File No." label.
+- **PDFs:** the richer detail (parking breakdown, unit mix, exact floor area) lives in the
+  application PDFs; a row missing a valuable field is flagged `needs_pdf_extraction` with the
+  drawing / report PDFs stored as documents, for the Claude-read PDF pass (architectural plans /
+  New Application Report).
+- **PII:** only the company Applicant in the description header is kept (inside `raw_text`); the
+  staff planner and the individual applicant named in the page sidebar are outside the description
+  block and are never read (see CLAUDE.md data handling).
+- **De-dup by address** (`consolidate.consolidate_by_address`) at the end of `harvest()`.
