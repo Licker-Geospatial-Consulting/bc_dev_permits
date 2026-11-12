@@ -29,6 +29,15 @@ CLAUDE_READ = {
         {"title": "Conceptual Site Plan (Unit Count Summary)",
          "url": UP + "2023/11/45857-Tretheway-Ave-location-conceptual-site-plan.png"},
     ),
+    # Chilliwack SmartCentre: the page names no civic address (title is the mall name). Its reference
+    # site plan shows the parcel fronting Luckakuck Way, and the prose places it along Vedder Road, so
+    # the approximate address is the Vedder Road / Luckakuck Way corner. The exact map point still
+    # comes from the marker coordinates; this only gives the row a human-readable reference address.
+    "chilliwack-smartcentre": (
+        {"address": "Vedder Road & Luckakuck Way, Chilliwack, BC"},
+        {"title": "Reference site plan (location map)",
+         "url": UP + "2023/10/site-plan.png"},
+    ),
 }
 
 # Confirmed mis-parses, forced after the merge; each verified against the gallery image.
@@ -41,6 +50,12 @@ NOTES = {
                            "dorm-style units (Level 1: 7 = 24 men's + 4 accessible beds; Level 2: 4 = "
                            "12 women's + 2 couples/queen beds) totalling 42 beds. Plus a Fraser "
                            "Health outbuilding (~180 m2 footprint, program TBD).",
+    "chilliwack-smartcentre": "Address is approximate: the reference site plan shows the SmartCentres "
+                              "parcel fronting Luckakuck Way and the prose places it along Vedder "
+                              "Road, so the Vedder Road / Luckakuck Way corner is used as a reference "
+                              "point (exact placement from the marker coordinates). The site plan "
+                              "shows 10 buildings totalling 118,270 ft2, anchored by Safeway with "
+                              "Winners, SportChek and an adjacent Canadian Tire.",
 }
 
 
