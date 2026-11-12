@@ -1531,11 +1531,21 @@ const ROADS={"type":"FeatureCollection","features":[{"type":"Feature","propertie
 const CLASSES = ["residential","mixed","commercial","industrial","institutional","unknown"];
 const CLABEL = {residential:"Residential",mixed:"Mixed-use",commercial:"Commercial",
   industrial:"Industrial",institutional:"Institutional",unknown:"Unclassified"};
-// Municipalities grouped by province; the province dropdown filters to one province at a time.
-const PROVINCES = {
-  "British Columbia": ["Burnaby","Chilliwack","City of North Vancouver","Coquitlam","Delta","District of North Vancouver","Langley","Maple Ridge","New Westminster","Port Moody","Richmond","Surrey","UBC","Vancouver","Victoria","West Vancouver","White Rock"],
-  "Ontario": ["Halton Hills"],
+// Municipalities grouped by province, then by regional district (the municipality dropdown shows the
+// regional district as a bold subheading). The province dropdown filters to one province at a time.
+const REGIONS = {
+  "British Columbia": {
+    "Metro Vancouver Regional District": ["Burnaby","City of North Vancouver","Coquitlam","Delta","District of North Vancouver","Langley","Maple Ridge","New Westminster","Port Moody","Richmond","Surrey","UBC","Vancouver","West Vancouver","White Rock"],
+    "Fraser Valley Regional District": ["Chilliwack"],
+    "Capital Regional District": ["Victoria"],
+  },
+  "Ontario": {
+    "Halton Region": ["Halton Hills"],
+  },
 };
+// Flat province -> [munis] list derived from REGIONS; existing filter / fit / count logic uses this.
+const PROVINCES = {};
+for (const [prov, regions] of Object.entries(REGIONS)) PROVINCES[prov] = Object.values(regions).flat();
 const MUNI_PROVINCE = {};
 for (const [prov, ms] of Object.entries(PROVINCES)) ms.forEach(m => MUNI_PROVINCE[m] = prov);
 const cssvar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -1698,7 +1708,12 @@ Object.keys(PROVINCES).forEach(prov=>provSel.appendChild(opt(prov,`${prov} (${pr
 function populateMuni(){
   muniSel.innerHTML="";
   muniSel.appendChild(opt("All",`All municipalities (${provCount(state.province).toLocaleString()})`));
-  PROVINCES[state.province].forEach(m=>muniSel.appendChild(opt(m,`${m} (${(counts[m]||0).toLocaleString()})`)));
+  // One <optgroup> per regional district: its label is a bold, non-selectable subheading.
+  for(const [region,ms] of Object.entries(REGIONS[state.province])){
+    const g=document.createElement("optgroup"); g.label=region;
+    ms.forEach(m=>g.appendChild(opt(m,`${m} (${(counts[m]||0).toLocaleString()})`)));
+    muniSel.appendChild(g);
+  }
   muniSel.value=state.muni;
 }
 provSel.value=state.province; populateMuni();
