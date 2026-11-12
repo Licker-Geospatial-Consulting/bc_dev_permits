@@ -63,8 +63,24 @@ def test_project_details_mapped():
     assert ROW["height_m"] == 21.5                          # "21.5m" -> 21.5
     assert ROW["parking_vehicle_stalls"] == 96              # "96 Spaces" -> 96
     assert ROW["parking_notes"] == "Parking: 96 Spaces"
-    # Trees has no scalar home, but the full block survives in raw_text.
+    # "Size: 118,270ft 2" -> floor_area in m2 (the superscript 2 collapses to "ft 2").
+    assert ROW["floor_area"] == round(118270 * cwk._SQFT_TO_M2, 1)
+    assert ROW["floor_area_unit"] == "m2"
+    # Trees and Buildings have no scalar home, but the full block survives in raw_text.
     assert "Trees: 24" in ROW["raw_text"]
+
+
+def test_address_from_prose_when_title_has_none():
+    """A project whose title names no address takes one from the body prose."""
+    marker = {"title": "Petro-Canada and Starbucks",
+              "permalink": "https://buildchilliwack.com/project/45044-commercial-court/",
+              "coordinates": [-121.97, 49.14]}
+    html = ("<html><head><meta property='og:title' content='Petro-Canada and Starbucks'></head>"
+            "<body><p>The newly completed commercial development at 45044 Commercial Court in "
+            "Chilliwack, BC, is now open to the public under Development Permit DP001455.</p>"
+            "</body></html>")
+    row = cwk.parse_project(html, marker)
+    assert row["address"] == "45044 Commercial Court"
 
 
 def test_gallery_and_pdf_flag():
@@ -80,5 +96,6 @@ if __name__ == "__main__":
     test_core_fields_from_marker_and_page()
     test_type_maps_to_class()
     test_project_details_mapped()
+    test_address_from_prose_when_title_has_none()
     test_gallery_and_pdf_flag()
     print("\nAll Chilliwack harvester tests passed.")

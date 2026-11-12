@@ -192,11 +192,16 @@ _ADDR_RE = re.compile(
     r"Lane|Ln|Court|Crt|Court|Trail|Terrace))\b")
 
 
-def address_from_title(title: str | None) -> str | None:
-    """Return a civic address embedded in the project title ('45857 Tretheway Ave'), else None."""
-    if not title:
+def find_address(text: str | None) -> str | None:
+    """Return the first civic address in the text ('45857 Tretheway Ave', '45044 Commercial Court').
+
+    Applied to the marker title first, then the body prose. Some projects name no address in the
+    title ('Petro-Canada and Starbucks') but state one in the description ('... at 45044 Commercial
+    Court in Chilliwack, BC'), so the prose fallback gives those rows a reference point to geocode.
+    """
+    if not text:
         return None
-    m = _ADDR_RE.search(title)
+    m = _ADDR_RE.search(text)
     return m.group(1) if m else None
 
 
@@ -217,7 +222,9 @@ def map_details(details: dict) -> dict:
             out["parking_vehicle_stalls"] = _int(value)
             out["parking_notes"] = f"{label}: {value}"
         elif ("floor area" in low or "gross floor" in low or low == "size") and "floor_area" not in out:
-            m = re.search(r"([\d,]+)\s*(?:ft2|ft²|sq\.?\s*ft|sf)", value, re.IGNORECASE)
+            # The site renders a superscript 2 (ft^2) that collapses to "ft 2" / "ft2" / "ft²" on
+            # extraction, so accept an optional space and either glyph after the unit.
+            m = re.search(r"([\d,]+)\s*(?:sq\.?\s*ft|ft|sf)\s*[²²2]?", value, re.IGNORECASE)
             if m:
                 out["floor_area"] = round(int(m.group(1).replace(",", "")) * _SQFT_TO_M2, 1)
                 out["floor_area_unit"] = "m2"
@@ -272,7 +279,7 @@ def parse_project(html: str, marker: dict) -> dict | None:
         "permit_id": slug,
         "source_url": permalink,
         "development_name": title,
-        "address": address_from_title(title),
+        "address": find_address(title) or find_address(prose),
         "latitude": round(lat, 6) if isinstance(lat, (int, float)) else None,
         "longitude": round(lon, 6) if isinstance(lon, (int, float)) else None,
         "permit_type": ptype,
