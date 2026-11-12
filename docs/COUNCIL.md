@@ -24,6 +24,7 @@ the exact instructions you gave per site.
 | dnv         | District of North Vancouver| api         | (dnv_search JSON API; NOT the City = `north_van`) |
 | white_rock  | City of White Rock         | arcgis      | arcgis_webmaps.md (layer 1 + Milestones table 3) |
 | delta       | City of Delta              | html        | html_detail_pages.md (EngagementHQ; Building-Permit filter) |
+| chilliwack  | City of Chilliwack         | html        | html_detail_pages.md (Build Chilliwack WordPress map + pages) |
 
 ---
 
@@ -661,3 +662,38 @@ the exact instructions you gave per site.
   staff planner and the individual applicant named in the page sidebar are outside the description
   block and are never read (see CLAUDE.md data handling).
 - **De-dup by address** (`consolidate.consolidate_by_address`) at the end of `harvest()`.
+
+---
+
+## chilliwack - City of Chilliwack  (Build Chilliwack, a WordPress project map)
+
+- **Source:** `buildchilliwack.com` (`config.CHILLIWACK_MAP_URL` / `CHILLIWACK_BASE`), a WordPress
+  site. The `/map/` page plots every project as a Mapbox marker; the markers are embedded as a
+  `markersData` JSON array (title, permalink, coordinates, a prose summary), so the harvester reads
+  that array for the project list + lat/long rather than driving the map. Handled by
+  `harvesters/chilliwack.py`; harvest with `--limit 0`. 108 projects.
+- **Per project** the harvester fetches the project page (`/project/<slug>/`, politely at 0.3 s/page)
+  and reads: the body **prose**; a **"Project Details"** block (`.details-grid` of
+  `.detail-title` / `.detail-content` pairs - Storeys, Units / # of Units, Height, Parking, Size,
+  Trees, Buildings, ...); a **Project Status** and a **Project Type** (each a bare label followed by
+  a `.ct-text-block` value); and a **photo gallery**.
+- **Attribute -> field:** marker `title` -> `development_name` (and `address` when the title is a
+  civic address); marker `coordinates` -> `latitude`/`longitude` (the array is `[lon, lat]`);
+  marker `permalink` -> `source_url`, its slug -> `permit_id` (Build Chilliwack has no permit
+  number). Project Details -> `number_of_stories` / `units_total` / `height_m` (`"24.5m"`) /
+  `parking_vehicle_stalls` (`"96 Spaces"`) / `floor_area` (a `"Size"` in sq ft); the full block is
+  kept in `raw_text`. Project Type -> `development_class` (Condominium / Townhouse / Apartment /
+  Affordable / Supportive / Independent Living -> residential; Commercial / Retail / Restaurant /
+  Signage -> commercial; Industrial / Food Processing -> industrial; Daycare / School -> institutional;
+  **several distinct types -> mixed**). Project Status -> `status` (Proposed / Rezoning / Approved /
+  Under Construction / Complete / Defeated / Bare Land / ...). The prose is also parsed by
+  `features.extract_all` for anything Project Details omits (unit mix, tenure, class).
+- **permit_id:** the project slug (`nowell-4th`, `45857-tretheway-ave`).
+- **Gallery images (Claude-read).** For some projects the unit mix (and occasionally floor area)
+  lives only in a gallery **site-plan** image's "Unit Count Summary" - not in the prose or Project
+  Details (e.g. 45857 Trethewey: 50 supportive studio units + 11 shelter dorm-style units / 42 beds).
+  The gallery image URLs are stored as `documents` (`doc_role = image`); a row missing a valuable
+  field with a non-rendering plan image is flagged `needs_pdf_extraction` for the Claude-read gallery
+  pass (see `tools/chilliwack_enrich.py`).
+- **De-dup by address** at the end of `harvest()` (most projects also carry map coordinates, so the
+  dashboard plots them directly without geocoding).

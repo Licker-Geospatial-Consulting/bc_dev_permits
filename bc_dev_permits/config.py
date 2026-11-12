@@ -228,3 +228,12 @@ SURREY_LIST_URL = "https://www.surrey.ca/city-government/council-meetings/planni
 # download_file PDFs. DELTA_PROJECTS_URL is the list; DELTA_BASE builds each project + document URL.
 DELTA_BASE = "https://letstalk.delta.ca"
 DELTA_PROJECTS_URL = "https://letstalk.delta.ca/projects"
+
+# City of Chilliwack publishes projects on Build Chilliwack (buildchilliwack.com), a WordPress site.
+# The /map/ page plots every project as a Mapbox marker, embedded as a `markersData` JSON array
+# (title, permalink, coordinates, a prose summary), so the harvester reads that array for the project
+# list + lat/long rather than scraping the map. Each project page (/project/<slug>/) carries the full
+# prose, a "Project Details" label->value block (Storeys, Units, Height, Parking, ...), a Project
+# Status and Type, and a photo gallery whose site-plan image sometimes holds the unit mix.
+CHILLIWACK_MAP_URL = "https://buildchilliwack.com/map/"
+CHILLIWACK_BASE = "https://buildchilliwack.com"
