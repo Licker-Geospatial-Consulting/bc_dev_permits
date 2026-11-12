@@ -40,6 +40,47 @@ CLAUDE_READ = {
     ),
 }
 
+# Reference addresses for projects whose page, slug and image filenames name no civic address, read
+# in-session from the project page / its site plan, or - for a sub-building of a larger project - taken
+# from the parent development's civic address. These are approximate REFERENCE points only (the exact
+# map placement always comes from the marker coordinates), so each is applied only when the
+# deterministic harvest left `address` empty, and is noted as approximate in raw_text.
+ADDRESS_REF = {
+    # Sub-buildings / phases -> the parent development's civic address (same site, distinct buildings).
+    "andmar-chilliwack-46183-thomas-road-andmar-1": "46183 Thomas Road",
+    "andmar-chilliwack-46183-thomas-road-andmar-2": "46183 Thomas Road",
+    "andmar-chilliwack-46183-thomas-road-building-c": "46183 Thomas Road",
+    "45511-campus-drive-york-building-a-garrison-campus": "45511 Campus Drive",
+    "45511-campus-drive-york-building-b-garrison-crossing": "45511 Campus Drive",
+    "45511-campus-drive-york-building-c-garrison-crossing": "45511 Campus Drive",
+    "chilliwack-smartcentre-chilliwack-smartcentre-building-b": "Vedder Road & Luckakuck Way, Chilliwack, BC",
+    "chilliwack-smartcentre-chilliwack-smartcentres-sign": "Vedder Road & Luckakuck Way, Chilliwack, BC",
+    "chilliwack-smartcentre-kelly-obryans-chilliwack": "Vedder Road & Luckakuck Way, Chilliwack, BC",
+    "53003-bunker-road-phase-3-hotel-more-retail": "53003 Bunker Road",
+    "53003-bunker-road-phase-2-retail-drive-thru-opportunity": "53003 Bunker Road",
+    "53003-bunker-road-petro-canada-retail": "53003 Bunker Road",
+    "45434-willowstream-rd-parkstone-flats": "45434 Willowstream Rd",
+    "45434-willowstream-rd-lane-homes": "45434 Willowstream Rd",
+    "45434-willowstream-rd-row-homes": "45434 Willowstream Rd",
+    "45434-willowstream-rd-trail-homes": "45434 Willowstream Rd",
+    "45434-willowstream-rd-townhomes": "45434 Willowstream Rd",
+    "vantage-building-1": "45551 Knight Road",
+    "vantage-building-2": "45551 Knight Road",
+    "vantage-building-3": "45551 Knight Road",
+    "45745-45751-alder-avenue-45740-45744-45754-webb-avenue-building-1": "45751 Alder Avenue",
+    "45745-45751-alder-avenue-45740-45744-45754-webb-avenue-building-2": "45751 Alder Avenue",
+    # Standalone projects -> the street or landmark named in the page prose (no civic number stated).
+    "sardis-secondary-expansion": "Sardis Secondary School, Chilliwack, BC",
+    "a-d-rundle-expansion": "A.D. Rundle Middle School, Chilliwack, BC",
+    "bradley-centre": "Chilliwack General Hospital, Chilliwack, BC",  # prose: 2nd floor of CGH
+    "hocking-avenue-centre": "Hocking Avenue, Chilliwack, BC",
+    "nowell-4th": "Fourth Avenue & Nowell Street, Chilliwack, BC",   # prose: four properties at the corner
+    "liqwel": "Thomas Road, Chilliwack, BC",                         # prose: at Base 10 and Thomas Road
+    "base10": "Thomas Road, Chilliwack, BC",                         # Base10 community, beside Liqwel
+    "the-yearling": "Iron Horse, Chilliwack, BC",                    # prose: within the Iron Horse community
+    "district-1881": "Yale Road & Young Road, Chilliwack, BC",       # downtown Chilliwack, Young Rd/Yale Rd
+}
+
 # Confirmed mis-parses, forced after the merge; each verified against the gallery image.
 CLASS_OVERRIDE: dict[str, str] = {}
 FIELD_OVERRIDE: dict[str, dict] = {}
@@ -57,6 +98,25 @@ NOTES = {
                               "shows 10 buildings totalling 118,270 ft2, anchored by Safeway with "
                               "Winners, SportChek and an adjacent Canadian Tire.",
 }
+
+
+def apply_reference_addresses(by_id: dict) -> int:
+    """Fill a reference address on rows the deterministic harvest left address-less. Return count."""
+    filled = 0
+    for permit_id, address in ADDRESS_REF.items():
+        row = by_id.get(permit_id)
+        if not row:
+            print(f"  (addr row not found: {permit_id})")
+            continue
+        if row.get("address"):
+            continue  # a deterministic address already won; never overwrite it
+        pdf_enrich.apply_claude_pdf(row, {"address": address})
+        note = f"Reference address (approximate): {address}. Exact map placement from the marker coordinates."
+        if note not in (row.get("raw_text") or ""):
+            row["raw_text"] = "\n\n".join(p for p in (row.get("raw_text"), note) if p)
+        row.pop("needs_pdf_extraction", None)
+        filled += 1
+    return filled
 
 
 def main() -> None:
@@ -88,6 +148,8 @@ def main() -> None:
         row.pop("needs_pdf_extraction", None)
         print(f"{permit_id}: filled {filled} field(s) | method={row['extraction_method']} "
               f"| conflicts={len(row.get('conflicts') or [])} | needs_review={row['needs_review']}")
+
+    print(f"reference addresses filled: {apply_reference_addresses(by_id)}")
     path.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"wrote {path}")
 
