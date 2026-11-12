@@ -83,6 +83,16 @@ def test_address_from_prose_when_title_has_none():
     assert row["address"] == "45044 Commercial Court"
 
 
+def test_nested_permalinks_get_unique_ids():
+    """A nested /project/<parent>/<child>/ permalink joins the path so child slugs never collide."""
+    base = "https://buildchilliwack.com/project/"
+    assert cwk._permit_id(base + "9299-main-street/") == "9299-main-street"   # single segment
+    assert cwk._permit_id(base + "vantage/building-1/") == "vantage-building-1"
+    assert cwk._permit_id(base + "webb-avenue/building-1/") == "webb-avenue-building-1"
+    # The two 'building-1' children resolve to different ids.
+    assert cwk._permit_id(base + "vantage/building-1/") != cwk._permit_id(base + "webb-avenue/building-1/")
+
+
 def test_gallery_and_pdf_flag():
     """Gallery images lose their WordPress size suffix; a site-plan image + missing unit_mix flags it."""
     urls = [d["url"] for d in ROW["documents"]]
@@ -97,5 +107,6 @@ if __name__ == "__main__":
     test_type_maps_to_class()
     test_project_details_mapped()
     test_address_from_prose_when_title_has_none()
+    test_nested_permalinks_get_unique_ids()
     test_gallery_and_pdf_flag()
     print("\nAll Chilliwack harvester tests passed.")

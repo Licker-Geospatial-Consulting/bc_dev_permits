@@ -190,6 +190,8 @@ _ADDR_RE = re.compile(
     r"\b(\d{3,6}(?:\s*[-&]\s*\d{3,6})?\s+[A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,3}\s+"
     r"(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Way|Crescent|Cres|Place|Pl|Boulevard|Blvd|"
     r"Lane|Ln|Court|Crt|Court|Trail|Terrace))\b")
+# Same pattern, case-insensitive, for lowercased slugs / image filenames.
+_ADDR_RE_I = re.compile(_ADDR_RE.pattern, re.IGNORECASE)
 
 
 def find_address(text: str | None) -> str | None:
@@ -203,6 +205,30 @@ def find_address(text: str | None) -> str | None:
         return None
     m = _ADDR_RE.search(text)
     return m.group(1) if m else None
+
+
+def address_from_token(token: str | None) -> str | None:
+    """Return a civic address from a lowercase slug or image filename, title-cased.
+
+    Build Chilliwack's permalinks and plan-image filenames frequently encode the address
+    ('9299-main-street', '9298-young-road-ortho', '45922-Thunderbird-Ln'), so when the title and
+    prose name none this recovers it deterministically. The number must be a 3-6 digit civic number
+    before a street-type word, so a slug like 'building-2' or 'andmar-1' yields nothing.
+    """
+    if not token:
+        return None
+    m = _ADDR_RE_I.search(re.sub(r"[-_]+", " ", token))
+    return m.group(1).title() if m else None
+
+
+def _image_address(images: list[str]) -> str | None:
+    """First civic address recoverable from a gallery image filename (location / site-plan tiles)."""
+    for url in images:
+        stem = url.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+        addr = address_from_token(stem)
+        if addr:
+            return addr
+    return None
 
 
 # Project Details label -> schema field. A label is matched by keyword (first match wins); the value
@@ -253,10 +279,29 @@ def _raw_text(prose: str | None, details: dict, status: str | None, ptype: str |
 _IMG_WORTHY = ("units_total", "unit_mix", "floor_area")
 
 
+def _permit_id(permalink: str) -> str | None:
+    """Derive a unique permit_id from the permalink's path after /project/.
+
+    A single-segment permalink gives that slug ('9299-main-street'); a nested
+    /project/<parent>/<child>/ permalink joins the whole path ('vantage/building-1' ->
+    'vantage-building-1') so two projects reusing a generic child slug ('building-1') never collide.
+    """
+    if "/project/" in permalink:
+        path = permalink.split("/project/", 1)[-1].strip("/")
+    else:
+        path = permalink.rstrip("/").rsplit("/", 1)[-1]
+    return path.replace("/", "-") or None
+
+
+def _child_slug(permalink: str) -> str:
+    """Return the permalink's last path segment (the project's own slug, not its parent's)."""
+    return permalink.rstrip("/").rsplit("/", 1)[-1]
+
+
 def parse_project(html: str, marker: dict) -> dict | None:
     """Map one project page (+ its map marker) to a dev_permit row."""
     permalink = marker.get("permalink") or ""
-    slug = permalink.rstrip("/").rsplit("/", 1)[-1]
+    slug = _permit_id(permalink)
     if not slug:
         return None
     soup = _soup(html)
@@ -279,7 +324,15 @@ def parse_project(html: str, marker: dict) -> dict | None:
         "permit_id": slug,
         "source_url": permalink,
         "development_name": title,
-        "address": find_address(title) or find_address(prose),
+        # Title / prose first (cased, most reliable), then the child slug and plan-image filenames,
+        # which on Build Chilliwack usually encode the civic address ('9299-main-street',
+        # '9298-young-road'). Only the child segment is used, never the full nested path: a nested
+        # path carries the PARENT's address ('.../46183-thomas-road/building-c'), which would wrongly
+        # give every sub-building the parent address and let consolidate fold them away. Each
+        # sub-building keeps its own coordinates and gets its reference address from the enrichment
+        # pass (tools/chilliwack_enrich.py), which runs after consolidation.
+        "address": (find_address(title) or find_address(prose)
+                    or address_from_token(_child_slug(permalink)) or _image_address(images)),
         "latitude": round(lat, 6) if isinstance(lat, (int, float)) else None,
         "longitude": round(lon, 6) if isinstance(lon, (int, float)) else None,
         "permit_type": ptype,

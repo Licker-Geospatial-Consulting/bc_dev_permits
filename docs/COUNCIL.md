@@ -677,23 +677,37 @@ the exact instructions you gave per site.
   `.detail-title` / `.detail-content` pairs - Storeys, Units / # of Units, Height, Parking, Size,
   Trees, Buildings, ...); a **Project Status** and a **Project Type** (each a bare label followed by
   a `.ct-text-block` value); and a **photo gallery**.
-- **Attribute -> field:** marker `title` -> `development_name` (and `address` when the title is a
-  civic address); marker `coordinates` -> `latitude`/`longitude` (the array is `[lon, lat]`);
-  marker `permalink` -> `source_url`, its slug -> `permit_id` (Build Chilliwack has no permit
-  number). Project Details -> `number_of_stories` / `units_total` / `height_m` (`"24.5m"`) /
-  `parking_vehicle_stalls` (`"96 Spaces"`) / `floor_area` (a `"Size"` in sq ft); the full block is
-  kept in `raw_text`. Project Type -> `development_class` (Condominium / Townhouse / Apartment /
-  Affordable / Supportive / Independent Living -> residential; Commercial / Retail / Restaurant /
-  Signage -> commercial; Industrial / Food Processing -> industrial; Daycare / School -> institutional;
-  **several distinct types -> mixed**). Project Status -> `status` (Proposed / Rezoning / Approved /
-  Under Construction / Complete / Defeated / Bare Land / ...). The prose is also parsed by
-  `features.extract_all` for anything Project Details omits (unit mix, tenure, class).
-- **permit_id:** the project slug (`nowell-4th`, `45857-tretheway-ave`).
-- **Gallery images (Claude-read).** For some projects the unit mix (and occasionally floor area)
-  lives only in a gallery **site-plan** image's "Unit Count Summary" - not in the prose or Project
-  Details (e.g. 45857 Trethewey: 50 supportive studio units + 11 shelter dorm-style units / 42 beds).
-  The gallery image URLs are stored as `documents` (`doc_role = image`); a row missing a valuable
-  field with a non-rendering plan image is flagged `needs_pdf_extraction` for the Claude-read gallery
-  pass (see `tools/chilliwack_enrich.py`).
+- **Attribute -> field:** marker `title` -> `development_name`; marker `coordinates` ->
+  `latitude`/`longitude` (the array is `[lon, lat]`); marker `permalink` -> `source_url` and
+  `permit_id` (Build Chilliwack has no permit number). Project Details -> `number_of_stories` /
+  `units_total` / `height_m` (`"24.5m"`) / `parking_vehicle_stalls` (`"96 Spaces"`) / `floor_area`
+  (a `"Size"` value; the site renders `ft^2` as `"118,270ft 2"`, so the parser accepts that spacing);
+  the full block is kept in `raw_text`, including labels with no scalar home (Trees, Buildings).
+  Project Type -> `development_class` (Condominium / Townhouse / Apartment / Affordable / Supportive /
+  Independent Living -> residential; Commercial / Retail / Restaurant / Signage -> commercial;
+  Industrial / Food Processing -> industrial; Daycare / School -> institutional; **several distinct
+  types -> mixed**). Project Status -> `status` (Proposed / Rezoning / Approved / Under Construction /
+  Complete / Defeated / Bare Land / ...). The prose is also parsed by `features.extract_all` for
+  anything Project Details omits (unit mix, tenure, class).
+- **permit_id:** the permalink path after `/project/`. A single-segment permalink gives that slug
+  (`9299-main-street`); a **nested** `/project/<parent>/<child>/` permalink joins the whole path
+  (`vantage/building-1` -> `vantage-building-1`) so two projects that reuse a generic child slug
+  (`building-1`) never collide on `(municipality, permit_id)` (`_permit_id`).
+- **address (deterministic first).** `title` -> `prose` -> **child slug** -> **plan-image filename**,
+  the last two because Build Chilliwack usually encodes the civic address in them (`9299-main-street`,
+  `9298-young-road-ortho.jpg`). Only the *child* slug is used, never the full nested path, since a
+  nested path carries the *parent's* address and would wrongly give every sub-building the parent's
+  address (and let de-dup fold them away). Each sub-building keeps its own coordinates.
+- **Gallery images + reference addresses (Claude-read, `tools/chilliwack_enrich.py`).** For some
+  projects the unit mix (and occasionally floor area) lives only in a gallery **site-plan** image's
+  "Unit Count Summary" - not in the prose or Project Details (e.g. 45857 Trethewey: 50 supportive
+  studio units + 11 shelter dorm-style units / 42 beds). The gallery image URLs are stored as
+  `documents` (`doc_role = image`); a row missing a valuable field with a non-rendering plan image is
+  flagged `needs_pdf_extraction` for the pass. The same tool fills a **reference address** (approximate,
+  noted in `raw_text`; exact placement still from the marker coordinates) for the rows the deterministic
+  harvest left address-less: a sub-building takes its parent development's civic address (Andmar
+  buildings -> 46183 Thomas Road, York buildings -> 45511 Campus Drive, ...), a standalone takes the
+  street or landmark named in its prose (`nowell-4th` -> Fourth Avenue & Nowell Street). It is applied
+  only when `address` is empty, so a deterministic value is never overwritten.
 - **De-dup by address** at the end of `harvest()` (most projects also carry map coordinates, so the
   dashboard plots them directly without geocoding).
