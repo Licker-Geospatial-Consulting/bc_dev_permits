@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Trimmed synthetic copy of the Abbotsford SSRS XML export (one <Detail> per application), matching
+     the real namespace + attribute set the harvester reads. Covers: a mixed row (commercial m2 +
+     apartments), a subdivision (new SF lots), an industrial row, a no-metric rezoning row, and a
+     NULL CIVIC placeholder address. EMAIL / PHONE1 are present to confirm they are dropped. -->
+<Report xmlns="Instream_x0020_Development_x0020_Applications_x0020_-_x0020_1075" Name="Instream">
+  <table1 Textbox92="944" Textbox93="25288.5" Textbox94="0" Textbox95="12" Textbox96="0" Textbox97="78">
+    <Detail_Collection>
+      <Detail PRJ_NUMBER1="PRJ20-005" PROPERTIES="33816 SOUTH FRASER WAY"
+              PEOPLE_NAME1="EXAMPLE DEVELOPMENTS LTD" EMAIL="a@b.com" PHONE1="(604)555-1234"
+              DESCRIPTION="Rezoning: to a Comprehensive Development Zone.&#x0D;&#x0A;Development Permit: mixed use building."
+              APP_RECEIVED_DATE="01/13/20"
+              COMMERCIAL="469" INDUSTRIAL="0" INSTITUTIONAL="0" NEWSFLOTS="0" TOWNHOUSE="0" APARTMENT="78"
+              KEY_DATES="DVP AIP by Reg Council Date: Dec 6, 2021&#x0D;&#x0A;&#x0D;&#x0A;PLA Issuance Date: May 21, 2022&#x0D;&#x0A;&#x0D;&#x0A;" />
+      <Detail PRJ_NUMBER1="PRJ17-001" PROPERTIES="2733 STATION RD"
+              PEOPLE_NAME1="CENTRAL VALLEY ENGINEERING LTD" EMAIL="" PHONE1=""
+              DESCRIPTION="Subdivision: into 12 residential lots."
+              APP_RECEIVED_DATE="01/11/17"
+              COMMERCIAL="0" INDUSTRIAL="0" INSTITUTIONAL="0" NEWSFLOTS="12" TOWNHOUSE="0" APARTMENT="0"
+              KEY_DATES="PLA Issuance Date: May 21, 2021&#x0D;&#x0A;&#x0D;&#x0A;" />
+      <Detail PRJ_NUMBER1="PRJ20-060" PROPERTIES="31509 KING RD"
+              PEOPLE_NAME1="" EMAIL="" PHONE1=""
+              DESCRIPTION="Development Permit: new industrial warehouse."
+              APP_RECEIVED_DATE="05/28/20"
+              COMMERCIAL="0" INDUSTRIAL="25288.50" INSTITUTIONAL="0" NEWSFLOTS="0" TOWNHOUSE="0" APARTMENT="0"
+              KEY_DATES="" />
+      <Detail PRJ_NUMBER1="PRJ18-002" PROPERTIES="NULL CIVIC N/A"
+              PEOPLE_NAME1="" EMAIL="" PHONE1=""
+              DESCRIPTION="Rezoning; from Agricultural Zone One (A1) to General Industrial Zone (I2)."
+              APP_RECEIVED_DATE="02/01/18"
+              COMMERCIAL="0" INDUSTRIAL="0" INSTITUTIONAL="0" NEWSFLOTS="0" TOWNHOUSE="0" APARTMENT="0"
+              KEY_DATES="" />
+    </Detail_Collection>
+  </table1>
+</Report>

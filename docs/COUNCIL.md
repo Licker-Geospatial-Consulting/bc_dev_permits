@@ -25,6 +25,7 @@ the exact instructions you gave per site.
 | white_rock  | City of White Rock         | arcgis      | arcgis_webmaps.md (layer 1 + Milestones table 3) |
 | delta       | City of Delta              | html        | html_detail_pages.md (EngagementHQ; Building-Permit filter) |
 | chilliwack  | City of Chilliwack         | html        | html_detail_pages.md (Build Chilliwack WordPress map + pages) |
+| abbotsford  | City of Abbotsford         | ssrs        | (SSRS ReportViewer; one XML export of the Instream report) |
 
 ---
 
@@ -711,3 +712,35 @@ the exact instructions you gave per site.
   only when `address` is empty, so a deterministic value is never overwritten.
 - **De-dup by address** at the end of `harvest()` (most projects also carry map coordinates, so the
   dashboard plots them directly without geocoding).
+
+## abbotsford - City of Abbotsford  (SSRS "Instream Development Applications" report)
+
+- **Source:** `services.abbotsford.ca/OnlineReporting/InstreamDevelopmentApplications.aspx`
+  (`config.ABBOTSFORD_REPORT_URL`), a **SQL Server Reporting Services (SSRS) ReportViewer**. The
+  visible table paginates over 9 pages, but the report **executes on page load** and SSRS publishes
+  the full result set through its **export endpoint**, so the harvester reads one **XML export**
+  instead of scraping / paging the HTML (no Playwright). Handled by `harvesters/abbotsford.py`;
+  harvest with `--limit 0`. ~445 applications in the export -> ~426 rows after address de-dup.
+- **Flow:** GET the `.aspx` (sets a fresh `ReportSession` cookie) -> read `"ExportUrlBase"` out of
+  the page -> GET `<host><ExportUrlBase>XML` over the same session -> one `<Detail>` element per
+  application. The export URL carries a per-request session id, so it is re-read each run; the
+  resulting XML is cached by TTL like any other fetch.
+- **Columns -> fields** (the report's own column set, no detail pages):
+  `PRJ_NUMBER1` -> `permit_id` (e.g. `PRJ24-024`); `PROPERTIES` -> `address` (`NULL CIVIC N/A` ->
+  NULL); `DESCRIPTION` -> `raw_text`, and the application types named in it -> `permit_type`
+  (`Rezoning, Subdivision, Development Permit, ...`); `APP_RECEIVED_DATE` -> an "Application Received"
+  milestone; `KEY_DATES` -> one milestone per `Label: Mon DD, YYYY` line. **The six quantitative
+  columns are the authoritative project attributes:** `COMMERCIAL` / `INDUSTRIAL` / `INSTITUTIONAL`
+  (m2) -> per-use `occupancies` rows + summed `floor_area` + the non-residential part of
+  `development_class`; `NEWSFLOTS` / `TOWNHOUSE` / `APARTMENT` -> `unit_mix` + the residential part of
+  the class. Several distinct uses -> **mixed**. `units_total` = townhouse + apartment **dwelling**
+  units only; **new SF lots are subdivision lots, not dwellings**, so they live in `unit_mix`
+  (`single-family-lot`) and not in `units_total`. Residential counts come only from these columns, so
+  prose like "into 14 lots" is never misread as 14 dwellings; storeys / height / zoning are the only
+  description-derived signals (via `features.extract_all`).
+- **Privacy:** `PEOPLE_NAME1` (applicant, usually a firm) is kept in `raw_text`; `EMAIL` and `PHONE1`
+  are personal contact details and are **not stored**.
+- **status:** the report has no per-row status column, so `status` is left NULL (the report lists
+  in-stream applications; a per-status pass would need a parameterized postback).
+- **De-dup by address** at the end of `harvest()` folds the occasional duplicate filing (e.g. a
+  "Dummy folder" sharing a project's address, and `PRJ24-024`'s two rows) into one.

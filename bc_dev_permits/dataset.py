@@ -19,6 +19,7 @@ import sys
 
 from bc_dev_permits import config
 from bc_dev_permits.harvesters import (
+    abbotsford,
     burnaby,
     chilliwack,
     coquitlam,
@@ -55,6 +56,7 @@ HARVESTERS = {
     "richmond": richmond.harvest,
     "vancouver": vancouver.harvest,
     "burnaby": burnaby.harvest,
+    "abbotsford": abbotsford.harvest,
     "chilliwack": chilliwack.harvest,
     "delta": delta.harvest,
     "dnv": dnv.harvest,

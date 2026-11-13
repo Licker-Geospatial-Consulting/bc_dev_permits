@@ -237,3 +237,9 @@ DELTA_PROJECTS_URL = "https://letstalk.delta.ca/projects"
 # Status and Type, and a photo gallery whose site-plan image sometimes holds the unit mix.
 CHILLIWACK_MAP_URL = "https://buildchilliwack.com/map/"
 CHILLIWACK_BASE = "https://buildchilliwack.com"
+
+# City of Abbotsford publishes in-stream development applications through an SSRS ReportViewer
+# ("Online Reporting"). The report executes on page load and SSRS exposes the full result set via its
+# export endpoint, so the harvester reads one XML export instead of paging the 9-page HTML table.
+ABBOTSFORD_HOST = "https://services.abbotsford.ca"
+ABBOTSFORD_REPORT_URL = ABBOTSFORD_HOST + "/OnlineReporting/InstreamDevelopmentApplications.aspx"
