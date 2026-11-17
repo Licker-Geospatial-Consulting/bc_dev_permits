@@ -40,6 +40,18 @@ DETAIL_FIELDS = [
     "source_url", "enrichment_url", "related_permits", "raw_text",
 ]
 
+# The value-bearing fields the detail panel can tag as PDF-derived. For a row read entirely from a
+# PDF (Surrey memos, Burnaby / Richmond list PDFs), every one of these that is present is tagged;
+# for a mixed HTML + document-read row, only the fields field_methods marks are tagged.
+BADGE_FIELDS = (
+    "address", "development_class", "development_name", "units_total", "unit_mix",
+    "number_of_stories", "height_m", "floor_area", "lot_area", "footprint_area",
+    "parking_vehicle_stalls", "parking_bike_stalls", "zoning_density", "rental_or_strata",
+    "parking_notes", "building_materials", "energy_info", "mechanical_system_info", "retrofit_info",
+)
+# Base extraction methods that mean the whole row was read from a PDF (vs an HTML page / map / API).
+_PURE_PDF_BASES = ("pdf", "ollama")
+
 # Geocoded coords for the HTML-source municipalities (North Van, Victoria).
 gc_path = Path("tools/dashboard/geocoded.json")
 GEO = json.loads(gc_path.read_text(encoding="utf-8")) if gc_path.exists() else {}
@@ -70,18 +82,29 @@ for slug, name in FILES.items():
             "ms": [m for m in (r.get("milestones") or []) if m.get("milestone_date")],
             "docs": len(r.get("documents") or []),
         }
-        # Source documents the fields were actually read from (`extracted` flag set by the PDF
-        # enrichment). These are the exact PDFs a reviewer should open to verify the attributes,
-        # instead of wading through every attachment on the source page.
+        # A row whose base extraction method is a PDF read (Surrey / Burnaby / Richmond) came wholly
+        # from a PDF; a mixed "html+doc_read" row only has some fields from a document.
+        base_method = (r.get("extraction_method") or "").split("+")[0]
+        pure_pdf = any(base_method.startswith(b) for b in _PURE_PDF_BASES)
+        # Source documents the fields were read from. The enrichment flags the chosen PDF with
+        # `extracted`; a pure-PDF row's own memo is its source even when unflagged. (Burnaby / Richmond
+        # carry no per-row document, but their source_url IS the list PDF, which the panel links.)
+        docs = r.get("documents") or []
         src_docs = [{"url": d["url"], "title": d.get("title"), "role": d.get("doc_role")}
-                    for d in (r.get("documents") or []) if d.get("extracted") and d.get("url")]
+                    for d in docs if d.get("extracted") and d.get("url")]
+        if not src_docs and pure_pdf and docs and docs[0].get("url"):
+            d = docs[0]
+            src_docs = [{"url": d["url"], "title": d.get("title"), "role": d.get("doc_role")}]
         if src_docs:
             rec["source_docs"] = src_docs
-        # Field names whose value was read from a document (field_methods != html), so the panel can
-        # tag them — a reviewer then knows which attributes to check against the source PDF.
+        # Fields to tag as PDF-derived: all present value fields for a pure-PDF row, else the fields
+        # field_methods marks as document-read. A reviewer then knows what to check against the PDF.
         fm = r.get("field_methods") or {}
-        pdf_fields = [k for k, m in fm.items()
-                      if any(t in str(m) for t in ("pdf", "claude", "ollama", "letter"))]
+        if pure_pdf:
+            pdf_fields = [f for f in BADGE_FIELDS if r.get(f) not in (None, "", [], {})]
+        else:
+            pdf_fields = [k for k, m in fm.items()
+                          if any(t in str(m) for t in ("pdf", "claude", "ollama", "letter"))]
         if pdf_fields:
             rec["pdf_fields"] = pdf_fields
         if approx:
