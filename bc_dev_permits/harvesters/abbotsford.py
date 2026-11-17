@@ -20,7 +20,9 @@ Columns -> fields (the report's own column set):
   PEOPLE_NAME1                             -> applicant, kept in raw_text only
 
 PEOPLE_NAME1 is the applicant (usually a firm); EMAIL and PHONE1 are personal contact details and are
-deliberately NOT stored. The report carries no per-row status column, so ``status`` is left NULL.
+deliberately NOT stored. The report has no per-row status column, but its Folder Status parameter
+defaults to "Active" (the default export is exactly the Active set - Cancelled / Completed / Deposited
+are separate values the default excludes), so every harvested row is stamped ``status = "Active"``.
 """
 
 from __future__ import annotations
@@ -205,7 +207,10 @@ def parse_detail(attrib: dict) -> dict | None:
         "development_class": dev_class,
         "occupancy_types": occ_types,
         "occupancies": occupancies,
-        "status": None,  # the report carries no per-row status column
+        # The report has no per-row status column, but its default Folder Status parameter is "Active"
+        # (confirmed: the default export is exactly the Active set; Cancelled / Completed / Deposited
+        # are separate parameter values the default excludes), so every harvested row is active.
+        "status": "Active",
         # Residential counts come only from the structured columns (never the prose, so "into 14 lots"
         # is not misread as 14 dwellings); storeys / height / zoning are description signals.
         "units_total": s["units_total"],

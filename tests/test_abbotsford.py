@@ -24,6 +24,7 @@ def test_all_rows_parsed():
     for r in ROWS.values():
         assert r["municipality"] == "abbotsford"
         assert r["source_url"].endswith("InstreamDevelopmentApplications.aspx")
+        assert r["status"] == "Active"   # the report's default Folder Status is Active
 
 
 def test_mixed_use_row():

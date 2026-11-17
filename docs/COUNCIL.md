@@ -740,7 +740,11 @@ the exact instructions you gave per site.
   description-derived signals (via `features.extract_all`).
 - **Privacy:** `PEOPLE_NAME1` (applicant, usually a firm) is kept in `raw_text`; `EMAIL` and `PHONE1`
   are personal contact details and are **not stored**.
-- **status:** the report has no per-row status column, so `status` is left NULL (the report lists
-  in-stream applications; a per-status pass would need a parameterized postback).
+- **status:** the report has no per-row status column, but its **Folder Status parameter defaults to
+  "Active"** - confirmed empirically: the default export is exactly the Active set (446), while
+  Cancelled (488), Completed (611) and Deposited (4) are separate values the default excludes (the
+  four partition the 1549-row "Select All"). So every harvested row is stamped `status = "Active"`.
+  Pulling another status would need a parameterized "View Report" postback (`HiddenIndices` =
+  0 Active / 1 Cancelled / 2 Completed / 3 Deposited).
 - **De-dup by address** at the end of `harvest()` folds the occasional duplicate filing (e.g. a
   "Dummy folder" sharing a project's address, and `PRJ24-024`'s two rows) into one.
