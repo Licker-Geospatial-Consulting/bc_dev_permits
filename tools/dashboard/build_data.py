@@ -70,6 +70,13 @@ for slug, name in FILES.items():
             "ms": [m for m in (r.get("milestones") or []) if m.get("milestone_date")],
             "docs": len(r.get("documents") or []),
         }
+        # Source documents the fields were actually read from (`extracted` flag set by the PDF
+        # enrichment). These are the exact PDFs a reviewer should open to verify the attributes,
+        # instead of wading through every attachment on the source page.
+        src_docs = [{"url": d["url"], "title": d.get("title"), "role": d.get("doc_role")}
+                    for d in (r.get("documents") or []) if d.get("extracted") and d.get("url")]
+        if src_docs:
+            rec["source_docs"] = src_docs
         if approx:
             rec["lat_approx"] = True
         for k in DETAIL_FIELDS:
