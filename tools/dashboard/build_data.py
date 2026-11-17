@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 FILES = {
+    "abbotsford": "Abbotsford",
     "burnaby": "Burnaby",
     "chilliwack": "Chilliwack",
     "coquitlam": "Coquitlam",

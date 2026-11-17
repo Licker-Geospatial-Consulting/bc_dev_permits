@@ -7,6 +7,7 @@ import requests
 from shapely.geometry import mapping, shape
 
 QUERIES = {
+    "Abbotsford": "Abbotsford, British Columbia, Canada",
     "Burnaby": "Burnaby, British Columbia, Canada",
     "Chilliwack": "Chilliwack, British Columbia, Canada",
     "Coquitlam": "Coquitlam, British Columbia, Canada",

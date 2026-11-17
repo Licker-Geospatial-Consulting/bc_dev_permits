@@ -26,6 +26,7 @@ CITY = {
     "vancouver": ("Vancouver", (49.2497, -123.1193), "BC"),
     "burnaby": ("Burnaby", (49.2488, -122.9805), "BC"),
     "delta": ("Delta", (49.0847, -123.0587), "BC"),
+    "abbotsford": ("Abbotsford", (49.0504, -122.3045), "BC"),
 }
 
 # Street-type suffixes used to pick a civic street phrase out of a UBC project address.
