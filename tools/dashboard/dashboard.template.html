@@ -136,6 +136,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 .kpi .v{font-size:19px;font-weight:700;font-family:var(--display);line-height:1;letter-spacing:-.01em}
 .kpi .u{font-size:11px;font-weight:600;color:var(--muted)}
 .kpi .l{font-size:10.5px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
+/* tag marking a value that was read from a source document (PDF), so a reviewer knows to verify it */
+.pdftag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.03em;vertical-align:middle;
+  padding:1px 4px;margin-left:5px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);
+  border:1px solid var(--line-2);text-transform:none}
 .rows{display:flex;flex-direction:column;gap:0}
 .row{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:13px}
 .row:last-child{border-bottom:0}
@@ -298,9 +302,9 @@ const byRec = new Map(markers.map(m=>[m._p,m]));
 
 // ---- detail panel ----
 const panel=document.getElementById("panel");
-function kpi(v,u,l){ return v==null?"":`<div class="kpi"><div class="v">${fmt(v)}${u?` <span class="u">${u}</span>`:""}</div><div class="l">${l}</div></div>`; }
+function kpi(v,u,l,tag){ return v==null?"":`<div class="kpi"><div class="v">${fmt(v)}${u?` <span class="u">${u}</span>`:""}</div><div class="l">${l}${tag||""}</div></div>`; }
 function rowsHtml(pairs){
-  const r=pairs.filter(([,v])=>v!=null&&v!=="").map(([k,v])=>`<div class="row"><div class="k">${k}</div><div class="val">${v}</div></div>`).join("");
+  const r=pairs.filter(([,v])=>v!=null&&v!=="").map(([k,v,tag])=>`<div class="row"><div class="k">${k}${tag||""}</div><div class="val">${v}</div></div>`).join("");
   return r?`<div class="rows">${r}</div>`:"";
 }
 function sect(title,inner){ return inner?`<div class="sect"><h3>${title}</h3>${inner}</div>`:""; }
@@ -309,56 +313,62 @@ function select(p,m){
   if(state.selected && byRec.get(state.selected)) byRec.get(state.selected).setStyle({radius:5,weight:1});
   state.selected=p;
   if(m){ m.setStyle({radius:8,weight:2.5}); m.bringToFront(); }
+  // Tag a field that was read from a source document (PDF), so a reviewer knows to verify it.
+  const pdfTag = f => (Array.isArray(p.pdf_fields)&&p.pdf_fields.includes(f))
+    ? ` <span class="pdftag" title="Read from a source document — verify against it">PDF</span>` : "";
   document.getElementById("p-muni").textContent = `${p.muni} · ${p.id||""}`;
-  document.getElementById("p-addr").textContent = p.addr || p.id || "Development permit";
+  document.getElementById("p-addr").innerHTML = esc(p.addr || p.id || "Development permit")+pdfTag("address");
   const col=classColor(p.class);
   document.getElementById("p-pills").innerHTML =
-    `<span class="pill"><span class="d" style="background:${col}"></span>${CLABEL[p.class]||"Unclassified"}</span>`+
+    `<span class="pill"><span class="d" style="background:${col}"></span>${CLABEL[p.class]||"Unclassified"}${pdfTag("development_class")}</span>`+
     (p.status?`<span class="pill status">${esc(p.status)}</span>`:"")+
     (p.permit_type?`<span class="pill">${esc(p.permit_type)}</span>`:"");
   const unit = p.floor_area_unit==="m2"?"m²":(p.floor_area_unit||"m²");
   const lunit = p.lot_area_unit==="m2"?"m²":(p.lot_area_unit||"m²");
-  const kpis=[kpi(p.units_total,"","Units"),kpi(p.number_of_stories,"","Storeys"),
-    kpi(p.height_m,"m","Height"),kpi(p.floor_area,unit,"Floor area"),
-    kpi(p.lot_area,lunit,"Lot area"),kpi(p.footprint_area,"m²","Footprint"),
-    kpi(p.parking_vehicle_stalls,"","Vehicle parking"),kpi(p.parking_bike_stalls,"","Bicycle parking")
+  const kpis=[kpi(p.units_total,"","Units",pdfTag("units_total")),kpi(p.number_of_stories,"","Storeys",pdfTag("number_of_stories")),
+    kpi(p.height_m,"m","Height",pdfTag("height_m")),kpi(p.floor_area,unit,"Floor area",pdfTag("floor_area")),
+    kpi(p.lot_area,lunit,"Lot area",pdfTag("lot_area")),kpi(p.footprint_area,"m²","Footprint",pdfTag("footprint_area")),
+    kpi(p.parking_vehicle_stalls,"","Vehicle parking",pdfTag("parking_vehicle_stalls")),kpi(p.parking_bike_stalls,"","Bicycle parking",pdfTag("parking_bike_stalls"))
   ].filter(Boolean);
   const mix = p.unit_mix && typeof p.unit_mix==="object"
-    ? `<div class="mix">${Object.entries(p.unit_mix).map(([k,v])=>`<span>${esc(k)}: ${fmt(v)}</span>`).join("")}</div>` : "";
+    ? `<div class="mix">${Object.entries(p.unit_mix).map(([k,v])=>`<span>${esc(k)}: ${fmt(v)}</span>`).join("")}${pdfTag("unit_mix")}</div>` : "";
   const dev = rowsHtml([
-    ["Project", p.development_name && esc(p.development_name)],
-    ["Zoning / density", p.zoning_density && esc(p.zoning_density)],
-    ["Tenure", p.rental_or_strata && esc(p.rental_or_strata)+(p.rental_subtype?` · ${esc(p.rental_subtype)}`:"")],
-    ["Parking notes", p.parking_notes && esc(p.parking_notes)],
+    ["Project", p.development_name && esc(p.development_name), pdfTag("development_name")],
+    ["Zoning / density", p.zoning_density && esc(p.zoning_density), pdfTag("zoning_density")],
+    ["Tenure", p.rental_or_strata && esc(p.rental_or_strata)+(p.rental_subtype?` · ${esc(p.rental_subtype)}`:""), pdfTag("rental_or_strata")],
+    ["Parking notes", p.parking_notes && esc(p.parking_notes), pdfTag("parking_notes")],
   ]);
   const bld = rowsHtml([
-    ["Materials", p.building_materials && esc(p.building_materials)],
-    ["Energy", p.energy_info && esc(p.energy_info)],
-    ["Mechanical", p.mechanical_system_info && esc(p.mechanical_system_info)],
-    ["Renovation", p.retrofit_info && esc(p.retrofit_info)],
+    ["Materials", p.building_materials && esc(p.building_materials), pdfTag("building_materials")],
+    ["Energy", p.energy_info && esc(p.energy_info), pdfTag("energy_info")],
+    ["Mechanical", p.mechanical_system_info && esc(p.mechanical_system_info), pdfTag("mechanical_system_info")],
+    ["Renovation", p.retrofit_info && esc(p.retrofit_info), pdfTag("retrofit_info")],
   ]);
   const msHtml = (p.ms&&p.ms[0]) ? `<div class="ms">${esc(p.ms[0].milestone||p.ms[0].m||"Received")}: <b>${esc(p.ms[0].milestone_date||p.ms[0].d||"")}</b></div>`:"";
   const conf = typeof p.extraction_confidence==="number"?Math.round(p.extraction_confidence*100)+"%":null;
   const rel = Array.isArray(p.related_permits) && p.related_permits.length
     ? `<div class="rel">${p.related_permits.map(r=>`<div><b>${esc(r.permit_id||"")}</b>${r.permit_type?` · ${esc(r.permit_type)}`:""}${r.address?` · ${esc(r.address)}`:""}</div>`).join("")}</div>` : "";
+  // Some Esri Web AppBuilder source maps accept ?find=<address>, which pre-searches and zooms the
+  // viewer to the permit instead of opening at the default city extent. (VertiGIS Studio and
+  // Experience Builder viewers ignore location params, so their source link is left unchanged.)
+  let srcHref = p.source_url;
+  if(srcHref && /\/webappviewer\//.test(srcHref) && p.addr)
+    srcHref += (srcHref.indexOf("?")>=0?"&":"?")+"find="+encodeURIComponent(p.addr);
   const prov = `<div class="prov">`+
     (p.extraction_method?`<span>via ${esc(p.extraction_method)}</span>`:"")+
     (conf?`<span>· confidence ${conf}</span>`:"")+
     (p.docs?`<span>· ${p.docs} document${p.docs>1?"s":""}</span>`:"")+
     (p.needs_review?`<span class="flag">· flagged for review</span>`:"")+
     (p.lat_approx?`<span class="flag">· approximate location</span>`:"")+`</div>`+
-    (p.source_url?`<div class="src"><a href="${esc(p.source_url)}" target="_blank" rel="noopener">Open source page ↗</a></div>`:"")+
+    (srcHref?`<div class="src"><a href="${esc(srcHref)}" target="_blank" rel="noopener">Open source page ↗</a></div>`:"")+
     (p.enrichment_url?`<div class="src"><a href="${esc(p.enrichment_url)}" target="_blank" rel="noopener">Engage project page (enrichment source) ↗</a></div>`:"");
-  // QA "Verify" block: jump the map to the exact point, open a satellite / OSM view there, and link
-  // the source document(s) the fields were read from (so a reviewer checks the attributes directly).
+  // QA "Verify" block: open the exact coordinates in a satellite view (so a reviewer sees the real
+  // parcel without re-searching), and link the source document(s) the fields were read from.
   const ll = (p.lat!=null && p.lon!=null) ? [p.lat, p.lon] : null;
   const gmap = ll ? `https://www.google.com/maps?q=${ll[0]},${ll[1]}&z=19&t=k` : null;
-  const osm  = ll ? `https://www.openstreetmap.org/?mlat=${ll[0]}&mlon=${ll[1]}#map=19/${ll[0]}/${ll[1]}` : null;
   const sdocs = Array.isArray(p.source_docs)?p.source_docs:[];
   const verify =
-    (ll?`<div class="verify"><button type="button" class="vbtn" onclick="zoomToSel()">Zoom to location</button>`+
-      `<a class="vbtn" href="${gmap}" target="_blank" rel="noopener">Satellite ↗</a>`+
-      `<a class="vbtn" href="${osm}" target="_blank" rel="noopener">OpenStreetMap ↗</a></div>`+
+    (ll?`<div class="verify"><a class="vbtn" href="${gmap}" target="_blank" rel="noopener">View exact location (satellite) ↗</a></div>`+
       (p.lat_approx?`<div class="vnote">Pin is approximate (geocoded from the address) — confirm it against “${esc(p.addr||p.id||"")}”.</div>`:""):"")+
     (sdocs.length?`<div class="srcdocs"><div class="sdh">Attributes read from</div>`+
       sdocs.map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title||({image:"Plan image",drawings:"Drawings",staff_report:"Staff report"}[d.role]||"Source document"))} ↗</a>`).join("")+
@@ -374,9 +384,6 @@ function select(p,m){
     sect("Source", prov);
   panel.classList.add("open"); panel.setAttribute("aria-hidden","false");
 }
-// Fly the map to the selected permit's exact point so a reviewer can eyeball the parcel up close.
-function zoomToSel(){ const p=state.selected;
-  if(p && p.lat!=null && p.lon!=null) map.flyTo([p.lat,p.lon], 18, {duration:.6}); }
 function closePanel(){ panel.classList.remove("open"); panel.setAttribute("aria-hidden","true");
   if(state.selected && byRec.get(state.selected)) byRec.get(state.selected).setStyle({radius:5,weight:1});
   state.selected=null; }

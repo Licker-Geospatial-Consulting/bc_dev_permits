@@ -77,6 +77,13 @@ for slug, name in FILES.items():
                     for d in (r.get("documents") or []) if d.get("extracted") and d.get("url")]
         if src_docs:
             rec["source_docs"] = src_docs
+        # Field names whose value was read from a document (field_methods != html), so the panel can
+        # tag them — a reviewer then knows which attributes to check against the source PDF.
+        fm = r.get("field_methods") or {}
+        pdf_fields = [k for k, m in fm.items()
+                      if any(t in str(m) for t in ("pdf", "claude", "ollama", "letter"))]
+        if pdf_fields:
+            rec["pdf_fields"] = pdf_fields
         if approx:
             rec["lat_approx"] = True
         for k in DETAIL_FIELDS:
