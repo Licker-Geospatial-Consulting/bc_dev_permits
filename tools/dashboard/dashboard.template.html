@@ -226,7 +226,9 @@ const cssvar = n => getComputedStyle(document.documentElement).getPropertyValue(
 const classColor = c => cssvar("--c-"+(CLASSES.includes(c)?c:"unknown"));
 
 // ---- state ----
-const state = { province:"British Columbia", muni:"All", classesOff:new Set(), q:"", selected:null };
+// classOnly: when set, the map shows ONLY that development class (click a legend item to isolate it,
+// click it again to clear). null = show every class.
+const state = { province:"British Columbia", muni:"All", classOnly:null, q:"", selected:null };
 
 function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function fmt(n){return typeof n==="number"?n.toLocaleString():n;}
@@ -333,6 +335,7 @@ function select(p,m){
     (p.docs?`<span>· ${p.docs} document${p.docs>1?"s":""}</span>`:"")+
     (p.needs_review?`<span class="flag">· flagged for review</span>`:"")+
     (p.lat_approx?`<span class="flag">· approximate location</span>`:"")+`</div>`+
+    (p.source_url?`<div class="src"><a href="${esc(p.source_url)}" target="_blank" rel="noopener">Open source page ↗</a></div>`:"")+
     (p.enrichment_url?`<div class="src"><a href="${esc(p.enrichment_url)}" target="_blank" rel="noopener">Engage project page (enrichment source) ↗</a></div>`:"");
   document.getElementById("p-body").innerHTML =
     sect("Key figures", kpis.length?`<div class="kpis">${kpis.join("")}</div>`:(mix?"":`<div class="empty">No quantitative detail recorded for this application.</div>`))+
@@ -354,7 +357,7 @@ document.getElementById("map").addEventListener("click",e=>{ /* map bg click kee
 function visible(p){
   if(MUNI_PROVINCE[p.muni]!==state.province) return false;
   if(state.muni!=="All" && p.muni!==state.muni) return false;
-  if(state.classesOff.has(p.class||"unknown")) return false;
+  if(state.classOnly && (p.class||"unknown")!==state.classOnly) return false;
   if(state.q){ const q=state.q.toLowerCase();
     if(!((p.addr||"").toLowerCase().includes(q) || (p.id||"").toLowerCase().includes(q))) return false; }
   return true;
@@ -431,8 +434,11 @@ CLASSES.forEach(c=>{
   if(!clsCounts[c]) return;
   const el=document.createElement("div"); el.className="leg"; el.dataset.c=c;
   el.innerHTML=`<span class="dot" style="background:var(--c-${c})"></span>${CLABEL[c]}<span class="lc">${clsCounts[c].toLocaleString()}</span>`;
-  el.onclick=()=>{ if(state.classesOff.has(c)){state.classesOff.delete(c);el.classList.remove("off");}
-    else{state.classesOff.add(c);el.classList.add("off");} applyFilters(); };
+  // Click a class to show ONLY it on the map; click the same class again to show all classes.
+  el.onclick=()=>{ state.classOnly = (state.classOnly===c) ? null : c;
+    legItems.querySelectorAll(".leg").forEach(x=>
+      x.classList.toggle("off", state.classOnly!==null && x.dataset.c!==state.classOnly));
+    applyFilters(); };
   legItems.appendChild(el);
 });
 renderKeyInfo();
@@ -494,9 +500,9 @@ function exportName(ext){
   const tag = (state.muni!=="All" ? state.muni : state.province).replace(/\s+/g,"");
   return `permit_atlas_${tag}.${ext}`;
 }
-// Hand a generated file to the viewer. Inside the claude.ai artifact the viewer blocks plain
-// downloads, so the file is offered through the `downloads` capability (viewer confirms); when the
-// page is opened as a local file (no runtime) it falls back to an ordinary browser download.
+// Hand a generated file to the viewer. Inside the published artifact host the viewer blocks plain
+// downloads, so the file is offered through the host's `downloads` capability (viewer confirms); when
+// the page is opened as a local file (no runtime) it falls back to an ordinary browser download.
 async function saveFile(filename, data, mime){
   let dl=null;
   try{ if(typeof window.claude!=="undefined" && window.claude.use) dl=await window.claude.use("downloads"); }

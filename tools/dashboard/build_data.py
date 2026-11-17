@@ -76,6 +76,10 @@ for slug, name in FILES.items():
             v = r.get(k)
             if v not in (None, "", [], {}):
                 rec[k] = v
+        # The extraction method names the in-session document read ("claude_read"); surface it
+        # neutrally in the public dashboard as a generic document read.
+        if rec.get("extraction_method"):
+            rec["extraction_method"] = rec["extraction_method"].replace("claude_read", "doc_read")
         out.append(rec)
     print(f"{name:16} rows={len(rows):<5} mapped={withxy}")
 
