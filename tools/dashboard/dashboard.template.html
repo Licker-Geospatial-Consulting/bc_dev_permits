@@ -1,3 +1,6 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Permit Atlas</title>
 <style>
 /*__FONTS__*/
@@ -140,6 +143,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 .pdftag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.03em;vertical-align:middle;
   padding:1px 4px;margin-left:5px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);
   border:1px solid var(--line-2);text-transform:none}
+a.pdftag{text-decoration:none;cursor:pointer}
+a.pdftag:hover{border-color:var(--accent,#2563eb);color:var(--accent,#2563eb)}
 .rows{display:flex;flex-direction:column;gap:0}
 .row{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:13px}
 .row:last-child{border-bottom:0}
@@ -313,9 +318,13 @@ function select(p,m){
   if(state.selected && byRec.get(state.selected)) byRec.get(state.selected).setStyle({radius:5,weight:1});
   state.selected=p;
   if(m){ m.setStyle({radius:8,weight:2.5}); m.bringToFront(); }
-  // Tag a field that was read from a source document (PDF), so a reviewer knows to verify it.
-  const pdfTag = f => (Array.isArray(p.pdf_fields)&&p.pdf_fields.includes(f))
-    ? ` <span class="pdftag" title="Read from a source document — verify against it">PDF</span>` : "";
+  // Tag a field that was read from a source document, linking to that document so a reviewer can
+  // open it and verify the value. Falls back to a non-link tag when no document URL is available.
+  const pdfSrc = (Array.isArray(p.source_docs)&&p.source_docs.length&&p.source_docs[0].url) || p.source_url || null;
+  const pdfTag = f => !(Array.isArray(p.pdf_fields)&&p.pdf_fields.includes(f)) ? ""
+    : (pdfSrc
+      ? ` <a class="pdftag" href="${esc(pdfSrc)}" target="_blank" rel="noopener" title="Open the source document this value was read from">PDF ↗</a>`
+      : ` <span class="pdftag" title="Read from a source document — verify against it">PDF</span>`);
   document.getElementById("p-muni").textContent = `${p.muni} · ${p.id||""}`;
   document.getElementById("p-addr").innerHTML = esc(p.addr || p.id || "Development permit")+pdfTag("address");
   const col=classColor(p.class);
