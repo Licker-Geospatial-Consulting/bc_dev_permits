@@ -123,6 +123,21 @@ def burnaby_query(addr):
     return " ".join(parts)
 
 
+def abbotsford_query(addr):
+    """Build 'civic street' from an Abbotsford address, dropping a leading unit number.
+
+    Most Abbotsford addresses are already clean civic addresses ("33816 South Fraser Way"), but a few
+    prefix a 1-2 digit unit/suite number before the 4-5 digit civic number ("3 2485 Eagle Mtn Dr",
+    "1 33759 Morey Ave"); the unit is dropped so the civic address resolves. A bare street name with
+    no civic number ("Westview Blvd") returns None -> city centroid.
+    """
+    addr = (addr or "").strip()
+    m = re.match(r"^\d{1,2}\s+(\d{3,6}\s+.+)$", addr)   # "<unit> <civic> <street>" -> "<civic> <street>"
+    if m:
+        return m.group(1)
+    return addr if re.match(r"^\d", addr) else None
+
+
 def spread_coincident(entries, radius_m=25.0):
     """Nudge resolved points that share a coordinate onto a small ring of nearby points.
 
@@ -190,6 +205,8 @@ def query_for(row, slug):
         return burnaby_query(addr)
     if slug == "delta":
         return delta_query(addr)
+    if slug == "abbotsford":
+        return abbotsford_query(addr)
     # A usable street address starts with a house number; take the first of any range.
     if re.match(r"^\d", addr):
         m = re.match(r"(\d+)\s*[-–]\s*\d+\s+(.*)", addr)   # "216-232 East 3rd Street"
