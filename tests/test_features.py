@@ -183,6 +183,64 @@ def test_development_class_from_use_keywords():
         assert features.development_class(features.occupancy_types(text)) == expected, text
 
 
+def test_hotel_rooms_forms():
+    # The room-count forms Richmond / other municipal descriptions use.
+    assert features.hotel_rooms("three buildings ... with approximately 405 hotel rooms") == 405
+    assert features.hotel_rooms("conversion of two floors of office to a 61 room hotel") == 61
+    assert features.hotel_rooms("a 7 storey hotel with 100 rooms") == 100
+    assert features.hotel_rooms("a 9-storey building with approximately 105 Hotel rooms") == 105
+
+
+def test_hotel_rooms_requires_a_hotel_and_ignores_dwellings():
+    # "rooms"/"units" that are not a hotel must not be read as hotel keys.
+    assert features.hotel_rooms("a 300 unit residential tower") is None
+    assert features.hotel_rooms("a 14 storey building with 136 residential units") is None
+    # a pod hotel stated in beds (not rooms) is not a room count.
+    assert features.hotel_rooms("a 3-storey pod hotel containing 93 beds") is None
+
+
+def test_hotel_storeys_binds_to_the_hotel_element():
+    # Mixed project: the hotel's storeys differ from the tallest (residential) element.
+    mixed = ("construct a 14 storey residential building with 136 residential units, "
+             "27 affordable housing units and a 7 storey hotel with 100 rooms")
+    assert features.hotel_storeys(mixed) == 7
+    assert features.number_of_stories(mixed) == 14  # overall height still the tallest element
+    # Single-use hotel: hotel storeys equal the building storeys.
+    assert features.hotel_storeys("construct a 14-storey hotel and office building") == 14
+    assert features.hotel_storeys("a 7-storey boutique hotel") == 7
+    # A storey count not bound to a hotel is not read as hotel storeys.
+    assert features.hotel_storeys("a 9-storey residential building") is None
+
+
+def test_hotel_beds_pod_hotel_only():
+    assert features.hotel_beds("a 3-storey pod hotel containing 93 beds") == 93
+    assert features.hotel_beds("a 120-bed hostel") == 120
+    # care-facility beds are not a hotel bed count.
+    assert features.hotel_beds("an eight storey health service with 144 long-term care beds") is None
+
+
+def test_hotel_type_and_brand():
+    assert features.hotel_type("a 3-storey pod hotel containing 93 beds") == "pod"
+    assert features.hotel_type("a new hostel") == "hostel"
+    assert features.hotel_type("a 405 room hotel") is None          # generic hotel -> no sub-type
+    assert features.hotel_brand("a new Marriott hotel with 200 rooms") == "Marriott"
+    assert features.hotel_brand("a 200 unit Marriott residential tower") is None  # no lodging context
+    assert features.hotel_brand("a 405 room hotel") is None          # unbranded
+
+
+def test_hotel_floor_area_share():
+    assert features.hotel_floor_area("5,000 m2 of hotel space and 2,470 m2 of office space") == 5000.0
+    assert features.hotel_floor_area("a 405 room hotel") is None     # GFA not broken out
+
+
+def test_number_of_buildings():
+    assert features.number_of_buildings("three buildings of up to 14 storeys") == 3
+    assert features.number_of_buildings("a two-building commercial development") == 2
+    assert features.number_of_buildings("eighteen (18) buildings") == 18
+    # a count that belongs to storeys, not buildings, is not misread.
+    assert features.number_of_buildings("a 2-storey light industrial building") is None
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

@@ -306,7 +306,7 @@ table.gt td.rev{text-align:center;color:#1a7f37;font-weight:700;width:26px}
     <div class="field"><label for="province">Province</label><select id="province" class="sel" aria-label="Province"></select></div>
     <div class="field"><label for="muni">Municipality</label><select id="muni" class="sel" aria-label="Municipality"></select></div>
     <div id="keyinfo"></div>
-    <div class="field"><label for="q">Search</label><div id="search"><input id="q" type="search" placeholder="Address or permit #" autocomplete="off"></div></div>
+    <div class="field"><label for="q">Search</label><div id="search"><input id="q" type="search" placeholder="Address, permit #, or keyword" autocomplete="off"></div></div>
     <div><div class="sb-sec-title">Development class</div><div id="legitems"></div></div>
   </div>
   <div class="sb-foot">
@@ -457,15 +457,25 @@ function select(p,m){
     (p.permit_type?`<span class="pill">${esc(p.permit_type)}</span>`:"");
   const unit = p.floor_area_unit==="m2"?"m²":(p.floor_area_unit||"m²");
   const lunit = p.lot_area_unit==="m2"?"m²":(p.lot_area_unit||"m²");
-  const kpis=[kpi(p.units_total,"","Units",pdfTag("units_total")),kpi(p.number_of_stories,"","Storeys",pdfTag("number_of_stories")),
+  const kpis=[kpi(p.units_total,"","Units",pdfTag("units_total")),kpi(p.hotel_rooms,"","Hotel rooms",pdfTag("hotel_rooms")),
+    kpi(p.hotel_beds,"","Hotel beds",pdfTag("hotel_beds")),
+    kpi(p.number_of_stories,"","Storeys",pdfTag("number_of_stories")),
+    kpi(p.hotel_storeys && p.hotel_storeys!==p.number_of_stories ? p.hotel_storeys : null,"","Hotel storeys",pdfTag("hotel_storeys")),
+    kpi(p.number_of_buildings,"","Buildings",pdfTag("number_of_buildings")),
     kpi(p.height_m,"m","Height",pdfTag("height_m")),kpi(p.floor_area,unit,"Floor area",pdfTag("floor_area")),
+    kpi(p.hotel_floor_area,unit,"Hotel GFA",pdfTag("hotel_floor_area")),
     kpi(p.lot_area,lunit,"Lot area",pdfTag("lot_area")),kpi(p.footprint_area,"m²","Footprint",pdfTag("footprint_area")),
     kpi(p.parking_vehicle_stalls,"","Vehicle parking",pdfTag("parking_vehicle_stalls")),kpi(p.parking_bike_stalls,"","Bicycle parking",pdfTag("parking_bike_stalls"))
   ].filter(Boolean);
   const mix = p.unit_mix && typeof p.unit_mix==="object"
     ? `<div class="mix">${Object.entries(p.unit_mix).map(([k,v])=>`<span>${esc(k)}: ${fmt(v)}</span>`).join("")}${pdfTag("unit_mix")}</div>` : "";
+  const hshare = (typeof p.hotel_floor_area==="number" && typeof p.floor_area==="number" && p.floor_area)
+    ? `${Math.round(p.hotel_floor_area/p.floor_area*100)}% of total GFA` : "";
   const dev = rowsHtml([
     ["Project", p.development_name && esc(p.development_name), pdfTag("development_name")],
+    ["Hotel type", p.hotel_type && esc(p.hotel_type), pdfTag("hotel_type")],
+    ["Hotel brand", p.hotel_brand && esc(p.hotel_brand), pdfTag("hotel_brand")],
+    ["Hotel GFA share", hshare, pdfTag("hotel_floor_area")],
     ["Zoning / density", p.zoning_density && esc(p.zoning_density), pdfTag("zoning_density")],
     ["Tenure", p.rental_or_strata && esc(p.rental_or_strata)+(p.rental_subtype?` · ${esc(p.rental_subtype)}`:""), pdfTag("rental_or_strata")],
     ["Parking notes", p.parking_notes && esc(p.parking_notes), pdfTag("parking_notes")],
@@ -559,7 +569,11 @@ function visible(p){
       if(b!==bf.bin) return false; }
   }
   if(state.q){ const q=state.q.toLowerCase();
-    if(!((p.addr||"").toLowerCase().includes(q) || (p.id||"").toLowerCase().includes(q))) return false; }
+    // Match the address, folder number, project name, and the description text, so a keyword like
+    // "hotel" surfaces every permit whose description mentions it.
+    if(!((p.addr||"").toLowerCase().includes(q) || (p.id||"").toLowerCase().includes(q)
+       || (p.development_name||"").toLowerCase().includes(q)
+       || (p.raw_text||"").toLowerCase().includes(q))) return false; }
   return true;
 }
 function applyFilters(){

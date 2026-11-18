@@ -40,7 +40,14 @@ CREATE TABLE dev_permit (
     lot_area_unit          TEXT DEFAULT 'm2',
     height_m               NUMERIC,                -- building height in metres; a proxy for storeys when storeys aren't stated
     number_of_stories      INTEGER,
+    number_of_buildings    INTEGER,                -- distinct buildings in the development, when stated
     units_total            INTEGER,                -- total dwelling/unit count
+    hotel_rooms            INTEGER,                -- hotel guest rooms / keys (hotel developments)
+    hotel_storeys          INTEGER,                -- storeys of the hotel element (differs from number_of_stories in mixed projects)
+    hotel_beds             INTEGER,                -- bed capacity for pod hotels / hostels / motels
+    hotel_type             TEXT,                   -- hotel sub-type: 'pod'|'hostel'|'motel'|'boutique'|...
+    hotel_brand            TEXT,                   -- named hotel chain / operator, when stated
+    hotel_floor_area       NUMERIC,                -- hotel-use GFA (m^2) when broken out from the total
     unit_mix               JSONB,                  -- {"1-bed":19,"2-bed":12,"3-bed":3,"suite":6}  ("count of unit types")
     rental_or_strata       TEXT,                   -- 'rental'|'strata'|'mixed'|'unknown'
     rental_subtype         TEXT,                   -- 'purpose-built rental','mid-market rental','market rental',...

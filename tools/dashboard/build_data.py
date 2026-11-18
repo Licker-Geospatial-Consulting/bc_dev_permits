@@ -31,7 +31,8 @@ PROC = Path("data/processed")
 # complete record of each application.
 DETAIL_FIELDS = [
     "permit_type", "development_class", "development_name", "status",
-    "number_of_stories", "units_total", "unit_mix",
+    "number_of_stories", "number_of_buildings", "units_total", "unit_mix",
+    "hotel_rooms", "hotel_storeys", "hotel_beds", "hotel_type", "hotel_brand", "hotel_floor_area",
     "height_m", "lot_area", "lot_area_unit", "floor_area", "floor_area_unit", "footprint_area",
     "parking_vehicle_stalls", "parking_bike_stalls", "parking_notes",
     "rental_or_strata", "rental_subtype", "rental_mix", "zoning_density", "occupancy_types", "occupancies",

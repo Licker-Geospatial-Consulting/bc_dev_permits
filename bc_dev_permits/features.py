@@ -928,6 +928,135 @@ def score_confidence(fields: dict) -> float:
     return round(present / len(_CONFIDENCE_KEYS), 2)
 
 
+# Hotel guest-room / key count, in the forms municipal descriptions use. Only read when the text
+# actually describes a hotel use, so a residential "rooms" count is never mistaken for hotel keys.
+_HOTEL_ROOMS = (
+    re.compile(rf"\b({_NUM})\s*[- ]?room\s+hotel", re.IGNORECASE),               # "61 room hotel"
+    re.compile(rf"\b({_NUM})\s+hotel\s+(?:rooms?|keys|suites?)", re.IGNORECASE),  # "405 hotel rooms"
+    re.compile(                                                                   # "hotel with 100 rooms"
+        rf"hotel\b[^.]{{0,80}}?\b(?:with|containing|comprising|of)\s+(?:approximately\s+)?"
+        rf"({_NUM})\s+(?:guest\s*rooms?|rooms?|keys|suites?)", re.IGNORECASE),
+    re.compile(rf"\b({_NUM})\s+(?:guest\s*rooms?|keys)\b", re.IGNORECASE),        # "100 keys"
+)
+
+
+def hotel_rooms(text: str) -> int | None:
+    """Guest-room / key count for a hotel, when the text describes a hotel use (else None)."""
+    if not re.search(r"\bhotel\b", text, re.IGNORECASE):
+        return None
+    for pat in _HOTEL_ROOMS:
+        m = pat.search(text)
+        if m and _to_int(m.group(1)):
+            return _to_int(m.group(1))
+    return None
+
+
+# Storeys of the hotel element specifically. The count must bind to "hotel": either "<N> storey
+# hotel" (a few qualifier words tolerated between, e.g. "7 storey boutique hotel") or a storey
+# figure stated just after the word "hotel". _PAREN adds group 2 (a "(7)" restating the number).
+_HOTEL_STOREYS = (
+    re.compile(rf"\b({_NUM}){_PAREN}[\s-]*{_STOREY}\s+(?:\w+\s+){{0,2}}?hotel\b", re.IGNORECASE),
+    re.compile(rf"\bhotel\b[^.]{{0,40}}?\b({_NUM}){_PAREN}[\s-]*{_STOREY}", re.IGNORECASE),
+)
+
+
+def hotel_storeys(text: str) -> int | None:
+    """Storeys of the hotel element specifically, when a mixed project states it (else None).
+
+    For a single-use hotel this equals number_of_stories. Its value is in mixed projects where the
+    hotel differs from the tallest element ("a 14 storey residential building ... and a 7 storey
+    hotel" -> hotel_storeys 7 while number_of_stories stays 14, the tallest element).
+    """
+    if not re.search(r"\bhotel\b", text, re.IGNORECASE):
+        return None
+    for pat in _HOTEL_STOREYS:
+        m = pat.search(text)
+        if (v := _count(m)) is not None:
+            return v
+    return None
+
+
+# Number of distinct buildings, when the text states it as a count ("three buildings",
+# "two-building development", "18 (eighteen) buildings"). A count must sit directly before
+# "building(s)", so "2-storey ... building" (one building, two storeys) is not misread.
+_BUILDINGS = re.compile(rf"\b({_NUM})\s*[- ]?{_PAREN}\s*buildings?\b", re.IGNORECASE)
+
+
+def number_of_buildings(text: str) -> int | None:
+    """Count of buildings when the text gives one as 'N building(s)' / 'N-building', else None."""
+    m = _BUILDINGS.search(text)
+    return (_to_int(m.group(2)) or _to_int(m.group(1))) if m else None
+
+
+# Bed count for a pod hotel / hostel / motel (capacity stated in beds, not rooms). Only read in a
+# hotel / hostel / motel context so care-facility beds ("144 long-term care beds") are never counted.
+_LODGING = re.compile(r"\bhotels?\b|\bhostels?\b|\bmotels?\b", re.IGNORECASE)
+_HOTEL_BEDS = (
+    re.compile(rf"(?:hotel|hostel|motel)[^.]{{0,60}}?\b(?:with|containing|comprising|of)\s+"
+               rf"(?:approximately\s+)?({_NUM})\s+beds?\b", re.IGNORECASE),
+    re.compile(rf"\b({_NUM})[\s-]bed\s+(?:pod\s+|capsule\s+)?(?:hotel|hostel|motel)", re.IGNORECASE),
+)
+
+
+def hotel_beds(text: str) -> int | None:
+    """Bed count for a pod hotel / hostel / motel, when stated in a lodging context (else None)."""
+    if not _LODGING.search(text):
+        return None
+    for pat in _HOTEL_BEDS:
+        m = pat.search(text)
+        if m and _to_int(m.group(1)):
+            return _to_int(m.group(1))
+    return None
+
+
+# Hotel sub-type, most specific first; a plain "hotel" with no qualifier returns None.
+_HOTEL_SUBTYPE = (
+    (r"\bpod\s+hotel|capsule\s+hotel", "pod"),
+    (r"\bhostel\b", "hostel"),
+    (r"\bmotel\b", "motel"),
+    (r"\bboutique\s+hotel", "boutique"),
+    (r"extended[\s-]stay", "extended-stay"),
+    (r"apart[\s-]?hotel|apartment[\s-]hotel|aparthotel", "aparthotel"),
+)
+
+
+def hotel_type(text: str) -> str | None:
+    """Return a distinguishing hotel sub-type (pod / hostel / motel / boutique / ...), else None."""
+    for pat, label in _HOTEL_SUBTYPE:
+        if re.search(pat, text, re.IGNORECASE):
+            return label
+    return None
+
+
+# Known hotel chains / brands (longest first so a sub-brand wins over its parent word).
+_HOTEL_BRANDS = (
+    "Ritz-Carlton", "Four Seasons", "Waldorf Astoria", "St. Regis", "Shangri-La", "Fairmont",
+    "InterContinental", "Crowne Plaza", "Holiday Inn", "Staybridge", "Candlewood", "Kimpton",
+    "Residence Inn", "Courtyard", "Fairfield", "Delta Hotels", "AC Hotel", "Moxy", "Aloft",
+    "Marriott", "Sheraton", "Westin", "DoubleTree", "Embassy Suites", "Hampton", "Conrad", "Canopy",
+    "Hilton", "Grand Hyatt", "Park Hyatt", "Hyatt Place", "Hyatt House", "Hyatt", "Novotel",
+    "Sofitel", "Pullman", "Accor", "Radisson", "Ramada", "Days Inn", "Super 8", "Wyndham",
+    "Best Western", "Sandman", "Coast Hotels", "Comfort Inn", "Quality Inn", "Sutton Place",
+)
+_BRAND_RE = re.compile(
+    r"\b(" + "|".join(re.escape(b) for b in sorted(_HOTEL_BRANDS, key=len, reverse=True)) + r")\b",
+    re.IGNORECASE)
+
+
+def hotel_brand(text: str) -> str | None:
+    """Return a named hotel chain / brand if one appears in a lodging context, else None."""
+    if not _LODGING.search(text) and "resort" not in text.lower():
+        return None
+    m = _BRAND_RE.search(text)
+    return m.group(1) if m else None
+
+
+def hotel_floor_area(text: str) -> float | None:
+    """Hotel-use floor area when the text breaks it out ('N m2 of hotel space'), else None."""
+    h = floor_area_by_use(text).get("hotel")
+    return h.get("floor_area") if h else None
+
+
 def extract_all(text: str) -> dict:
     """Run every deterministic extractor over prose text; return schema-shaped fields."""
     text = re.sub(r"\s+", " ", text or "").strip()
@@ -962,6 +1091,13 @@ def extract_all(text: str) -> dict:
         "floor_area": fa,
         "floor_area_unit": fa_unit,
         "height_m": height_m(text),
+        "hotel_rooms": hotel_rooms(text),
+        "hotel_storeys": hotel_storeys(text),
+        "hotel_beds": hotel_beds(text),
+        "hotel_type": hotel_type(text),
+        "hotel_brand": hotel_brand(text),
+        "hotel_floor_area": hotel_floor_area(text),
+        "number_of_buildings": number_of_buildings(text),
     }
     # Provisional prose-only score; harvesters finalize it over the full row (with the
     # harvester-provided address) via score_confidence(row).
