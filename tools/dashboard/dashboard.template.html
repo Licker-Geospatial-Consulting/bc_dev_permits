@@ -176,6 +176,97 @@ a.pdftag:hover{border-color:var(--accent,#2563eb);color:var(--accent,#2563eb)}
 .flag{color:#b06a00}
 :root[data-theme="dark"] .flag{color:#eab84a}
 .empty{color:var(--muted);font-size:13px;padding:20px 0}
+/* QA review mode */
+.qa-sec{margin-top:16px}
+.qa-btn{font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;width:100%;
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:inherit}
+.qa-btn:hover{border-color:var(--ink-2)}
+.qa-btn[disabled]{opacity:.6;cursor:default}
+.qa-toggle{display:flex;align-items:center;gap:7px;font-size:12.5px;margin-top:9px;cursor:pointer;color:var(--ink)}
+.qa-toggle #qa-count{color:var(--muted);font-variant-numeric:tabular-nums}
+.qa-hint{font-size:11.5px;color:var(--muted);margin-top:7px}
+.qa-hint a{color:var(--accent,#2563eb);text-decoration:none}
+.qa-hint a:hover{text-decoration:underline}
+.checks{display:flex;flex-direction:column;gap:6px}
+.chk{display:flex;gap:8px;font-size:12.5px;align-items:flex-start;color:var(--ink)}
+.chk .sv{width:8px;height:8px;border-radius:50%;flex:none;margin-top:4px}
+.chk.high .sv{background:#d4351c}
+.chk.med .sv{background:#c77700}
+.chk.low .sv{background:var(--muted)}
+.qa-muted{color:var(--muted);font-variant-numeric:tabular-nums}
+.conflicts{display:flex;flex-direction:column;gap:7px}
+.conflict{font-size:12.5px;border:1px solid var(--line-2);border-radius:8px;padding:7px 9px;background:var(--surface-2)}
+.conflict .cf{font-weight:600;color:var(--ink)}
+.conflict .opt{display:flex;gap:8px;margin-top:3px;color:var(--ink-2)}
+.evidence{font-size:12px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap;max-height:220px;
+  overflow:auto;background:var(--surface-2);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px}
+.rvw{display:flex;flex-direction:column;gap:8px}
+.rvw-row{display:flex;gap:8px;align-items:center}
+.rvw-btn{font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:inherit}
+.rvw-btn.on{background:#1a7f37;border-color:#1a7f37;color:#fff}
+.rvw-note{width:100%;font-family:inherit;font-size:12.5px;padding:7px 9px;border:1px solid var(--line-2);
+  border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical;min-height:44px}
+.rvw-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e6f4ea;color:#1a7f37;border:1px solid #bfe3cc}
+/* review-mode overlay: a toggle + top toolbar + grid, floating over the map */
+#review-enter{position:absolute;top:12px;left:calc(var(--sidebar-w) + 58px);z-index:500;font-family:inherit;
+  font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+#review-enter:hover{border-color:var(--ink-2)}
+#review-enter::before,.rb-badge::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:#b06a00;margin-right:7px;vertical-align:middle}
+#review-bar{position:absolute;top:0;left:var(--sidebar-w);right:0;z-index:650;height:46px;display:flex;
+  align-items:center;gap:12px;padding:0 14px;background:#fff6e5;border-bottom:1px solid #e9d8b0;
+  font-size:12.5px;color:var(--ink);box-shadow:var(--shadow)}
+#review-bar[hidden],#grid[hidden],#stats[hidden],#review-enter[hidden]{display:none}
+.rb-sel{font-family:inherit;font-size:12px;padding:4px 6px;border-radius:7px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink)}
+.rb-chip{font-family:inherit;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 12%, var(--surface));color:var(--ink)}
+.rb-chip[hidden]{display:none}
+.rb-chip::after{content:" x";color:var(--muted)}
+.st-svg rect{cursor:pointer}
+:root[data-theme="dark"] #review-bar{background:#2c2612;border-color:#5a4d22}
+.rb-badge{font-weight:700;font-family:inherit;font-size:12.5px;cursor:pointer;border:0;background:none;color:var(--ink);padding:0}
+.rb-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.rb-seg button{border:0;background:var(--surface);color:var(--ink);font-family:inherit;font-size:12px;font-weight:600;padding:5px 13px;cursor:pointer}
+.rb-seg button.on{background:var(--accent);color:var(--accent-ink)}
+.rb-chk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.rb-chk #qa-count{color:var(--muted);font-variant-numeric:tabular-nums}
+.rb-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;cursor:pointer}
+.rb-spacer{flex:1}
+.rb-prog{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rb-link{color:var(--accent,#2563eb);text-decoration:none;font-weight:600}
+body.review-on .leaflet-top{top:52px}
+#grid{position:absolute;top:46px;left:var(--sidebar-w);right:0;bottom:0;z-index:640;overflow:auto;background:var(--surface)}
+table.gt{border-collapse:collapse;width:100%;font-size:12.5px}
+table.gt th,table.gt td{padding:6px 10px;border-bottom:1px solid var(--line-2);text-align:left;white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis}
+table.gt th{position:sticky;top:0;background:var(--surface-2);cursor:pointer;font-weight:600;color:var(--ink-2);user-select:none;z-index:1}
+table.gt th.num,table.gt td.num{text-align:right;font-variant-numeric:tabular-nums}
+table.gt tbody tr{cursor:pointer}
+table.gt tbody tr:hover td{background:var(--surface-2)}
+table.gt tr.sel td{background:color-mix(in srgb, var(--accent) 14%, var(--surface))}
+table.gt td.miss{color:var(--line-2)}
+table.gt td.bad{color:#d4351c;font-weight:600}
+table.gt tr.flag-high td:first-child{box-shadow:inset 3px 0 0 #d4351c}
+table.gt tr.flag-med td:first-child{box-shadow:inset 3px 0 0 #c77700}
+table.gt td.rev{text-align:center;color:#1a7f37;font-weight:700;width:26px}
+.gt-note{padding:10px 14px;color:var(--muted);font-size:12px}
+/* stats view: distribution histograms for the current scope */
+#stats{position:absolute;top:46px;left:var(--sidebar-w);right:0;bottom:0;z-index:640;overflow:auto;
+  background:var(--surface);padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;align-content:start}
+.st-card{border:1px solid var(--line-2);border-radius:12px;padding:12px 14px;background:var(--surface-2)}
+.st-card h4{margin:0 0 2px;font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink);display:flex;justify-content:space-between}
+.st-card h4 span{color:var(--muted);font-weight:500;font-size:11.5px}
+.st-sub{font-size:11px;color:var(--muted);margin-bottom:8px}
+.st-svg{width:100%;height:92px;display:block}
+.st-svg rect{fill:var(--accent)}
+.st-svg rect.out{fill:#d4351c}
+.st-ax{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:5px;font-variant-numeric:tabular-nums}
+.st-empty{color:var(--muted);font-size:12.5px;padding:24px 0;text-align:center}
+.st-top{margin-top:9px;font-size:11.5px;color:var(--ink-2)}
+.st-top b{color:var(--ink);font-variant-numeric:tabular-nums}
+.st-wide{grid-column:1/-1}
 @media (max-width:760px){
   /* stack: sidebar becomes a scrollable top drawer, map fills below */
   #sidebar{right:0;width:auto;bottom:auto;max-height:52vh;border-right:0;border-bottom:1px solid var(--line)}
@@ -187,6 +278,25 @@ a.pdftag:hover{border-color:var(--accent,#2563eb);color:var(--accent,#2563eb)}
 </style>
 
 <div id="map"></div>
+
+<!-- Internal QA review mode: a toggle floating over the map; when on, a top toolbar + optional grid.
+     None of this touches the public card/sidebar until Review mode is entered. -->
+<button id="review-enter" type="button" title="Switch to internal QA review mode">Review mode</button>
+<div id="review-bar" hidden>
+  <button id="review-exit" type="button" class="rb-badge" title="Exit review mode">Review mode</button>
+  <div class="rb-seg"><button id="rb-map" class="on" type="button">Map</button><button id="rb-grid" type="button">Grid</button><button id="rb-stats" type="button">Stats</button></div>
+  <label class="rb-chk"><input type="checkbox" id="qa-flagonly"> Flagged only <span id="qa-count"></span></label>
+  <select id="qa-status" class="rb-sel" title="Filter by review status"><option value="">All</option><option value="unreviewed">Unreviewed</option><option value="reviewed">Reviewed</option></select>
+  <select id="qa-source" class="rb-sel" title="Filter by source type"><option value="">All sources</option><option value="html">HTML</option><option value="pdf">PDF</option><option value="arcgis">Map / ArcGIS</option><option value="api">API</option></select>
+  <button id="qa-binchip" class="rb-chip" type="button" hidden></button>
+  <label class="rb-chk"><input type="checkbox" id="qa-evidence"> Source text</label>
+  <button id="qa-run" class="rb-btn" type="button">Re-run checks</button>
+  <span class="rb-spacer"></span>
+  <span id="qa-progress" class="rb-prog"></span>
+  <a href="#" id="qa-export" class="rb-link">Export</a>
+</div>
+<div id="grid" hidden></div>
+<div id="stats" hidden></div>
 
 <aside id="sidebar">
   <div class="sb-head">
@@ -249,7 +359,20 @@ const classColor = c => cssvar("--c-"+(CLASSES.includes(c)?c:"unknown"));
 // ---- state ----
 // classOnly: when set, the map shows ONLY that development class (click a legend item to isolate it,
 // click it again to clear). null = show every class.
-const state = { province:"British Columbia", muni:"All", classOnly:null, q:"", selected:null };
+const state = { province:"British Columbia", muni:"All", classOnly:null, q:"", selected:null,
+  flaggedOnly:false, review:false, evidence:false, view:"map", status:"", source:"", binFilter:null };
+let QA = null;   // {permit_id: [{sev, msg}]} once the QA checks have computed the validator flags
+// Reviewer annotations persisted per browser: {permit_id: {reviewed, note, ts}}. Exportable to a
+// review_actions.json the pipeline can read. This is the only review state that outlives a reload.
+const RKEY = "bcpa-review-v1";
+let REVIEWED = {};
+try { REVIEWED = JSON.parse(localStorage.getItem(RKEY) || "{}") || {}; } catch (e) { REVIEWED = {}; }
+function saveReviewed(){ try{ localStorage.setItem(RKEY, JSON.stringify(REVIEWED)); }catch(e){} }
+// A permit is "flagged" (needs a reviewer's eye) if the harvester asked for review, confidence is
+// low, or any validator check fired.
+function isFlagged(p){ return !!(p.needs_review
+  || (typeof p.extraction_confidence==="number" && p.extraction_confidence<0.6)
+  || (QA && QA[p.id])); }
 
 function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function fmt(n){return typeof n==="number"?n.toLocaleString():n;}
@@ -324,7 +447,7 @@ function select(p,m){
   const pdfTag = f => !(Array.isArray(p.pdf_fields)&&p.pdf_fields.includes(f)) ? ""
     : (pdfSrc
       ? ` <a class="pdftag" href="${esc(pdfSrc)}" target="_blank" rel="noopener" title="Open the source document this value was read from">PDF ↗</a>`
-      : ` <span class="pdftag" title="Read from a source document — verify against it">PDF</span>`);
+      : ` <span class="pdftag" title="Read from a source document - verify against it">PDF</span>`);
   document.getElementById("p-muni").textContent = `${p.muni} · ${p.id||""}`;
   document.getElementById("p-addr").innerHTML = esc(p.addr || p.id || "Development permit")+pdfTag("address");
   const col=classColor(p.class);
@@ -378,11 +501,32 @@ function select(p,m){
   const sdocs = Array.isArray(p.source_docs)?p.source_docs:[];
   const verify =
     (ll?`<div class="verify"><a class="vbtn" href="${gmap}" target="_blank" rel="noopener">View exact location (satellite) ↗</a></div>`+
-      (p.lat_approx?`<div class="vnote">Pin is approximate (geocoded from the address) — confirm it against “${esc(p.addr||p.id||"")}”.</div>`:""):"")+
+      (p.lat_approx?`<div class="vnote">Pin is approximate (geocoded from the address) - confirm it against “${esc(p.addr||p.id||"")}”.</div>`:""):"")+
     (sdocs.length?`<div class="srcdocs"><div class="sdh">Attributes read from</div>`+
       sdocs.map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title||({image:"Plan image",drawings:"Drawings",staff_report:"Staff report"}[d.role]||"Source document"))} ↗</a>`).join("")+
       `</div>`:"");
+  // Review-mode blocks (only when Review mode is on): validator flags, HTML-vs-PDF conflicts, the
+  // source text for eyeball verification, and the mark-reviewed / comment action.
+  let reviewSects = "";
+  if(state.review){
+    const qflags=(QA&&QA[p.id])||[];
+    const checksHtml=qflags.length?`<div class="checks">`+qflags.map(fl=>`<div class="chk ${fl.sev}"><span class="sv"></span><span>${esc(fl.msg)}</span></div>`).join("")+`</div>`:"";
+    const cf=Array.isArray(p.conflicts)?p.conflicts:[];
+    const conflictsHtml=cf.length?`<div class="conflicts">`+cf.map(c=>
+      `<div class="conflict"><div class="cf">${esc(c.field||"value")}</div>`+
+      `<div class="opt">page: <b>${esc(String(c.kept&&c.kept.value))}</b></div>`+
+      `<div class="opt">document: <b>${esc(String(c.pdf&&c.pdf.value))}</b></div></div>`).join("")+`</div>`:"";
+    const r=REVIEWED[p.id]||{};
+    const rvw=`<div class="rvw"><div class="rvw-row">`+
+      `<button type="button" class="rvw-btn ${r.reviewed?"on":""}" onclick="toggleReviewedSel()">${r.reviewed?"✓ Reviewed":"Mark reviewed"}</button>`+
+      (r.reviewed&&r.ts?`<span class="qa-muted">${new Date(r.ts).toISOString().slice(0,10)}</span>`:"")+`</div>`+
+      `<textarea class="rvw-note" placeholder="Reviewer comment - e.g. which document has the correct value (passed to the pipeline on export)…" onchange="setReviewNoteSel(this.value)">${esc(r.note||"")}</textarea></div>`;
+    const ev=state.evidence&&p.raw_text?`<div class="evidence">${esc(p.raw_text)}</div>`:"";
+    reviewSects=sect("Checks", checksHtml)+sect("Conflicts (page vs document)", conflictsHtml)+
+      sect("Source text", ev)+sect("Review", rvw);
+  }
   document.getElementById("p-body").innerHTML =
+    reviewSects+
     sect("Verify", verify)+
     sect("Key figures", kpis.length?`<div class="kpis">${kpis.join("")}</div>`:(mix?"":`<div class="empty">No quantitative detail recorded for this application.</div>`))+
     sect("Unit mix", mix)+
@@ -404,6 +548,16 @@ function visible(p){
   if(MUNI_PROVINCE[p.muni]!==state.province) return false;
   if(state.muni!=="All" && p.muni!==state.muni) return false;
   if(state.classOnly && (p.class||"unknown")!==state.classOnly) return false;
+  if(state.review){
+    if(state.flaggedOnly && !isFlagged(p)) return false;
+    if(state.status==="reviewed"   && !(REVIEWED[p.id]&&REVIEWED[p.id].reviewed)) return false;
+    if(state.status==="unreviewed" &&  (REVIEWED[p.id]&&REVIEWED[p.id].reviewed)) return false;
+    if(state.source && !(p.extraction_method||"").split("+")[0].startsWith(state.source)) return false;
+    if(state.binFilter){ const bf=state.binFilter, v=p[bf.field];
+      if(typeof v!=="number"||v<=0) return false;
+      let b=Math.floor((v-bf.mn)/bf.span*bf.bins); if(b<0)b=0; if(b>=bf.bins)b=bf.bins-1;  // same binning as the histogram
+      if(b!==bf.bin) return false; }
+  }
   if(state.q){ const q=state.q.toLowerCase();
     if(!((p.addr||"").toLowerCase().includes(q) || (p.id||"").toLowerCase().includes(q))) return false; }
   return true;
@@ -413,6 +567,8 @@ function applyFilters(){
     if(v && !map.hasLayer(m)) layer.addLayer(m);
     else if(!v && map.hasLayer(m)) layer.removeLayer(m);
   });
+  if(state.view==="grid" && typeof renderGrid==="function") renderGrid();
+  else if(state.view==="stats" && typeof renderStats==="function") renderStats();
 }
 function fitCurrent(){
   // Fit the selected municipality, or the whole selected province when "All" is chosen.
@@ -440,8 +596,8 @@ function populateMuni(){
   muniSel.value=state.muni;
 }
 provSel.value=state.province; populateMuni();
-provSel.onchange=()=>{ state.province=provSel.value; state.muni="All"; populateMuni(); applyFilters(); fitCurrent(); renderKeyInfo(); };
-muniSel.onchange=()=>{ state.muni=muniSel.value; applyFilters(); fitCurrent(); renderKeyInfo(); };
+provSel.onchange=()=>{ clearBin(); state.province=provSel.value; state.muni="All"; populateMuni(); applyFilters(); fitCurrent(); renderKeyInfo(); updateProgress(); };
+muniSel.onchange=()=>{ clearBin(); state.muni=muniSel.value; applyFilters(); fitCurrent(); renderKeyInfo(); updateProgress(); };
 
 // ---- key info: summary for the selected province / municipality ----
 function renderKeyInfo(){
@@ -491,7 +647,7 @@ renderKeyInfo();
 
 // ---- search ----
 let qt; document.getElementById("q").addEventListener("input",e=>{
-  clearTimeout(qt); qt=setTimeout(()=>{ state.q=e.target.value.trim(); applyFilters();
+  clearTimeout(qt); qt=setTimeout(()=>{ clearBin(); state.q=e.target.value.trim(); applyFilters();
     if(state.q){ const vis=markers.filter(m=>map.hasLayer(m)).map(m=>[m._p.lat,m._p.lon]);
       if(vis.length&&vis.length<=60) map.flyToBounds(L.latLngBounds(vis).pad(.15),{duration:.6,maxZoom:16}); }
   },180);
@@ -511,7 +667,238 @@ document.getElementById("theme").onclick=()=>{
   restyle();
 };
 try{const t=localStorage.getItem("bcpa-theme"); if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePanel(); });
+
+// ---- QA review mode ----------------------------------------------------------------------------
+// Client-side data-quality validators (the same heuristics as the offline qa probe) that flag likely
+// problems so a reviewer can filter to the suspect permits and step through them. Run on demand.
+const MUNI_POLY = {};
+if (typeof BOUNDARIES !== "undefined" && BOUNDARIES.features)
+  BOUNDARIES.features.forEach(f=>{ if(f.properties && f.properties.muni) MUNI_POLY[f.properties.muni]=f.geometry; });
+function _ringHas(x,y,r){ let inside=false;
+  for(let i=0,j=r.length-1;i<r.length;j=i++){ const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1];
+    if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; } return inside; }
+function _polyHas(x,y,rings){ if(!_ringHas(x,y,rings[0])) return false;
+  for(let k=1;k<rings.length;k++) if(_ringHas(x,y,rings[k])) return false; return true; }  // holes
+function _geomHas(x,y,g){ if(!g) return true;
+  if(g.type==="Polygon") return _polyHas(x,y,g.coordinates);
+  if(g.type==="MultiPolygon") return g.coordinates.some(rings=>_polyHas(x,y,rings)); return true; }
+// Tolerant containment (~1 km around the point) absorbs boundary simplification + geocode slack, so
+// only points clearly in the wrong place flag.
+function inMuni(x,y,g){ const t=0.01;
+  return _geomHas(x,y,g)||_geomHas(x+t,y,g)||_geomHas(x-t,y,g)||_geomHas(x,y+t,g)||_geomHas(x,y-t,g); }
+
+function runQA(){
+  const byClass={};
+  PERMITS.forEach(p=>{ if(typeof p.floor_area==="number"&&p.floor_area>0)(byClass[p.class]=byClass[p.class]||[]).push(p.floor_area); });
+  const fence={};   // per-class far-outlier fence: q3 + 3*IQR
+  for(const [c,v] of Object.entries(byClass)){ if(v.length<8) continue; const s=[...v].sort((a,b)=>a-b);
+    fence[c]=s[(s.length*3)>>2] + 3*(s[(s.length*3)>>2]-s[s.length>>2]); }
+  const F={}; const add=(id,sev,msg)=>{ (F[id]=F[id]||[]).push({sev,msg}); };
+  for(const p of PERMITS){ const id=p.id; if(!id) continue;
+    if(typeof p.height_m==="number"&&typeof p.number_of_stories==="number"&&p.number_of_stories>0){
+      const r=p.height_m/p.number_of_stories;
+      if(r<2||r>6) add(id,"high",`Height ÷ storeys = ${r.toFixed(1)} m/storey (expect ~2.5-4.5)`); }
+    if(p.unit_mix&&typeof p.unit_mix==="object"&&typeof p.units_total==="number"&&!("single-family-lot" in p.unit_mix)){
+      const s=Object.values(p.unit_mix).reduce((a,v)=>a+(typeof v==="number"?v:0),0);
+      if(s>0&&s!==p.units_total) add(id,"med",`Unit mix sums to ${s} but units total is ${p.units_total}`); }
+    if(p.class==="residential"&&typeof p.floor_area==="number"&&typeof p.units_total==="number"&&p.units_total>0){
+      const per=p.floor_area/p.units_total;
+      if(per<15||per>600) add(id,"med",`Floor area ÷ units = ${Math.round(per)} m²/unit (expect ~30-200)`); }
+    if(typeof p.floor_area==="number"&&fence[p.class]&&p.floor_area>fence[p.class])
+      add(id,"high",`Floor area ${Math.round(p.floor_area).toLocaleString()} m² is a far outlier for ${CLABEL[p.class]||p.class}`);
+    if(!p.lat_approx&&p.lat!=null&&p.lon!=null&&MUNI_POLY[p.muni]&&!inMuni(p.lon,p.lat,MUNI_POLY[p.muni]))
+      add(id,"high","Mapped point falls outside the municipal boundary");
+    // Lower-signal completeness check, left commented so the default queue stays high-precision:
+    // if(p.class==="residential"&&!p.units_total&&!p.floor_area&&!p.unit_mix)
+    //   add(id,"low","Residential application with no units, floor area or unit mix");
+  }
+  // NOTE: the harvester's own needs_review / low-confidence / approximate-location signals are shown
+  // on each card's Source line and are intentionally NOT folded in here, to keep this queue focused
+  // on the new cross-field / statistical / geometry checks. Uncomment a check above to add it.
+  QA=F; return F;
+}
+
+const reviewEnter=document.getElementById("review-enter"), reviewBar=document.getElementById("review-bar"),
+  reviewExit=document.getElementById("review-exit"), rbMap=document.getElementById("rb-map"),
+  rbGrid=document.getElementById("rb-grid"), rbStats=document.getElementById("rb-stats"),
+  gridEl=document.getElementById("grid"), statsEl=document.getElementById("stats"),
+  qaRun=document.getElementById("qa-run"), qaOnly=document.getElementById("qa-flagonly"),
+  qaEvidence=document.getElementById("qa-evidence"), qaCount=document.getElementById("qa-count"),
+  qaProgress=document.getElementById("qa-progress"), qaStatus=document.getElementById("qa-status"),
+  qaSource=document.getElementById("qa-source");
+// Per-muni progress: how many of the flagged permits in the current view a reviewer has signed off.
+function updateProgress(){
+  if(!state.review){ qaProgress.textContent=""; qaCount.textContent=""; return; }
+  const scope=PERMITS.filter(p=>MUNI_PROVINCE[p.muni]===state.province && (state.muni==="All"||p.muni===state.muni));
+  const flagged=scope.filter(isFlagged);
+  const reviewed=flagged.filter(p=>REVIEWED[p.id]&&REVIEWED[p.id].reviewed).length;
+  qaCount.textContent=`(${flagged.length.toLocaleString()})`;
+  qaProgress.textContent=`${reviewed.toLocaleString()} / ${flagged.length.toLocaleString()} flagged reviewed`;
+}
+function refreshCard(){ if(state.selected) select(state.selected, byRec.get(state.selected)); }
+// Enter / exit review mode. Review tools + card sections appear ONLY in review mode, so the public
+// dashboard is untouched until the reviewer opts in via the map-top toggle.
+function setReview(on){ state.review=on; reviewEnter.hidden=on; reviewBar.hidden=!on;
+  document.body.classList.toggle("review-on", on);
+  if(on && !QA) runQA();              // compute validator flags so the flagged set is complete
+  if(!on){ state.flaggedOnly=false; qaOnly.checked=false; state.evidence=false; qaEvidence.checked=false;
+    state.status=""; qaStatus.value=""; state.source=""; qaSource.value=""; clearBin(); setView("map"); }
+  applyFilters(); updateProgress(); refreshCard(); }
+reviewEnter.onclick=()=>setReview(true);
+reviewExit.onclick=()=>setReview(false);
+// Switch the main surface between the map, the review grid, and the stats/histograms view.
+function setView(v){ if(v!=="grid") clearBin();   // the bin drill-down only lives in the grid
+  state.view=v;
+  rbMap.classList.toggle("on", v==="map"); rbGrid.classList.toggle("on", v==="grid"); rbStats.classList.toggle("on", v==="stats");
+  gridEl.hidden = v!=="grid"; statsEl.hidden = v!=="stats";
+  if(v==="grid") renderGrid(); else if(v==="stats") renderStats(); }
+rbMap.onclick=()=>setView("map");
+rbGrid.onclick=()=>setView("grid");
+rbStats.onclick=()=>setView("stats");
+qaStatus.onchange=()=>{ clearBin(); state.status=qaStatus.value; applyFilters(); if(state.view==="map") fitCurrent(); };
+qaSource.onchange=()=>{ clearBin(); state.source=qaSource.value; applyFilters(); if(state.view==="map") fitCurrent(); };
+qaRun.onclick=()=>{ qaRun.disabled=true; qaRun.textContent="Running…";
+  setTimeout(()=>{ runQA(); qaRun.disabled=false; qaRun.textContent="Re-run checks";
+    applyFilters(); updateProgress(); refreshCard(); }, 30); };
+qaOnly.onchange=()=>{ clearBin(); state.flaggedOnly=qaOnly.checked; applyFilters(); if(state.view==="map") fitCurrent(); };
+qaEvidence.onchange=()=>{ state.evidence=qaEvidence.checked; refreshCard(); };
+document.getElementById("qa-export").onclick=e=>{ e.preventDefault(); if(!QA) runQA();
+  const rows=PERMITS.filter(p=>isFlagged(p)||REVIEWED[p.id]).map(p=>({
+    id:p.id, muni:p.muni, addr:p.addr, class:p.class,
+    flags:(QA&&QA[p.id])||[], needs_review:!!p.needs_review, confidence:p.extraction_confidence,
+    reviewed:!!(REVIEWED[p.id]&&REVIEWED[p.id].reviewed), note:(REVIEWED[p.id]&&REVIEWED[p.id].note)||"",
+    reviewed_ts:(REVIEWED[p.id]&&REVIEWED[p.id].ts)||null }));
+  saveFile("review_actions.json", JSON.stringify(rows,null,2), "application/json"); };
+
+// Mark-reviewed / comment, keyed to the open card. Persisted to localStorage (survives reloads).
+function setReviewed(id, on){ const r=REVIEWED[id]||{};
+  if(!on) delete REVIEWED[id]; else REVIEWED[id]={reviewed:true, note:r.note||"", ts:Date.now()};
+  saveReviewed(); updateProgress(); if(state.view==="grid") renderGrid(); }
+function toggleReviewedSel(){ const p=state.selected; if(!p||!p.id) return;
+  setReviewed(p.id, !(REVIEWED[p.id]&&REVIEWED[p.id].reviewed)); refreshCard(); }
+function setReviewNoteSel(v){ const p=state.selected; if(!p||!p.id) return;
+  const r=REVIEWED[p.id]||{reviewed:false}; r.note=v; REVIEWED[p.id]=r; saveReviewed(); }
+
+// Step through the currently-visible permits (turn on "Flagged only" to walk just the review queue).
+function stepPermit(dir){
+  const list=markers.filter(m=>map.hasLayer(m)); if(!list.length) return;
+  let i=state.selected?list.findIndex(m=>m._p===state.selected):-1;
+  i=(i+dir+list.length)%list.length;
+  const m=list[i]; select(m._p,m); map.panTo([m._p.lat,m._p.lon]);
+}
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ closePanel(); return; }
+  const t=e.target&&e.target.tagName; if(t==="INPUT"||t==="SELECT"||t==="TEXTAREA") return;
+  if(!state.review) return;                 // arrow-key stepping is a review-mode feature
+  if(e.key==="ArrowRight"){ stepPermit(1); e.preventDefault(); }
+  else if(e.key==="ArrowLeft"){ stepPermit(-1); e.preventDefault(); }
+});
+
+// ---- review grid (sortable / filterable table over the map, review mode only) ----
+// Columns: [key, header, accessor, {num, sortv, bad}]. The flags / confidence columns drive the
+// conditional formatting (severity stripe, red low-confidence) so a reviewer can sort to the worst.
+const GRID_COLS = [
+  {k:"rev",   h:"✓",        get:p=>REVIEWED[p.id]&&REVIEWED[p.id].reviewed?"✓":"", sv:p=>REVIEWED[p.id]&&REVIEWED[p.id].reviewed?1:0, cell:"rev"},
+  {k:"flags", h:"Flags",    num:true, get:p=>{const n=((QA&&QA[p.id])||[]).length; return n||(isFlagged(p)?"•":"");}, sv:p=>((QA&&QA[p.id])||[]).length + (isFlagged(p)?0.4:0)},
+  {k:"conf",  h:"Conf",     num:true, get:p=>typeof p.extraction_confidence==="number"?Math.round(p.extraction_confidence*100)+"%":"", sv:p=>typeof p.extraction_confidence==="number"?p.extraction_confidence:2, bad:p=>typeof p.extraction_confidence==="number"&&p.extraction_confidence<0.6},
+  {k:"muni",  h:"Muni",     get:p=>p.muni, sv:p=>p.muni||""},
+  {k:"id",    h:"Permit",   get:p=>p.id||"", sv:p=>p.id||""},
+  {k:"addr",  h:"Address",  get:p=>p.addr||"", sv:p=>p.addr||""},
+  {k:"class", h:"Class",    get:p=>CLABEL[p.class]||p.class, sv:p=>p.class||""},
+  {k:"status",h:"Status",   get:p=>p.status||"", sv:p=>p.status||""},
+  {k:"units", h:"Units",    num:true, get:p=>p.units_total, sv:p=>p.units_total},
+  {k:"floor", h:"Floor m²", num:true, get:p=>p.floor_area, sv:p=>p.floor_area},
+  {k:"height",h:"Height",   num:true, get:p=>p.height_m, sv:p=>p.height_m},
+  {k:"method",h:"Source",   get:p=>p.extraction_method||"", sv:p=>p.extraction_method||""},
+];
+let gridSort={k:"flags", dir:-1};
+let gridRows=[];
+const MAXR=4000;
+function renderGrid(){
+  const col=GRID_COLS.find(c=>c.k===gridSort.k)||GRID_COLS[1];
+  const rows=PERMITS.filter(visible).sort((a,b)=>{
+    let av=col.sv(a), bv=col.sv(b);
+    if(av==null) av=gridSort.dir<0?-Infinity:Infinity;
+    if(bv==null) bv=gridSort.dir<0?-Infinity:Infinity;
+    if(typeof av==="string"||typeof bv==="string") return gridSort.dir*String(av).localeCompare(String(bv));
+    return gridSort.dir*((av>bv)-(av<bv));
+  });
+  gridRows=rows.slice(0,MAXR);
+  const head="<tr>"+GRID_COLS.map(c=>`<th class="${c.num?"num":""}" data-k="${c.k}">${c.h}${gridSort.k===c.k?(gridSort.dir<0?" ↓":" ↑"):""}</th>`).join("")+"</tr>";
+  const body=gridRows.map((p,i)=>{
+    const f=(QA&&QA[p.id])||[]; const sev=f.some(x=>x.sev==="high")?"flag-high":(f.length?"flag-med":"");
+    const rv=(REVIEWED[p.id]&&REVIEWED[p.id].reviewed)?"reviewed":"";
+    const selc=state.selected===p?"sel":"";
+    const tds=GRID_COLS.map(c=>{ const v=c.get(p); const miss=(v==null||v==="");
+      const cls=[c.cell||"", c.num?"num":"", miss&&!c.cell?"miss":"", (c.bad&&c.bad(p))?"bad":""].filter(Boolean).join(" ");
+      const txt=miss?(c.cell?"":"-"):esc(typeof v==="number"?v.toLocaleString():String(v));
+      return `<td class="${cls}">${txt}</td>`; }).join("");
+    return `<tr class="${[sev,rv,selc].filter(Boolean).join(" ")}" data-i="${i}">${tds}</tr>`;
+  }).join("");
+  gridEl.innerHTML=`<table class="gt"><thead>${head}</thead><tbody>${body}</tbody></table>`+
+    (rows.length>MAXR?`<div class="gt-note">Showing the first ${MAXR.toLocaleString()} of ${rows.length.toLocaleString()} rows - filter by municipality or “Flagged only” to narrow.</div>`:"");
+}
+gridEl.addEventListener("click",e=>{
+  const th=e.target.closest("th");
+  if(th){ const k=th.dataset.k; gridSort = gridSort.k===k ? {k, dir:-gridSort.dir} : {k, dir:-1}; renderGrid(); return; }
+  const tr=e.target.closest("tr[data-i]"); if(!tr) return;
+  const p=gridRows[+tr.dataset.i]; if(!p) return;
+  const td=e.target.closest("td");
+  if(td && td.cellIndex===0){ setReviewed(p.id, !(REVIEWED[p.id]&&REVIEWED[p.id].reviewed)); if(state.selected===p) refreshCard(); return; }
+  select(p, byRec.get(p)); renderGrid();
+});
+
+// ---- stats view: distribution histograms for the current scope ----
+// A reviewer spots "the one bar that's wrong": a lone far-right bar is an extreme value worth
+// opening. Values are binned linearly min..max; the top outliers are also listed so they're one
+// click away. Scope respects the active muni / flagged / status / source filters.
+function _median(a){ if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y); const m=s.length>>1;
+  return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+const STAT_BINS=24;
+const STAT_LABEL={units_total:"Units", floor_area:"Floor area", height_m:"Height",
+  number_of_stories:"Storeys", parking_vehicle_stalls:"Vehicle parking"};
+let STAT_PARAMS={};   // {field: {mn, span, bins, mx}} so a clicked bar can reproduce the histogram bin
+function histogram(title, vals, unit, field){
+  if(!vals.length) return `<div class="st-card"><h4>${esc(title)}</h4><div class="st-empty">No values in the current scope</div></div>`;
+  const nums=vals.map(v=>v.v), n=nums.length, mn=Math.min(...nums), mx=Math.max(...nums), med=_median(nums);
+  const span=(mx-mn)||1, counts=new Array(STAT_BINS).fill(0);
+  nums.forEach(v=>{ let b=Math.floor((v-mn)/span*STAT_BINS); if(b<0)b=0; if(b>=STAT_BINS)b=STAT_BINS-1; counts[b]++; });
+  STAT_PARAMS[field]={mn, span, bins:STAT_BINS, mx};
+  const cmax=Math.max(...counts), W=300, H=92, bw=W/STAT_BINS;
+  const bars=counts.map((c,i)=>{ const h=cmax?c/cmax*(H-2):0; const out=(i>=STAT_BINS-1&&c&&c<=3);
+    const lo=Math.round(mn+span*i/STAT_BINS), hi=(i===STAT_BINS-1?mx:Math.round(mn+span*(i+1)/STAT_BINS));
+    return `<rect class="${out?"out":""}" data-f="${field}" data-b="${i}" x="${(i*bw).toFixed(1)}" y="${(H-h).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${h.toFixed(1)}"><title>${c} in ${fmt(lo)}-${fmt(hi)}${unit?" "+unit:""} (click to see in grid)</title></rect>`; }).join("");
+  const top=[...vals].sort((a,b)=>b.v-a.v).slice(0,3)
+    .map(x=>`<div><b>${fmt(x.v)}${unit?" "+unit:""}</b>: ${esc(x.muni)} ${esc(x.id||"")}</div>`).join("");
+  return `<div class="st-card"><h4>${esc(title)} <span>n=${n.toLocaleString()}</span></h4>`+
+    `<svg viewBox="0 0 ${W} ${H}" class="st-svg" preserveAspectRatio="none" role="img" aria-label="${esc(title)} distribution">${bars}</svg>`+
+    `<div class="st-ax"><span>${fmt(mn)}</span><span>median ${fmt(med)}</span><span>${fmt(mx)}${unit?" "+unit:""}</span></div>`+
+    `<div class="st-top">Largest: ${top}</div></div>`;
+}
+function renderStats(){
+  const rows=PERMITS.filter(visible);
+  const pick=k=>rows.filter(p=>typeof p[k]==="number"&&p[k]>0).map(p=>({v:p[k], muni:p.muni, id:p.id}));
+  const scope = state.muni!=="All" ? state.muni : state.province;
+  statsEl.innerHTML =
+    `<div class="st-wide st-sub">Distributions for <b>${esc(scope)}</b> - ${rows.length.toLocaleString()} permits in scope (respects the active filters). A lone far-right bar is an outlier worth opening.</div>`+
+    histogram("Units total", pick("units_total"), "", "units_total")+
+    histogram("Floor area", pick("floor_area"), "m²", "floor_area")+
+    histogram("Height", pick("height_m"), "m", "height_m")+
+    histogram("Storeys", pick("number_of_stories"), "", "number_of_stories")+
+    histogram("Parking (vehicle)", pick("parking_vehicle_stalls"), "", "parking_vehicle_stalls");
+}
+// Click a histogram bar -> filter the grid to exactly those permits (that metric, that value bin).
+const qaBinchip=document.getElementById("qa-binchip");
+function showBinChip(){ if(state.binFilter){ qaBinchip.textContent=state.binFilter.label; qaBinchip.hidden=false; } }
+function clearBin(){ state.binFilter=null; if(qaBinchip) qaBinchip.hidden=true; }
+qaBinchip.onclick=()=>{ clearBin(); applyFilters(); };
+statsEl.addEventListener("click",e=>{
+  const r=e.target.closest("rect[data-f]"); if(!r) return;
+  const field=r.dataset.f, bin=+r.dataset.b, P=STAT_PARAMS[field]; if(!P) return;
+  const lo=Math.round(P.mn+P.span*bin/P.bins), hi=(bin===P.bins-1?P.mx:Math.round(P.mn+P.span*(bin+1)/P.bins));
+  state.binFilter={field, mn:P.mn, span:P.span, bins:P.bins, bin, label:`${STAT_LABEL[field]||field} ${fmt(lo)}-${fmt(hi)}`};
+  showBinChip(); setView("grid");
+});
 
 // ---- export to Excel ----
 // Flatten the object/array fields so every attribute lands in one cell.

@@ -52,6 +52,17 @@ BADGE_FIELDS = (
 # Base extraction methods that mean the whole row was read from a PDF (vs an HTML page / map / API).
 _PURE_PDF_BASES = ("pdf", "ollama")
 
+
+def _dedash(v):
+    """Replace em/en dashes with a hyphen in every rendered string, preserving URLs untouched."""
+    if isinstance(v, str):
+        return v if v.startswith("http") else v.replace("—", "-").replace("–", "-")
+    if isinstance(v, list):
+        return [_dedash(x) for x in v]
+    if isinstance(v, dict):
+        return {k: (val if k == "url" else _dedash(val)) for k, val in v.items()}
+    return v
+
 # Geocoded coords for the HTML-source municipalities (North Van, Victoria).
 gc_path = Path("tools/dashboard/geocoded.json")
 GEO = json.loads(gc_path.read_text(encoding="utf-8")) if gc_path.exists() else {}
@@ -107,6 +118,10 @@ for slug, name in FILES.items():
                           if any(t in str(m) for t in ("pdf", "claude", "ollama", "letter"))]
         if pdf_fields:
             rec["pdf_fields"] = pdf_fields
+        # HTML-vs-PDF disagreements the harvester logged ("one of these two numbers is wrong") - shown
+        # on the review card so a reviewer can resolve them.
+        if r.get("conflicts"):
+            rec["conflicts"] = r["conflicts"]
         if approx:
             rec["lat_approx"] = True
         for k in DETAIL_FIELDS:
@@ -117,7 +132,9 @@ for slug, name in FILES.items():
         # neutrally in the public dashboard as a generic document read.
         if rec.get("extraction_method"):
             rec["extraction_method"] = rec["extraction_method"].replace("claude_read", "doc_read")
-        out.append(rec)
+        # Normalize em/en dashes to a plain hyphen everywhere the dashboard renders text, so no long
+        # dashes appear in the UI. URLs are left alone (a dash can be a real path character there).
+        out.append(_dedash(rec))
     print(f"{name:16} rows={len(rows):<5} mapped={withxy}")
 
 geo = [r for r in out if r["lat"] is not None]
