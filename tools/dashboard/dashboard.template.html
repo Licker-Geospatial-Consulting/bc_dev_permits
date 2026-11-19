@@ -71,6 +71,31 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 #province{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23fffdf9' stroke-width='1.5'/%3E%3C/svg%3E")}
 .sel:hover{border-color:var(--ring)}
 .sel option{color:var(--ink);background:var(--surface)}
+/* Custom multi-select municipality control (checkbox popover; a native <select multiple> can't
+   group with counts or show a tidy summary). The button reuses .sel so it matches the province box. */
+.ms{position:relative}
+.ms-btn{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-pop{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:700;max-height:320px;overflow:auto;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px}
+.ms-pop[hidden]{display:none}
+.ms-all{font-weight:700}
+.ms-group-row{margin-top:3px}
+.ms-group{font-family:var(--display);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)}
+.ms-sub{padding-left:26px}
+.ms-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink)}
+.ms-row:hover{background:var(--surface-2)}
+.ms-row input{margin:0;cursor:pointer;accent-color:var(--accent)}
+.ms-row .ms-c{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+.ms-sep{height:1px;background:var(--line-2);margin:5px 2px}
+/* Rubber-band rectangle for shift-drag point selection on the map (review mode). */
+.boxsel{position:fixed;z-index:655;pointer-events:none;border:1.5px solid var(--accent);border-radius:3px;
+  background:color-mix(in srgb, var(--accent) 14%, transparent)}
+/* Selected-points chip in the review toolbar: click to open the grid, the x to clear. The
+   compound selector beats the generic .rb-chip::after "x" regardless of rule order. */
+.rb-chip.rb-pick::after{content:""}
+.rb-pick .pk-x{margin-left:7px;padding-left:7px;border-left:1px solid color-mix(in srgb,var(--accent) 40%,transparent);
+  color:var(--muted);font-weight:700}
+.rb-pick .pk-x:hover{color:var(--ink)}
 #search input{width:100%;box-sizing:border-box;font:inherit;font-size:13px;
   padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
 #search input::placeholder{color:var(--muted)}
@@ -295,6 +320,7 @@ table.gt td.rev{text-align:center;color:#1a7f37;font-weight:700;width:26px}
   <select id="qa-status" class="rb-sel" title="Filter by review status"><option value="">All</option><option value="unreviewed">Unreviewed</option><option value="reviewed">Reviewed</option></select>
   <select id="qa-source" class="rb-sel" title="Filter by source type"><option value="">All sources</option><option value="html">HTML</option><option value="pdf">PDF</option><option value="arcgis">Map / ArcGIS</option><option value="api">API</option></select>
   <button id="qa-binchip" class="rb-chip" type="button" hidden></button>
+  <button id="qa-pickchip" class="rb-chip rb-pick" type="button" hidden title="Open the selected points in the grid"></button>
   <label class="rb-chk"><input type="checkbox" id="qa-evidence"> Source text</label>
   <button id="qa-run" class="rb-btn" type="button">Re-run checks</button>
   <span class="rb-spacer"></span>
@@ -310,7 +336,12 @@ table.gt td.rev{text-align:center;color:#1a7f37;font-weight:700;width:26px}
   </div>
   <div class="sb-body">
     <div class="field"><label for="province">Province</label><select id="province" class="sel" aria-label="Province"></select></div>
-    <div class="field"><label for="muni">Municipality</label><select id="muni" class="sel" aria-label="Municipality"></select></div>
+    <div class="field"><label for="muni-btn">Municipality</label>
+      <div id="muni-ms" class="ms">
+        <button id="muni-btn" class="sel ms-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Municipality (select one or more)"></button>
+        <div id="muni-pop" class="ms-pop" hidden role="group" aria-label="Municipalities"></div>
+      </div>
+    </div>
     <div id="keyinfo"></div>
     <div class="field"><label for="q">Search</label><div id="search"><input id="q" type="search" placeholder="Address, permit #, or keyword" autocomplete="off"></div></div>
     <div><div class="sb-sec-title">Development class</div><div id="legitems"></div></div>
@@ -365,8 +396,16 @@ const classColor = c => cssvar("--c-"+(CLASSES.includes(c)?c:"unknown"));
 // ---- state ----
 // classOnly: when set, the map shows ONLY that development class (click a legend item to isolate it,
 // click it again to clear). null = show every class.
-const state = { province:"British Columbia", muni:"All", classOnly:null, q:"", selected:null,
-  flaggedOnly:false, review:false, evidence:false, view:"map", status:"", source:"", binFilter:null };
+// munis: the set of selected municipalities (empty = every municipality in the province). picked /
+// pickedOnly drive the review-mode multi-point selection (shift-click or shift-drag box -> grid).
+const state = { province:"British Columbia", munis:new Set(), classOnly:null, q:"", selected:null,
+  flaggedOnly:false, review:false, evidence:false, view:"map", status:"", source:"", binFilter:null,
+  picked:new Set(), pickedOnly:false };
+// Effective municipality scope: the chosen munis, or every municipality in the province when none
+// are checked. Used by fit / key-info / stats / export so "none checked" means "the whole province".
+function scopeMunis(){ return state.munis.size ? [...state.munis] : PROVINCES[state.province]; }
+function scopeLabel(){ return state.munis.size===0 ? state.province
+  : (state.munis.size===1 ? [...state.munis][0] : `${state.munis.size} municipalities`); }
 let QA = null;   // {permit_id: [{sev, msg}]} once the QA checks have computed the validator flags
 // Reviewer annotations persisted per browser: {permit_id: {reviewed, note, ts}}. Exportable to a
 // review_actions.json the pipeline can read. This is the only review state that outlives a reload.
@@ -415,6 +454,23 @@ if (typeof BOUNDARIES !== "undefined" && BOUNDARIES.features && BOUNDARIES.featu
   boundaryLayer = L.geoJSON(BOUNDARIES,{interactive:false,renderer:L.svg(),style:boundaryStyle}).addTo(map);
 }
 
+// A marker's resting style, accounting for selection (click) and the review-mode picked set (a
+// shift-selected point gets an accent ring). Used by mouseout, restyle, and pick toggles so picked
+// highlighting survives hover and theme changes.
+function restingStyle(p){
+  const ap=p.lat_approx===true, sel=state.selected===p, pk=state.picked.has(p.id);
+  return { color: pk?cssvar("--accent"):cssvar("--ring"), fillColor:classColor(p.class),
+    radius: sel?8:(pk?7:5), weight: sel?2.5:(pk?3:1), fillOpacity:ap?.4:.9, opacity:ap?.5:.95 };
+}
+// Click a marker: in review mode a shift-click toggles it in the multi-point selection; otherwise
+// (and in public mode) it opens the detail card. suppressClick swallows the click that ends a box drag.
+let suppressClick=false;
+function onMarkerClick(p,m,e){
+  if(suppressClick) return;
+  if(state.review && e && e.originalEvent && e.originalEvent.shiftKey){ togglePick(p,m); return; }
+  select(p,m);
+}
+
 // ---- markers ----
 const geo = PERMITS.filter(p => typeof p.lat === "number" && typeof p.lon === "number");
 const muniBounds = {};
@@ -426,8 +482,8 @@ const markers = geo.map(p => {
   m._p = p;
   m.bindTooltip(buildTip(p),{className:"tip",sticky:true,direction:"top",offset:[0,-4],opacity:1});
   m.on("mouseover",function(){ this.setStyle({radius:7.5,weight:2}); this.bringToFront(); });
-  m.on("mouseout",function(){ if(state.selected!==p) this.setStyle({radius:5,weight:1}); });
-  m.on("click",()=>select(p,m));
+  m.on("mouseout",function(){ if(state.selected!==p) this.setStyle(restingStyle(p)); });
+  m.on("click",e=>onMarkerClick(p,m,e));
   (muniBounds[p.muni] = muniBounds[p.muni] || []).push([p.lat,p.lon]);
   return m;
 });
@@ -443,10 +499,11 @@ function rowsHtml(pairs){
 }
 function sect(title,inner){ return inner?`<div class="sect"><h3>${title}</h3>${inner}</div>`:""; }
 function select(p,m){
-  // reset previous
-  if(state.selected && byRec.get(state.selected)) byRec.get(state.selected).setStyle({radius:5,weight:1});
+  // reset previous (back to its resting style so a picked ring is preserved)
+  const prev=state.selected; state.selected=null;
+  if(prev && byRec.get(prev)) byRec.get(prev).setStyle(restingStyle(prev));
   state.selected=p;
-  if(m){ m.setStyle({radius:8,weight:2.5}); m.bringToFront(); }
+  if(m){ m.setStyle(restingStyle(p)); m.bringToFront(); }
   // Tag a field that was read from a source document, linking to that document so a reviewer can
   // open it and verify the value. Falls back to a non-link tag when no document URL is available.
   const pdfSrc = (Array.isArray(p.source_docs)&&p.source_docs.length&&p.source_docs[0].url) || p.source_url || null;
@@ -554,15 +611,15 @@ function select(p,m){
   panel.classList.add("open"); panel.setAttribute("aria-hidden","false");
 }
 function closePanel(){ panel.classList.remove("open"); panel.setAttribute("aria-hidden","true");
-  if(state.selected && byRec.get(state.selected)) byRec.get(state.selected).setStyle({radius:5,weight:1});
-  state.selected=null; }
+  const prev=state.selected; state.selected=null;
+  if(prev && byRec.get(prev)) byRec.get(prev).setStyle(restingStyle(prev)); }
 document.getElementById("pclose").onclick=closePanel;
 document.getElementById("map").addEventListener("click",e=>{ /* map bg click keeps panel */ },true);
 
 // ---- filtering ----
 function visible(p){
   if(MUNI_PROVINCE[p.muni]!==state.province) return false;
-  if(state.muni!=="All" && p.muni!==state.muni) return false;
+  if(state.munis.size && !state.munis.has(p.muni)) return false;
   if(state.classOnly && (p.class||"unknown")!==state.classOnly) return false;
   if(state.review){
     if(state.flaggedOnly && !isFlagged(p)) return false;
@@ -591,40 +648,79 @@ function applyFilters(){
   else if(state.view==="stats" && typeof renderStats==="function") renderStats();
 }
 function fitCurrent(){
-  // Fit the selected municipality, or the whole selected province when "All" is chosen.
-  const pts = state.muni!=="All"
-    ? (muniBounds[state.muni]||[])
-    : PROVINCES[state.province].flatMap(m=>muniBounds[m]||[]);
+  // Fit the selected municipalities, or the whole province when none are checked.
+  const pts = scopeMunis().flatMap(m=>muniBounds[m]||[]);
   if(pts.length) map.flyToBounds(L.latLngBounds(pts).pad(.08),{duration:.7,maxZoom:15});
 }
 
 // ---- province / municipality dropdowns ----
 const counts = {}; geo.forEach(p=>counts[p.muni]=(counts[p.muni]||0)+1);
 const provCount = prov => PROVINCES[prov].reduce((s,m)=>s+(counts[m]||0),0);
-const provSel=document.getElementById("province"), muniSel=document.getElementById("muni");
+const provSel=document.getElementById("province");
+const muniBtn=document.getElementById("muni-btn"), muniPop=document.getElementById("muni-pop"),
+  muniMs=document.getElementById("muni-ms");
 function opt(value,label){ const o=document.createElement("option"); o.value=value; o.textContent=label; return o; }
 Object.keys(PROVINCES).forEach(prov=>provSel.appendChild(opt(prov,`${prov} (${provCount(prov).toLocaleString()})`)));
-function populateMuni(){
-  muniSel.innerHTML="";
-  muniSel.appendChild(opt("All",`All municipalities (${provCount(state.province).toLocaleString()})`));
-  // One <optgroup> per regional district: its label is a bold, non-selectable subheading.
-  for(const [region,ms] of Object.entries(REGIONS[state.province])){
-    const g=document.createElement("optgroup"); g.label=region;
-    ms.forEach(m=>g.appendChild(opt(m,`${m} (${(counts[m]||0).toLocaleString()})`)));
-    muniSel.appendChild(g);
-  }
-  muniSel.value=state.muni;
+
+// The municipality control is a checkbox popover so several munis can be chosen at once. An empty
+// selection means "all municipalities in the province"; the button shows a summary + the live count.
+function muniLabel(){
+  const n = state.munis.size ? [...state.munis].reduce((s,m)=>s+(counts[m]||0),0) : provCount(state.province);
+  return `${scopeLabel()} (${n.toLocaleString()})`;
 }
-provSel.value=state.province; populateMuni();
-provSel.onchange=()=>{ clearBin(); state.province=provSel.value; state.muni="All"; populateMuni(); applyFilters(); fitCurrent(); renderKeyInfo(); updateProgress(); };
-muniSel.onchange=()=>{ clearBin(); state.muni=muniSel.value; applyFilters(); fitCurrent(); renderKeyInfo(); updateProgress(); };
+function syncMuniLabel(){ muniBtn.textContent = muniLabel(); }
+// Checking every muni in the province is the same as "all" -> clear so the label reads cleanly.
+function normalizeMunis(){ if(state.munis.size===PROVINCES[state.province].length) state.munis.clear(); }
+function buildMuniPop(){
+  muniPop.innerHTML="";
+  const all=document.createElement("label"); all.className="ms-row ms-all";
+  all.innerHTML=`<input type="checkbox" ${state.munis.size===0?"checked":""}> All municipalities`
+    +`<span class="ms-c">${provCount(state.province).toLocaleString()}</span>`;
+  all.querySelector("input").onchange=()=>{ clearBin(); state.munis.clear(); buildMuniPop(); onMuniChange(); };
+  muniPop.appendChild(all);
+  muniPop.appendChild(Object.assign(document.createElement("div"),{className:"ms-sep"}));
+  for(const [region,ms] of Object.entries(REGIONS[state.province])){
+    // One checkbox per regional district: checking it selects every municipality in the district
+    // (so a whole region is one click, not ten). It is indeterminate when only some are chosen.
+    const inSel=ms.filter(m=>state.munis.has(m)).length;
+    const rcount=ms.reduce((s,m)=>s+(counts[m]||0),0);
+    const grp=document.createElement("label"); grp.className="ms-row ms-group-row";
+    grp.innerHTML=`<input type="checkbox"> <span class="ms-group">${region}</span>`
+      +`<span class="ms-c">${rcount.toLocaleString()}</span>`;
+    const gi=grp.querySelector("input");
+    gi.checked = ms.length>0 && inSel===ms.length;
+    gi.indeterminate = inSel>0 && inSel<ms.length;
+    gi.onchange=()=>{ clearBin();
+      if(gi.checked) ms.forEach(m=>state.munis.add(m)); else ms.forEach(m=>state.munis.delete(m));
+      normalizeMunis(); buildMuniPop(); onMuniChange(); };
+    muniPop.appendChild(grp);
+    ms.forEach(m=>{
+      const row=document.createElement("label"); row.className="ms-row ms-sub";
+      row.innerHTML=`<input type="checkbox" ${state.munis.has(m)?"checked":""}> ${m}`
+        +`<span class="ms-c">${(counts[m]||0).toLocaleString()}</span>`;
+      row.querySelector("input").onchange=e=>{ clearBin();
+        if(e.target.checked) state.munis.add(m); else state.munis.delete(m);
+        normalizeMunis(); buildMuniPop(); onMuniChange(); };
+      muniPop.appendChild(row);
+    });
+  }
+}
+function onMuniChange(){ syncMuniLabel(); applyFilters(); fitCurrent(); renderKeyInfo(); updateProgress(); }
+function openMuniPop(o){ muniPop.hidden=!o; muniBtn.setAttribute("aria-expanded", o?"true":"false"); }
+muniBtn.onclick=()=>{ const show=muniPop.hidden; if(show) buildMuniPop(); openMuniPop(show); };
+document.addEventListener("click",e=>{ if(!muniMs.contains(e.target)) openMuniPop(false); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !muniPop.hidden) openMuniPop(false); });
+
+provSel.value=state.province; syncMuniLabel();
+provSel.onchange=()=>{ clearBin(); state.province=provSel.value; state.munis.clear(); openMuniPop(false);
+  onMuniChange(); };
 
 // ---- key info: summary for the selected province / municipality ----
 function renderKeyInfo(){
   const sel = PERMITS.filter(p => MUNI_PROVINCE[p.muni]===state.province
-    && (state.muni==="All" || p.muni===state.muni));
-  const name = state.muni==="All" ? state.province : state.muni;
-  const sub = state.muni==="All"
+    && (!state.munis.size || state.munis.has(p.muni)));
+  const name = scopeLabel();
+  const sub = state.munis.size===0
     ? `${PROVINCES[state.province].length} municipalities`
     : state.province;
   const byC = {};
@@ -674,9 +770,7 @@ let qt; document.getElementById("q").addEventListener("input",e=>{
 });
 
 // ---- theme toggle + marker restyle ----
-function restyle(){ markers.forEach(m=>{ const p=m._p, ap=p.lat_approx===true, sel=state.selected===p;
-  m.setStyle({color:cssvar("--ring"),fillColor:classColor(p.class),
-    radius:sel?8:5,weight:sel?2.5:1,fillOpacity:ap?.4:.9,opacity:ap?.5:.95}); });
+function restyle(){ markers.forEach(m=>{ m.setStyle(restingStyle(m._p)); });
   if(roadsLayer) roadsLayer.setStyle(roadStyle);
   if(boundaryLayer) boundaryLayer.setStyle(boundaryStyle); }
 document.getElementById("theme").onclick=()=>{
@@ -749,7 +843,7 @@ const reviewEnter=document.getElementById("review-enter"), reviewBar=document.ge
 // Per-muni progress: how many of the flagged permits in the current view a reviewer has signed off.
 function updateProgress(){
   if(!state.review){ qaProgress.textContent=""; qaCount.textContent=""; return; }
-  const scope=PERMITS.filter(p=>MUNI_PROVINCE[p.muni]===state.province && (state.muni==="All"||p.muni===state.muni));
+  const scope=PERMITS.filter(p=>MUNI_PROVINCE[p.muni]===state.province && (!state.munis.size||state.munis.has(p.muni)));
   const flagged=scope.filter(isFlagged);
   const reviewed=flagged.filter(p=>REVIEWED[p.id]&&REVIEWED[p.id].reviewed).length;
   qaCount.textContent=`(${flagged.length.toLocaleString()})`;
@@ -768,9 +862,11 @@ function syncBarHeight(){
 if(window.ResizeObserver) new ResizeObserver(syncBarHeight).observe(reviewBar);
 function setReview(on){ state.review=on; reviewEnter.hidden=on; reviewBar.hidden=!on;
   document.body.classList.toggle("review-on", on); syncBarHeight();
+  // Shift-drag is the point box-select in review mode, so Leaflet's shift-drag box-zoom is off then.
+  if(map.boxZoom){ on ? map.boxZoom.disable() : map.boxZoom.enable(); }
   if(on && !QA) runQA();              // compute validator flags so the flagged set is complete
   if(!on){ state.flaggedOnly=false; qaOnly.checked=false; state.evidence=false; qaEvidence.checked=false;
-    state.status=""; qaStatus.value=""; state.source=""; qaSource.value=""; clearBin(); setView("map"); }
+    state.status=""; qaStatus.value=""; state.source=""; qaSource.value=""; clearBin(); clearPicked(); setView("map"); }
   applyFilters(); updateProgress(); refreshCard(); }
 reviewEnter.onclick=()=>setReview(true);
 reviewExit.onclick=()=>setReview(false);
@@ -815,7 +911,7 @@ function stepPermit(dir){
   const m=list[i]; select(m._p,m); map.panTo([m._p.lat,m._p.lon]);
 }
 document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"){ closePanel(); return; }
+  if(e.key==="Escape"){ if(state.picked.size) clearPicked(); closePanel(); return; }
   const t=e.target&&e.target.tagName; if(t==="INPUT"||t==="SELECT"||t==="TEXTAREA") return;
   if(!state.review) return;                 // arrow-key stepping is a review-mode feature
   if(e.key==="ArrowRight"){ stepPermit(1); e.preventDefault(); }
@@ -844,7 +940,11 @@ let gridRows=[];
 const MAXR=4000;
 function renderGrid(){
   const col=GRID_COLS.find(c=>c.k===gridSort.k)||GRID_COLS[1];
-  const rows=PERMITS.filter(visible).sort((a,b)=>{
+  // With a point selection active, the grid is exactly the picked set (the other filters are
+  // bypassed - the reviewer hand-picked these); otherwise it is the normally filtered view.
+  const base = (state.review && state.pickedOnly && state.picked.size)
+    ? PERMITS.filter(p=>state.picked.has(p.id)) : PERMITS.filter(visible);
+  const rows=base.sort((a,b)=>{
     let av=col.sv(a), bv=col.sv(b);
     if(av==null) av=gridSort.dir<0?-Infinity:Infinity;
     if(bv==null) bv=gridSort.dir<0?-Infinity:Infinity;
@@ -863,8 +963,11 @@ function renderGrid(){
       return `<td class="${cls}">${txt}</td>`; }).join("");
     return `<tr class="${[sev,rv,selc].filter(Boolean).join(" ")}" data-i="${i}">${tds}</tr>`;
   }).join("");
-  gridEl.innerHTML=`<table class="gt"><thead>${head}</thead><tbody>${body}</tbody></table>`+
-    (rows.length>MAXR?`<div class="gt-note">Showing the first ${MAXR.toLocaleString()} of ${rows.length.toLocaleString()} rows - filter by municipality or “Flagged only” to narrow.</div>`:"");
+  const picking = state.review && state.pickedOnly && state.picked.size;
+  const note = picking
+    ? `<div class="gt-note">Showing ${rows.length.toLocaleString()} hand-selected point${rows.length===1?"":"s"} - clear the “selected” chip to return to the full view.</div>`
+    : (rows.length>MAXR?`<div class="gt-note">Showing the first ${MAXR.toLocaleString()} of ${rows.length.toLocaleString()} rows - filter by municipality or “Flagged only” to narrow.</div>`:"");
+  gridEl.innerHTML=`<table class="gt"><thead>${head}</thead><tbody>${body}</tbody></table>`+note;
 }
 gridEl.addEventListener("click",e=>{
   const th=e.target.closest("th");
@@ -906,7 +1009,7 @@ function histogram(title, vals, unit, field){
 function renderStats(){
   const rows=PERMITS.filter(visible);
   const pick=k=>rows.filter(p=>typeof p[k]==="number"&&p[k]>0).map(p=>({v:p[k], muni:p.muni, id:p.id}));
-  const scope = state.muni!=="All" ? state.muni : state.province;
+  const scope = scopeLabel();
   statsEl.innerHTML =
     `<div class="st-wide st-sub">Distributions for <b>${esc(scope)}</b> - ${rows.length.toLocaleString()} permits in scope (respects the active filters). A lone far-right bar is an outlier worth opening.</div>`+
     histogram("Units total", pick("units_total"), "", "units_total")+
@@ -926,6 +1029,68 @@ statsEl.addEventListener("click",e=>{
   const lo=Math.round(P.mn+P.span*bin/P.bins), hi=(bin===P.bins-1?P.mx:Math.round(P.mn+P.span*(bin+1)/P.bins));
   state.binFilter={field, mn:P.mn, span:P.span, bins:P.bins, bin, label:`${STAT_LABEL[field]||field} ${fmt(lo)}-${fmt(hi)}`};
   showBinChip(); setView("grid");
+});
+
+// ---- review-mode multi-point selection -------------------------------------------------------
+// Build a set of points on the map (shift-click a marker, or shift-drag a rectangle over several),
+// then open just those rows in the grid. Lives entirely in review mode; cleared on exit.
+const qaPickchip=document.getElementById("qa-pickchip");
+function updatePickChip(){
+  if(state.picked.size){ qaPickchip.hidden=false;
+    qaPickchip.innerHTML=`${state.picked.size.toLocaleString()} selected<span class="pk-x" title="Clear selection">&times;</span>`; }
+  else { qaPickchip.hidden=true; state.pickedOnly=false; }
+}
+function clearPicked(){ state.picked.clear(); state.pickedOnly=false; updatePickChip(); restyle();
+  if(state.view!=="map") renderGrid(); }
+function togglePick(p,m){
+  if(state.picked.has(p.id)) state.picked.delete(p.id); else state.picked.add(p.id);
+  (m||byRec.get(p)).setStyle(restingStyle(p)); updatePickChip();
+  // A second shift-click (2+ points) jumps to the grid of the selection; a single shift-click
+  // stays on the map so one stray click does not yank the view away.
+  if(state.picked.size>1){ state.pickedOnly=true; if(state.view==="map") setView("grid"); else renderGrid(); }
+  else if(state.pickedOnly && state.view==="grid") renderGrid();
+}
+// Chip: click to open the selection in the grid; the x clears it.
+qaPickchip.onclick=e=>{ if(e.target.classList.contains("pk-x")){ clearPicked(); return; }
+  if(!state.picked.size) return; state.pickedOnly=true; setView("grid"); };
+
+// Shift-drag a rubber band over the map to select every visible point inside it. The box is created
+// lazily once the pointer actually moves, so a plain shift-click still reaches the marker handler.
+const mapEl=document.getElementById("map");
+let boxOrigin=null, boxActive=false, boxEl=null;
+function inReviewMap(){ return state.review && state.view==="map"; }
+mapEl.addEventListener("mousedown",e=>{
+  if(!inReviewMap() || !e.shiftKey || e.button!==0) return;
+  boxOrigin=[e.clientX,e.clientY]; boxActive=false;
+});
+window.addEventListener("mousemove",e=>{
+  if(!boxOrigin) return;
+  if(!boxActive){ if(Math.abs(e.clientX-boxOrigin[0])+Math.abs(e.clientY-boxOrigin[1])<6) return;
+    boxActive=true; map.dragging.disable();
+    boxEl=document.createElement("div"); boxEl.className="boxsel"; document.body.appendChild(boxEl); }
+  const x0=Math.min(boxOrigin[0],e.clientX), y0=Math.min(boxOrigin[1],e.clientY),
+        x1=Math.max(boxOrigin[0],e.clientX), y1=Math.max(boxOrigin[1],e.clientY);
+  Object.assign(boxEl.style,{left:x0+"px",top:y0+"px",width:(x1-x0)+"px",height:(y1-y0)+"px"});
+  e.preventDefault();
+});
+window.addEventListener("mouseup",e=>{
+  if(!boxOrigin) return;
+  const origin=boxOrigin, active=boxActive; boxOrigin=null; boxActive=false;
+  if(boxEl){ boxEl.remove(); boxEl=null; }
+  if(!active) return;                         // a plain click: let the marker handler deal with it
+  map.dragging.enable();
+  suppressClick=true; setTimeout(()=>{ suppressClick=false; }, 0);   // swallow the click that ends the drag
+  const rect=mapEl.getBoundingClientRect();
+  const x0=Math.min(origin[0],e.clientX)-rect.left, y0=Math.min(origin[1],e.clientY)-rect.top,
+        x1=Math.max(origin[0],e.clientX)-rect.left, y1=Math.max(origin[1],e.clientY)-rect.top;
+  state.picked.clear();                                        // a box drag REPLACES the selection
+  markers.forEach(m=>{ if(!map.hasLayer(m)) return;             // only points currently shown
+    const pt=map.latLngToContainerPoint(m.getLatLng());
+    if(pt.x>=x0 && pt.x<=x1 && pt.y>=y0 && pt.y<=y1) state.picked.add(m._p.id); });
+  state.pickedOnly = state.picked.size>0;
+  restyle();                                                   // clear old rings, draw the new ones
+  updatePickChip();
+  if(state.picked.size) setView("grid");
 });
 
 // ---- export to Excel ----
@@ -957,8 +1122,8 @@ const EXPORT_COLS = [
 ];
 function exportRows(){ return PERMITS.filter(visible); }   // honor the active muni/class/search filter
 function exportName(ext){
-  // Name the file after the current view: a specific municipality, else the selected province.
-  const tag = (state.muni!=="All" ? state.muni : state.province).replace(/\s+/g,"");
+  // Name the file after the current view: the chosen municipalities, else the selected province.
+  const tag = scopeLabel().replace(/\s+/g,"");
   return `permit_atlas_${tag}.${ext}`;
 }
 // Hand a generated file to the viewer. Inside the published artifact host the viewer blocks plain
