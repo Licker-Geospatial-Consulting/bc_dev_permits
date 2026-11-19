@@ -1349,6 +1349,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --sans:"Proxima Nova",system-ui,-apple-system,"Segoe UI",sans-serif;
   --display:"Proxima Nova",system-ui,sans-serif;
   --sidebar-w:372px;
+  --reviewbar-h:46px; /* measured from the real toolbar in JS; drives the panels below it */
 }
 /* lgeo is a light, warm theme by default; dark-teal is an explicit opt-in via the toggle. */
 :root[data-theme="dark"]{
@@ -1539,9 +1540,14 @@ a.pdftag:hover{border-color:var(--accent,#2563eb);color:var(--accent,#2563eb)}
 #review-enter:hover{border-color:var(--ink-2)}
 #review-enter::before,.rb-badge::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;
   background:#b06a00;margin-right:7px;vertical-align:middle}
-#review-bar{position:absolute;top:0;left:var(--sidebar-w);right:0;z-index:650;height:46px;display:flex;
-  align-items:center;gap:12px;padding:0 14px;background:#fff6e5;border-bottom:1px solid #e9d8b0;
-  font-size:12.5px;color:var(--ink);box-shadow:var(--shadow)}
+/* The toolbar holds more controls than fit one row on a laptop, so it WRAPS instead of clipping.
+   Its real height is measured in JS into --reviewbar-h, which the grid / stats / map-controls below
+   use for their top offset, so a second row never hides them. */
+#review-bar{position:absolute;top:0;left:var(--sidebar-w);right:0;z-index:650;min-height:46px;display:flex;
+  flex-wrap:wrap;align-items:center;align-content:center;gap:8px 10px;padding:6px 14px;background:#fff6e5;
+  border-bottom:1px solid #e9d8b0;font-size:12.5px;color:var(--ink);box-shadow:var(--shadow)}
+/* Keep every control at its natural width so labels never clip ("Grid", "Export"). */
+#review-bar>*{flex-shrink:0}
 #review-bar[hidden],#grid[hidden],#stats[hidden],#review-enter[hidden]{display:none}
 .rb-sel{font-family:inherit;font-size:12px;padding:4px 6px;border-radius:7px;border:1px solid var(--line);
   background:var(--surface);color:var(--ink)}
@@ -1561,8 +1567,8 @@ a.pdftag:hover{border-color:var(--accent,#2563eb);color:var(--accent,#2563eb)}
 .rb-spacer{flex:1}
 .rb-prog{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .rb-link{color:var(--accent,#2563eb);text-decoration:none;font-weight:600}
-body.review-on .leaflet-top{top:52px}
-#grid{position:absolute;top:46px;left:var(--sidebar-w);right:0;bottom:0;z-index:640;overflow:auto;background:var(--surface)}
+body.review-on .leaflet-top{top:calc(var(--reviewbar-h) + 6px)}
+#grid{position:absolute;top:var(--reviewbar-h);left:var(--sidebar-w);right:0;bottom:0;z-index:640;overflow:auto;background:var(--surface)}
 table.gt{border-collapse:collapse;width:100%;font-size:12.5px}
 table.gt th,table.gt td{padding:6px 10px;border-bottom:1px solid var(--line-2);text-align:left;white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis}
 table.gt th{position:sticky;top:0;background:var(--surface-2);cursor:pointer;font-weight:600;color:var(--ink-2);user-select:none;z-index:1}
@@ -1577,7 +1583,7 @@ table.gt tr.flag-med td:first-child{box-shadow:inset 3px 0 0 #c77700}
 table.gt td.rev{text-align:center;color:#1a7f37;font-weight:700;width:26px}
 .gt-note{padding:10px 14px;color:var(--muted);font-size:12px}
 /* stats view: distribution histograms for the current scope */
-#stats{position:absolute;top:46px;left:var(--sidebar-w);right:0;bottom:0;z-index:640;overflow:auto;
+#stats{position:absolute;top:var(--reviewbar-h);left:var(--sidebar-w);right:0;bottom:0;z-index:640;overflow:auto;
   background:var(--surface);padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;align-content:start}
 .st-card{border:1px solid var(--line-2);border-radius:12px;padding:12px 14px;background:var(--surface-2)}
 .st-card h4{margin:0 0 2px;font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink);display:flex;justify-content:space-between}
@@ -2078,8 +2084,16 @@ function updateProgress(){
 function refreshCard(){ if(state.selected) select(state.selected, byRec.get(state.selected)); }
 // Enter / exit review mode. Review tools + card sections appear ONLY in review mode, so the public
 // dashboard is untouched until the reviewer opts in via the map-top toggle.
+// The toolbar wraps to two rows on narrow viewports, so publish its real height to the panels
+// (grid / stats) and map controls that sit directly below it. Keyed off a ResizeObserver so it
+// tracks window resizes and wrap/unwrap without a resize handler of its own.
+function syncBarHeight(){
+  const h = reviewBar.hidden ? 46 : Math.round(reviewBar.getBoundingClientRect().height);
+  document.documentElement.style.setProperty("--reviewbar-h", h + "px");
+}
+if(window.ResizeObserver) new ResizeObserver(syncBarHeight).observe(reviewBar);
 function setReview(on){ state.review=on; reviewEnter.hidden=on; reviewBar.hidden=!on;
-  document.body.classList.toggle("review-on", on);
+  document.body.classList.toggle("review-on", on); syncBarHeight();
   if(on && !QA) runQA();              // compute validator flags so the flagged set is complete
   if(!on){ state.flaggedOnly=false; qaOnly.checked=false; state.evidence=false; qaEvidence.checked=false;
     state.status=""; qaStatus.value=""; state.source=""; qaSource.value=""; clearBin(); setView("map"); }
